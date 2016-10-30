@@ -57,7 +57,8 @@ struct State {
     board[move.to.row][move.to.col] = board[move.from.row][move.from.col];
     board[move.from.row][move.from.col].occupied = false;
     for (uint8_t i = 0; i < move.num_removed; i++) {
-      board[move.removed[i]].occupied = false;
+      Loc removed = move.removed[i];
+      board[removed.row][removed.col].occupied = false;
     }
   }
 };
