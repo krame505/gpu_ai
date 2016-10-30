@@ -45,7 +45,7 @@ struct State {
   Player turn;
 
   __host__ __device__ inline BoardItem *operator[](uint8_t row) {
-    return &(board[row]);
+    return &(board[row][0]);
   }
 
   __host__ __device__ inline BoardItem operator[](Loc loc) {
@@ -54,8 +54,8 @@ struct State {
 
   // TODO: Check passing reference on device is OK
   __host__ __device__ void move(const Move &move) {
-    board[move.to.row][move.to.col] = board[move.from];
-    board[move.from].occupied = false;
+    board[move.to.row][move.to.col] = board[move.from.row][move.from.col];
+    board[move.from.row][move.from.col].occupied = false;
     for (uint8_t i = 0; i < move.num_removed; i++) {
       board[move.removed[i]].occupied = false;
     }
