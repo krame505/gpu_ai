@@ -19,7 +19,7 @@ enum PieceType {
 struct Loc {
   uint8_t row;
   uint8_t col;
-}
+};
 
 struct BoardItem {
   bool occupied;
@@ -38,7 +38,7 @@ struct Move {
     Loc affected[];
   };
   uint8_t num_removed;
-}
+};
 
 struct State {
   BoardItem board[BOARD_SIZE][BOARD_SIZE];
@@ -49,14 +49,14 @@ struct State {
   }
 
   __host__ __device__ inline BoardItem operator[](Loc loc) {
-    return board;
+    return board[loc.row][loc.col];
   }
 
   // TODO: Check passing reference on device is OK
-  __host__ __device__ move(const Move &move) {
+  __host__ __device__ void move(const Move &move) {
     board[move.to.row][move.to.col] = board[move.from];
     board[move.from].occupied = false;
-    for (uint8_t i = 0; i < num_removed; i++) {
+    for (uint8_t i = 0; i < move.num_removed; i++) {
       board[move.removed[i]].occupied = false;
     }
   }
