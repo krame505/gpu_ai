@@ -8,13 +8,17 @@
 
 class GameTree {
 public:
-  GameTree(State state, GameTree *const parent):
+  GameTree(State state, GameTree *const parent) :
     state(state),
     parent(parent),
-    trials(0) {
+    trials(0),
+    totalTrials(0) {
     for (Move m : state.moves()) {
       moves.push_back(m);
       children.push_back(NULL);
+    }
+    for (unsigned i = 0; i < NUM_PLAYERS; i++) {
+      wins[i] = 0;
     }
   }
 
@@ -48,7 +52,7 @@ private:
 
   unsigned trials; // Trials assigned in last pass
   unsigned totalTrials;
-  unsigned wins[NUM_PLAYERS] = {0};
+  unsigned wins[NUM_PLAYERS];
 };
 
 // Build a tree by performing a series of trials with the number of playouts in a vector

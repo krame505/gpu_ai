@@ -17,6 +17,11 @@ enum Player {
   PLAYER_NONE=-1
 };
 
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+Player nextTurn(Player);
+
 enum PieceType {
   CHECKER,
   CHECKER_KING,
@@ -77,9 +82,7 @@ struct State {
       board[removed.row][removed.col].occupied = false;
     }
 
-    turn++;
-    if (turn >= NUM_PLAYERS)
-      turn = 0;
+    turn = nextTurn(turn);
   }
 
   // Return true if the game is finished
@@ -97,9 +100,3 @@ struct State {
   // TODO: There will be a device version of this as well...
   std::vector<Move> moves();
 };
-
-// Utility functions
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-Player nextTurn(Player);
