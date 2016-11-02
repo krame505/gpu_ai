@@ -65,7 +65,7 @@ struct State {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  inline BoardItem operator[](Loc loc) {
+  inline BoardItem operator[](Loc loc) const {
     return board[loc.row][loc.col];
   }
 
@@ -89,14 +89,14 @@ struct State {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool isFinished();
+  bool isFinished() const;
 
   // Return the winner, or NONE if a draw
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  Player result();
+  Player result() const;
 
   // TODO: There will be a device version of this as well...
-  std::vector<Move> moves();
+  std::vector<Move> moves() const;
 };

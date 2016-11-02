@@ -8,7 +8,7 @@
 #include <cmath>
 using namespace std;
 
-vector<State> select(unsigned trials) {
+vector<State> GameTree::select(unsigned trials) {
   assert(!state.isFinished());
   this->trials = trials;
 
@@ -29,7 +29,7 @@ vector<State> select(unsigned trials) {
   if (newNodes.size() > 0) {
     for (unsigned newNode : newNodes) {
       assignedTrials[newNode] = (double)trials / newNodes.size();
-      totalAssignedTrials += assignedTrials[i];
+      totalAssignedTrials += assignedTrials[newNode];
     }
     
     for (unsigned newNode : newNodes) {
@@ -42,7 +42,7 @@ vector<State> select(unsigned trials) {
   
     vector<State> result;
     for (int i = 0; i < children.size(); i++) {
-      childen[i]->trials = assignedTrials[i];
+      children[i]->trials = assignedTrials[i];
       for (int j = 0; j < assignedTrials[i]; j++) {
         result.push_back(state);
       }
@@ -55,14 +55,6 @@ vector<State> select(unsigned trials) {
     double totalWeights = 0;
 
     for (unsigned i = 0; i < children.size(); i++) {
-      if (newNodes == trials)
-        break;
-      if (children[i] == NULL) {
-        State newState = state;
-        newState.move(moves[i]);
-        children[i] = new GameTree(newState, this);
-        newNodes++;
-      }
       weights[i] = children[i]->ucb1();
       totalWeights += weights[i];
     }
@@ -80,7 +72,7 @@ vector<State> select(unsigned trials) {
     vector<State> result;
     for (int i = 0; i < children.size(); i++) {
       if (assignedTrials[i] != 0) {
-        vector<State> childTrials = children[i].select(assignedTrials[i]);
+        vector<State> childTrials = children[i]->select(assignedTrials[i]);
         result.insert(result.end(), childTrials.begin(), childTrials.end());
       }
     }
@@ -100,8 +92,8 @@ void GameTree::update(vector<Player> results) {
   }
 }
 
-array<NUM_PLAYERS, double> GameTree::getScores() const {
-  array<NUM_PLAYERS, double> result;
+array<double, NUM_PLAYERS> GameTree::getScores() const {
+  array<double, NUM_PLAYERS> result;
   for (unsigned i = 0; i < NUM_PLAYERS; i++) {
     result[i] = (double)wins[i] / totalTrials;
   }
@@ -113,7 +105,7 @@ double GameTree::ucb1() const {
   if (totalTrials == 0)
     return INFINITY;
   else
-    return (double)wins[turn] / totalTrials +
+    return (double)wins[state.turn] / totalTrials +
       sqrt(2.0L * log(parent->trials) / totalTrials);
 }
 
