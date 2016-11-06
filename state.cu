@@ -15,13 +15,9 @@ __host__ __device__ PlayerId nextTurn(PlayerId turn) {
   }
 }
 
-__host__ __device__ bool Move::conflictsWith(const Move &other) {
-  return false; // TODO
-}
-
 // TODO: Error checking on host
 __host__ __device__ void State::move(const Move &move) {
-  board[move.to.row][move.to.col] = board[move.from.row][move.from.col];
+  board[move.to.row][move.to.col] = (BoardItem){true, move.promoted, move.player};
   board[move.from.row][move.from.col].occupied = false;
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
@@ -36,11 +32,11 @@ __host__ __device__ bool State::isFinished() const {
 }
 
 __host__ __device__ PlayerId State::result() const {
-  return PLAYER_NONE; // TODO
+  //return PLAYER_NONE; // TODO
 }
 
 __host__ __device__ uint8_t State::locMoves(Loc, Move result[MAX_LOC_MOVES]) const {
-  return 0; // TODO
+  //return 0; // TODO
 }
 
 std::vector<Move> State::moves() const {
@@ -55,12 +51,16 @@ std::vector<Move> State::moves() const {
   return result;
 }
 
+__host__ __device__ bool Move::conflictsWith(const Move &other) {
+  //return false; // TODO
+}
+
 ostream &operator<<(ostream &os, PlayerId pi) {
   switch (pi) {
   case PLAYER_1:
-    return os << "player 1";
+    return os << "Player 1";
   case PLAYER_2:
-    return os << "player 1";
+    return os << "Player 2";
   default:
     assert(false);
     return os; // Unreachable, but to make -Wall shut up
@@ -80,13 +80,13 @@ ostream &operator<<(ostream &os, PieceType pt) {
 }
 
 ostream &operator<<(ostream &os, Loc loc) {
-  return os << string(1, 'a' + loc.col) << (loc.row + 1);
+  //return os << string(1, 'a' + loc.col) << (loc.row + 1);
 }
 
 ostream &operator<<(ostream &os, Move m) {
-  return os; // TODO
+  //return os; // TODO
 }
 
 ostream &operator<<(ostream &os, State s) {
-  return os; // TODO
+  //return os; // TODO
 }

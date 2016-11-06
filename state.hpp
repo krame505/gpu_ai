@@ -47,21 +47,7 @@ struct BoardItem {
   PlayerId owner;
 };
 
-struct Move {
-  PlayerId player;
-  Loc from;
-  Loc to;
-  Loc removed[MAX_MOVE_JUMPS];
-  Loc intermediate[MAX_MOVE_JUMPS];
-  uint8_t jumps;
-
-  // Return true if making this move prevents the other move from being made
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  bool conflictsWith(const Move &other);
-};
-
+struct Move;
 struct State {
   BoardItem board[BOARD_SIZE][BOARD_SIZE];
   PlayerId turn;
@@ -106,6 +92,22 @@ struct State {
   std::vector<Move> moves() const;
 };
 
+struct Move {
+  PlayerId player;
+  Loc from;
+  Loc to;
+  Loc removed[MAX_MOVE_JUMPS];
+  Loc intermediate[MAX_MOVE_JUMPS];
+  PieceType promoted;
+  uint8_t jumps;
+
+  // Return true if making this move prevents the other move from being made
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool conflictsWith(const Move &other);
+};
+
 #ifdef __CUDACC__
   __host__ __device__
 #endif
@@ -114,6 +116,6 @@ PlayerId nextTurn(PlayerId);
 std::ostream &operator<<(std::ostream&, PlayerId);
 std::ostream &operator<<(std::ostream&, PieceType);
 std::ostream &operator<<(std::ostream&, Loc);
-std::ostream &operator<<(std::ostream&, BoardItem);
+//std::ostream &operator<<(std::ostream&, BoardItem);
 std::ostream &operator<<(std::ostream&, Move);
 std::ostream &operator<<(std::ostream&, State);
