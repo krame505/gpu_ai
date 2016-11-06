@@ -41,9 +41,9 @@ vector<State> GameTree::select(unsigned trials) {
     assert(totalAssignedTrials == trials);
   
     vector<State> result;
-    for (int i = 0; i < children.size(); i++) {
+    for (unsigned i = 0; i < children.size(); i++) {
       children[i]->trials = assignedTrials[i];
-      for (int j = 0; j < assignedTrials[i]; j++) {
+      for (unsigned j = 0; j < assignedTrials[i]; j++) {
         result.push_back(state);
       }
     }
@@ -70,7 +70,7 @@ vector<State> GameTree::select(unsigned trials) {
     assert(totalAssignedTrials == trials);
   
     vector<State> result;
-    for (int i = 0; i < children.size(); i++) {
+    for (unsigned i = 0; i < children.size(); i++) {
       if (assignedTrials[i] != 0) {
         vector<State> childTrials = children[i]->select(assignedTrials[i]);
         result.insert(result.end(), childTrials.begin(), childTrials.end());
@@ -80,11 +80,11 @@ vector<State> GameTree::select(unsigned trials) {
   }
 }
 
-void GameTree::update(vector<Player> results) {
+void GameTree::update(vector<PlayerId> results) {
   totalTrials += trials;
   auto it = results.begin();
   for (unsigned i = 0; i < children.size(); i++) {
-    vector<Player> childResults(it, it += children[i]->trials);
+    vector<PlayerId> childResults(it, it += children[i]->trials);
     children[i]->update(childResults);
     for (unsigned j = 0; j < NUM_PLAYERS; j++) {
       wins[j] += children[i]->wins[j];
@@ -113,7 +113,7 @@ GameTree *buildTree(State state, vector<unsigned> trials) {
   GameTree *tree = new GameTree(state, NULL);
   for (unsigned numPlayouts : trials) {
     vector<State> playoutStates = tree->select(numPlayouts);
-    vector<Player> results = playouts(playoutStates);
+    vector<PlayerId> results = playouts(playoutStates);
     tree->update(results);
   }
   return tree;

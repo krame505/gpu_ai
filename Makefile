@@ -9,9 +9,11 @@ CUDA_INSTALL_PATH := /usr/local/cuda-6.5
 
 EXECUTABLE	:= run_ai
 # Cuda source files (compiled with cudacc)
-CUFILES		:= state.cu
+CUFILES		:= state.cu playout.cu
 # C/C++ source files (compiled with gcc / c++)
 CCFILES		:= mcts.cpp
+# Header files / anything that should trigger a full rebuild
+C_DEPS          := mcts.hpp playout.hpp state.hpp
 
 include ../../common/common.mk
 

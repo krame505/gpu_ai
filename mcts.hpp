@@ -42,7 +42,7 @@ public:
   std::vector<State> select(unsigned trials);
   
   // Update the entire tree with the playout results
-  void update(std::vector<Player>);
+  void update(std::vector<PlayerId>);
   
 private:
   const State state;
