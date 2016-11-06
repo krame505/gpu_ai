@@ -9,11 +9,9 @@ Move RandomPlayer::getMove(const State &state) const {
 }
 
 Move HumanPlayer::getMove(const State &state) const {
-  vector<Move> moves = state.moves();
-  return moves[0]; // TODO
+  // TODO
 }
 
 Move MCTSPlayer::getMove(const State &state) const {
-  vector<Move> moves = state.moves();
-  return moves[0]; // TODO
+  // TODO
 }
