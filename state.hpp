@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <vector>
+#include <iostream>
 
 #define BOARD_SIZE 8
 #define NUM_PLAYERS 2
@@ -105,8 +106,14 @@ struct State {
   std::vector<Move> moves() const;
 };
 
-// Function declarations
 #ifdef __CUDACC__
   __host__ __device__
 #endif
 PlayerId nextTurn(PlayerId);
+
+std::ostream &operator<<(std::ostream&, PlayerId);
+std::ostream &operator<<(std::ostream&, PieceType);
+std::ostream &operator<<(std::ostream&, Loc);
+std::ostream &operator<<(std::ostream&, BoardItem);
+std::ostream &operator<<(std::ostream&, Move);
+std::ostream &operator<<(std::ostream&, State);

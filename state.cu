@@ -1,6 +1,20 @@
 
 #include "state.hpp"
 
+#include <cassert>
+using namespace std;
+
+__host__ __device__ PlayerId nextTurn(PlayerId turn) {
+  switch (turn) {
+  case PLAYER_1:
+    return PLAYER_2;
+  case PLAYER_2:
+    return PLAYER_1;
+  default:
+    return PLAYER_NONE;
+  }
+}
+
 __host__ __device__ bool Move::conflictsWith(const Move &other) {
   return false; // TODO
 }
@@ -41,12 +55,38 @@ std::vector<Move> State::moves() const {
   return result;
 }
 
-__host__ __device__ PlayerId nextTurn(PlayerId turn) {
-  switch (turn) {
+ostream &operator<<(ostream &os, PlayerId pi) {
+  switch (pi) {
   case PLAYER_1:
-    return PLAYER_2;
+    return os << "player 1";
   case PLAYER_2:
-    return PLAYER_1;
+    return os << "player 1";
+  default:
+    assert(false);
+    return os; // Unreachable, but to make -Wall shut up
   }
-  return PLAYER_NONE; // Unreachable, but to make -Wall shut up
+}
+
+ostream &operator<<(ostream &os, PieceType pt) {
+  switch (pt) {
+  case PLAYER_1:
+    return os << "checker";
+  case PLAYER_2:
+    return os << "king";
+  default:
+    assert(false);
+    return os; // Unreachable, but to make -Wall shut up
+  }
+}
+
+ostream &operator<<(ostream &os, Loc loc) {
+  return os << string(1, 'a' + loc.col) << (loc.row + 1);
+}
+
+ostream &operator<<(ostream &os, Move m) {
+  return os; // TODO
+}
+
+ostream &operator<<(ostream &os, State s) {
+  return os; // TODO
 }
