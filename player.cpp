@@ -23,8 +23,8 @@ Move HumanPlayer::getMove(const State &state) const {
     vector<Move> moves = state.moves();
     unsigned len = strlen(input);
 
-    int i = 0;
-    Loc to(-1, -1);
+    unsigned i = 0;
+    Loc to(BOARD_SIZE, BOARD_SIZE); // Out of bounds
 
     if (len < 2 || len == 3 || len > 5) {
       error = "Invalid move syntax";
@@ -33,8 +33,7 @@ Move HumanPlayer::getMove(const State &state) const {
 
     if (len > 2) {
       Loc from(input[1] - '1', input[0] - 'a');
-      if (from.row < 0 || from.row >= BOARD_SIZE ||
-          from.col < 0 || from.col >= BOARD_SIZE) {
+      if (from.row >= BOARD_SIZE || from.col >= BOARD_SIZE) {
         error = "Invalid source location";
         moves.clear();
       }
@@ -55,8 +54,7 @@ Move HumanPlayer::getMove(const State &state) const {
 
     if (i < len) {
       to = Loc(input[i + 1] - '1', input[i] - 'a');
-      if (to.row < 0 || to.row >= BOARD_SIZE ||
-          to.col < 0 || to.col >= BOARD_SIZE) {
+      if (to.row >= BOARD_SIZE || to.col >= BOARD_SIZE) {
         error = "Invalid destination";
         moves.clear();
       }
