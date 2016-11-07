@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-# Using a newer version of CUDA
-CUDA_INSTALL_PATH := /usr/local/cuda-6.5
+# Using a newer version of CUDA than the default
+CUDA_INSTALL_PATH := /usr/local/cuda-8.0
 
 EXECUTABLE	:= run_ai
 # Cuda source files (compiled with cudacc)
@@ -18,10 +18,4 @@ C_DEPS          := mcts.hpp playout.hpp state.hpp player.cpp
 include ../../common/common.mk
 
 # Enable C++11 for compiling .cpp files
-# NVCC doesn't support gcc5 yet, but we can still use gcc5 for general c++
-# This hacky stuff needs to go after the include to override some variables that
-# I'm not sure were meant to be overridden... but it seems to work
 CXXFLAGS        += -std=gnu++11
-NVCCFLAGS       += --compiler-bindir /usr/bin/g++
-CXX              = /opt/rh/devtoolset-4/root/usr/bin/g++
-CC               = /opt/rh/devtoolset-4/root/usr/bin/gcc
