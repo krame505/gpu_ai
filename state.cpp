@@ -45,18 +45,22 @@ ostream &operator<<(ostream &os, BoardItem bi) {
   case CHECKER:
     switch (bi.owner) {
     case PLAYER_1:
-      return os << "⛀ ";
+      return os << "⛂";
     case PLAYER_2:
-      return os << "⛂ ";
+      return os << "⛀";
+    default:
+      break;
     }
     break;
 
   case CHECKER_KING:
     switch (bi.owner) {
     case PLAYER_1:
-      return os << "⛁ ";
+      return os << "⛃";
     case PLAYER_2:
-      return os << "⛃ ";
+      return os << "⛁";
+    default:
+      break;
     }
   }
   
@@ -71,17 +75,17 @@ ostream &operator<<(ostream &os, State s) {
     os << "  " << string(1, 'a' + i);
   }
   os << "\n";
-  for (int i = 0; i < BOARD_SIZE; i--) {
+  for (int i = 0; i < BOARD_SIZE; i++) {
     os << (BOARD_SIZE - i) << " ";
     for (int j = 0; j < BOARD_SIZE; j++) {
       // TODO: check parity of background colors is correct
-      os << EFFECT(BACKGROUND((i + j) % 2));
+      os << EFFECT(BACKGROUND(!((i + j) % 2)));
       if (s.board[i][j].occupied) {
         os << s.board[i][j] << " ";
       }
       else {
         os << EFFECT(FOREGROUND(BLUE));
-        os << string(1, 'a' + j) << (i + 1);
+        os << string(1, 'a' + j) << (BOARD_SIZE - i);
       }
       os << EFFECT(FOREGROUND(DEFAULT));
       os << EFFECT(BACKGROUND(DEFAULT));

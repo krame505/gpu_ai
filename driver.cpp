@@ -20,7 +20,6 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 
   while (!state.isFinished()) {
     if (verbose) {
-      cout << state.turn << "'s turn" << endl;
       cout << state << endl;
     }
     
