@@ -10,7 +10,7 @@
 #define BOARD_SIZE 8
 #define NUM_PLAYERS 2
 
-// TODO: Figure out the actual values for these
+// TODO: Figure out actual values - these are probably overestimates
 #define MAX_MOVE_JUMPS 4  // Max number of jumps that can be taken in a single move
 #define MAX_LOC_MOVES  10 // Max number of possible moves for a piece from a single point
 
@@ -116,6 +116,6 @@ PlayerId nextTurn(PlayerId);
 std::ostream &operator<<(std::ostream&, PlayerId);
 std::ostream &operator<<(std::ostream&, PieceType);
 std::ostream &operator<<(std::ostream&, Loc);
-//std::ostream &operator<<(std::ostream&, BoardItem);
+std::ostream &operator<<(std::ostream&, BoardItem);
 std::ostream &operator<<(std::ostream&, Move);
 std::ostream &operator<<(std::ostream&, State);
