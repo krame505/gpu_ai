@@ -17,7 +17,7 @@ __host__ __device__ PlayerId nextTurn(PlayerId turn) {
 
 // TODO: Error checking on host
 __host__ __device__ void State::move(const Move &move) {
-  board[move.to.row][move.to.col] = (BoardItem){true, move.promoted, move.player};
+  board[move.to.row][move.to.col] = (BoardItem){true, move.newType, move.player};
   board[move.from.row][move.from.col].occupied = false;
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];

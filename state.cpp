@@ -31,11 +31,20 @@ ostream &operator<<(ostream &os, PieceType pt) {
 }
 
 ostream &operator<<(ostream &os, Loc loc) {
-  //return os << string(1, 'a' + loc.col) << (loc.row + 1);
+  return os << string(1, 'a' + loc.col) << (loc.row + 1);
 }
 
 ostream &operator<<(ostream &os, Move m) {
-  //return os; // TODO
+  os << m.player << " moved " << m.from << " to " << m.to;
+  if (m.jumps) {
+    os << ", captured";
+    for (unsigned i = 0; i < m.jumps; i++) {
+      os << " " << m.removed[i];
+    }
+  }
+  if (m.promoted)
+    os << ", promoted to " << m.newType;
+  return os;
 }
 
 ostream &operator<<(ostream &os, BoardItem bi) {

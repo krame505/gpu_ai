@@ -25,7 +25,9 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
     
     Player *player = players[(unsigned)state.turn];
     Move move = player->getMove(state);
+    cout << move << endl;
     state.move(move);
+    cout << endl;
   }
 
   PlayerId result = state.result();

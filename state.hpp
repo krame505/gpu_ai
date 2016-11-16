@@ -93,12 +93,13 @@ struct State {
 };
 
 struct Move {
-  PlayerId player;
+  PlayerId player; // TODO: is this really needed?
   Loc from;
   Loc to;
   Loc removed[MAX_MOVE_JUMPS];
   Loc intermediate[MAX_MOVE_JUMPS];
-  PieceType promoted;
+  bool promoted;
+  PieceType newType; // Type after the move - same as original type if no promotion
   uint8_t jumps;
 
   // Return true if making this move prevents the other move from being made
