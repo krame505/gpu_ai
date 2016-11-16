@@ -1,6 +1,11 @@
 
-#include "state.hpp"
 #include "playout.hpp"
+#include "state.hpp"
+
+#include <curand.h>
+#include <curand_kernel.h>
+
+#define SEED 12345
 
 __global__ void playoutKernel(State *states, PlayerId *results) {
   uint8_t id = threadIdx.x;
@@ -11,10 +16,16 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   __shared__ State state;
   state = states[blockIdx.x];
 
-  __shared__ Move directMoves[NUM_PLAYERS][MAX_MOVES];
-  __shared__ Move captureMoves[NUM_PLAYERS][MAX_MOVES];
+  // Init random generators
+  __shared__ curandState_t generators[NUM_LOCS];
+  curand_init(SEED, id, 1, &generators[id]);
+ 
   __shared__ uint8_t directMoveIndices[NUM_PLAYERS][NUM_LOCS];
   __shared__ uint8_t captureMoveIndices[NUM_PLAYERS][NUM_LOCS];
+  __shared__ uint8_t numDirectMoves[NUM_PLAYERS];
+  __shared__ uint8_t numCaptureMoves[NUM_PLAYERS];
+  __shared__ Move directMoves[NUM_PLAYERS][MAX_MOVES];
+  __shared__ Move captureMoves[NUM_PLAYERS][MAX_MOVES];
 
   while (!state.isFinished()) {
     PlayerId locOwner = state[loc].owner;
@@ -36,30 +47,6 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
       }
     }
 
-    // Perform a reduction to calculate the max number of captures possible for each player
-    for (unsigned i = NUM_LOCS / 2; i > 0; i >>= 1) {
-      __syncthreads();
-      if (i > id) {
-	for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	  if (captureMoveIndices[i][id + i] > captureMoveIndices[i][id])
-	    captureMoveIndices[i][id] = captureMoveIndices[i][id + i];
-	}
-      }
-    }
-
-    __shared__ uint8_t maxCaptureMoves[NUM_PLAYERS];
-    if (id < NUM_PLAYERS)
-      maxCaptureMoves[id] = captureMoveIndices[id][0];
-    __syncthreads();
-
-    // The number of capture moves for a location is 0 if there are any other locations with more capture moves
-    for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-      captureMoveIndices[i][id] = 0;
-    }
-    if (numLocCaptureMoves < maxCaptureMoves[locOwner])
-      numLocCaptureMoves = 0;
-    captureMoveIndices[locOwner][id] = numLocCaptureMoves;
-
     // Perform exclusive scans to get indices to copy moves into the shared arrays
     for (uint8_t stride = 1; stride <= NUM_LOCS; stride <<= 1) {
       __syncthreads();
@@ -73,7 +60,10 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     }
 
     __syncthreads();
+
     if (id < NUM_PLAYERS) {
+      numDirectMoves[id] = directMoveIndices[id][NUM_LOCS - 1];
+      numCaptureMoves[id] = captureMoveIndices[id][NUM_LOCS - 1];
       directMoveIndices[id][NUM_LOCS - 1] = 0;
       captureMoveIndices[id][NUM_LOCS - 1] = 0;
     }
@@ -96,7 +86,45 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
 
     // Copy generated moves to shared arrays
     for (uint8_t i = 0; i < numLocDirectMoves; i++) {
-      //directMoves[i + directMoveIndices[id]] = locDirectMoves[i];
+      directMoves[i + directMoveIndices[id]] = locDirectMoves[i];
+      captureMoves[i + captureMoveIndices[id]] = locCaptureMoves[i];
+    }
+
+    // Perform a reduction to calculate the max capture move length possible for each player
+    // Each thread copies its capture moves of maximum length to a new local array
+    // Perform another scan to calculate indices and copy the new arrays back to captureMoves
+
+    // for (unsigned i = NUM_LOCS / 2; i > 0; i >>= 1) {
+    //   __syncthreads();
+    //   if (i > id) {
+    //     for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+    //       if (captureMoveIndices[i][id + i] > captureMoveIndices[i][id])
+    //         captureMoveIndices[i][id] = captureMoveIndices[i][id + i];
+    //     }
+    //   }
+    // }
+
+    // The number of capture moves for a location is 0 if there are any other locations with more capture moves
+    // for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+    //   captureMoveIndices[i][id] = 0;
+    // }
+    // if (numLocCaptureMoves > numCaptureMoves[locOwner])
+    //   numLocCaptureMoves = 0;
+    // captureMoveIndices[locOwner][id] = numLocCaptureMoves;
+
+    // Select a move
+    // TODO: Optimize this portion
+    if (id == 0) {
+      Move move;
+      if (numCaptureMoves[state.turn] > 0) {
+        move = captureMoves[state.turn][curand(&generators[id]) % numCaptureMoves[state.turn]];
+      }
+      else if (numCaptureMoves[state.turn] > 0) {
+        move = directMoves[state.turn][curand(&generators[id]) % numDirectMoves[state.turn]];
+      }
+      else {
+        // Handle case when a player can't make any moves
+      }
     }
   }
 }
