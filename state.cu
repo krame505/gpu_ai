@@ -35,8 +35,18 @@ __host__ __device__ PlayerId State::result() const {
   //return PLAYER_NONE; // TODO
 }
 
-__host__ __device__ uint8_t State::locMoves(Loc, Move result[MAX_LOC_MOVES]) const {
+__host__ __device__ uint8_t State::locDirectMoves(Loc, Move result[MAX_LOC_MOVES]) const {
   //return 0; // TODO
+}
+
+__host__ __device__ uint8_t State::locCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
+  //return 0; // TODO
+}
+
+__host__ __device__ uint8_t State::locMoves(Loc l, Move result[MAX_LOC_MOVES]) const {
+  uint8_t numDirect = locDirectMoves(l, result);
+  uint8_t numCapture = locCaptureMoves(l, result + numDirect);
+  return numDirect + numCapture;
 }
 
 std::vector<Move> State::moves() const {
