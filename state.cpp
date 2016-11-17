@@ -39,7 +39,7 @@ ostream &operator<<(ostream &os, Loc loc) {
 }
 
 ostream &operator<<(ostream &os, Move m) {
-  os << m.player << " moved " << m.from << " to " << m.to;
+  os << m.from << " to " << m.to;
   if (m.jumps) {
     os << ", captured";
     for (unsigned i = 0; i < m.jumps; i++) {

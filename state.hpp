@@ -47,10 +47,24 @@ struct Loc {
   void assertValid() const;
 };
 
+// Represents the contents of the location on the board, either a piece or an empty squate
 struct BoardItem {
   bool occupied;
   PieceType type;
   PlayerId owner;
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  BoardItem(bool occupied, PieceType type, PlayerId owner) :
+    occupied(occupied), type(type), owner(owner) {}
+
+  // Default constructor must be empty to avoid a race condition when initializing shared memory
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  BoardItem() {}
+  
 };
 
 struct Move;
@@ -112,7 +126,6 @@ struct State {
 };
 
 struct Move {
-  PlayerId player; // TODO: is this really needed?
   Loc from;
   Loc to;
   Loc removed[MAX_MOVE_JUMPS];
