@@ -1,6 +1,7 @@
 // Contains the implementation of functions that run on the host or device
 #include "state.hpp"
 
+// TODO: Set up some sort of error capture mechanism to check asserts in device code
 #include <cassert>
 using namespace std;
 
@@ -15,12 +16,27 @@ __host__ __device__ PlayerId nextTurn(PlayerId turn) {
   }
 }
 
-// TODO: Error checking on host
 __host__ __device__ void State::move(const Move &move) {
+  // Error checking on host
+#ifndef __CUDA_ARCH__
+  move.to.assertValid();
+  move.from.assertValid();
+  assert(board[move.from.row][move.from.col].occupied);
+  assert(!board[move.to.row][move.to.col].occupied);
+#endif
+
   board[move.to.row][move.to.col] = (BoardItem){true, move.newType, move.player};
   board[move.from.row][move.from.col].occupied = false;
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
+#ifndef __CUDA_ARCH__
+    Loc intermediate = move.intermediate[i];
+    removed.assertValid();
+    intermediate.assertValid();
+    assert(board[removed.row][removed.col].occupied);
+    assert(!board[intermediate.row][intermediate.col].occupied);
+#endif
+
     board[removed.row][removed.col].occupied = false;
   }
 

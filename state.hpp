@@ -42,6 +42,9 @@ struct Loc {
   __host__ __device__
 #endif
   Loc() {} //: row((uint8_t)-1), col((uint8_t)-1) {}
+
+  // Assert that this location is within the bounds of the board
+  void assertValid() const;
 };
 
 struct BoardItem {
