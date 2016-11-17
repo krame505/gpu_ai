@@ -7,6 +7,50 @@
 #include <cassert>
 using namespace std;
 
+PlayerId State::result() const {
+  int numPieces[NUM_PLAYERS] = {0, 0};
+  int numKings[NUM_PLAYERS]  = {0, 0};
+
+  for (int i = 0; i < BOARD_SIZE; i++) {
+    for (int j = 0; j < BOARD_SIZE; j++) {
+      if (board[i][j].occupied) {
+	numPieces[board[i][j].owner]++;
+	if (board[i][j].type == CHECKER_KING)
+	  numKings[board[i][j].owner]++;
+      }
+    }
+  }
+  
+  if (numPieces[PLAYER_1] == numPieces[PLAYER_2]) {
+    if (numKings[PLAYER_1] == numKings[PLAYER_2])
+      return PLAYER_NONE;
+    else
+      return numKings[PLAYER_1] > numKings[PLAYER_2] ? PLAYER_1 : PLAYER_2;
+  } else {
+    return numPieces[PLAYER_1] > numPieces[PLAYER_2] ? PLAYER_1 : PLAYER_2;
+  }
+}
+
+
+bool State::isFinished() const {
+  return moves().size() == 0;
+  //return false; // TODO
+}
+
+vector<Move> State::moves() const {
+  vector<Move> result;
+  Move moves[MAX_LOC_MOVES];
+  for (uint8_t row = 0; row < BOARD_SIZE; row++) {
+    for (uint8_t col = 0; col < BOARD_SIZE; col++) {
+        //TODO: fix locMoves so that only the moves for the current player are
+        //considered
+      uint8_t numMoves = locMoves(Loc(row, col), moves);
+      result.insert(result.end(), &moves[0], &moves[numMoves]);
+    }
+  }
+  return result;
+}
+
 ostream &operator<<(ostream &os, PlayerId pi) {
   switch (pi) {
   case PLAYER_1:

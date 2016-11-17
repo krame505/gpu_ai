@@ -49,6 +49,14 @@ struct Loc {
   __host__ __device__
 #endif
   void assertValid() const;
+
+  
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool isValid() const {
+      return (row < BOARD_SIZE && col < BOARD_SIZE);
+  }
 };
 
 // Represents the contents of the location on the board, either a piece or an empty squate
@@ -96,13 +104,15 @@ struct State {
 #endif
   void move(const Move &move);
 
-  // Return true if the game is finished
 #ifdef __CUDACC__
   __host__ __device__
 #endif
+  bool isValidMove(Move move) const;
+
+  // Return true if the game is finished
   bool isFinished() const;
 
-  // Return the winner, or NONE if a draw
+  // Return the winner, or PLAYER_NONE if a draw
 #ifdef __CUDACC__
   __host__ __device__
 #endif

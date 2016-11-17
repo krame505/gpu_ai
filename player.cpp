@@ -37,6 +37,7 @@ Move HumanPlayer::getMove(const State &state) const {
         error = "Invalid source location";
         moves.clear();
       }
+      // TODO: Check if intermediate locations are open when doing jump moves 
       moves.erase(remove_if(moves.begin(), moves.end(),
                             [state, from](Move m) {
                               if (state[from].occupied) {

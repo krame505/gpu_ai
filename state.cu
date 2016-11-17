@@ -37,16 +37,50 @@ __host__ __device__ void State::move(const Move &move) {
   turn = nextTurn(turn);
 }
 
-__host__ __device__ bool State::isFinished() const {
-  //return false; // TODO
-}
 
 __host__ __device__ PlayerId State::result() const {
   //return PLAYER_NONE; // TODO
 }
 
-__host__ __device__ uint8_t State::locDirectMoves(Loc, Move result[MAX_LOC_MOVES]) const {
-  //return 0; // TODO
+
+// This is taken from State::move but asserts just return false
+__host__ __device__ bool State::isValidMove(Move move) const
+{
+  // Error checking
+  if (!move.to.isValid() || !move.from.isValid())
+    return false;
+
+  if (!board[move.from.row][move.from.col].occupied || 
+       board[move.to.row][move.to.col].occupied || 
+       board[move.from.row][move.from.col].owner != turn)
+    return false;
+
+  for (uint8_t i = 0; i < move.jumps; i++) {
+    Loc removed = move.removed[i];
+
+    // Error checking
+    Loc intermediate = move.intermediate[i];
+    if (!removed.isValid() || !intermediate.isValid())
+      return false;
+
+    if (!board[removed.row][removed.col].occupied || 
+         board[intermediate.row][intermediate.col].occupied)
+      return false;
+  }
+
+  return true;
+}
+
+__host__ __device__ uint8_t State::locDirectMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
+  uint8_t count = 0;
+
+  if (!(*this)[loc].occupied)
+    return 0;
+
+  if ((*this)[loc].type == CHECKER_KING) {
+
+  } else {
+  }
 }
 
 __host__ __device__ uint8_t State::locCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
@@ -57,18 +91,6 @@ __host__ __device__ uint8_t State::locMoves(Loc l, Move result[MAX_LOC_MOVES]) c
   uint8_t numDirect = locDirectMoves(l, result);
   uint8_t numCapture = locCaptureMoves(l, result + numDirect);
   return numDirect + numCapture;
-}
-
-std::vector<Move> State::moves() const {
-  std::vector<Move> result;
-  Move moves[MAX_LOC_MOVES];
-  for (uint8_t row = 0; row < BOARD_SIZE; row++) {
-    for (uint8_t col = 0; col < BOARD_SIZE; col++) {
-      uint8_t numMoves = locMoves(Loc(row, col), moves);
-      result.insert(result.end(), &moves[0], &moves[numMoves]);
-    }
-  }
-  return result;
 }
 
 __host__ __device__ bool Move::conflictsWith(const Move &other) {
