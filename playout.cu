@@ -5,6 +5,8 @@
 #include <curand.h>
 #include <curand_kernel.h>
 
+#include <vector>
+
 #define SEED 12345
 
 __global__ void playoutKernel(State *states, PlayerId *results) {
@@ -86,8 +88,8 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
 
     // Copy generated moves to shared arrays
     for (uint8_t i = 0; i < numLocDirectMoves; i++) {
-      directMoves[i + directMoveIndices[id]] = locDirectMoves[i];
-      captureMoves[i + captureMoveIndices[id]] = locCaptureMoves[i];
+      directMoves[state.turn][i + directMoveIndices[state.turn][id]] = locDirectMoves[i];
+      captureMoves[state.turn][i + captureMoveIndices[state.turn][id]] = locCaptureMoves[i];
     }
 
     // Perform a reduction to calculate the max capture move length possible for each player
@@ -129,6 +131,8 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   }
 }
 
-std::vector<PlayerId> playouts(std::vector<State>) {
-  
+std::vector<PlayerId> playouts(std::vector<State> states) {
+  PlayerId results[states.size()];
+  //playoutKernel<<NUM_LOCS, states.size()>>>(states.begin(), results); // TODO: Why doesn't this line compile?  
+  return std::vector<PlayerId>(results, results + states.size());
 }
