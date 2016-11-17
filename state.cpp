@@ -1,4 +1,6 @@
 // Contains the C++-only implementation of functions that only run on the host
+// This file is compiled with gcc/g++
+
 #include "state.hpp"
 #include "colors.h"
 

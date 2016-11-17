@@ -1,6 +1,6 @@
 #pragma once
 
-// __CUDACC__ macro tests are needed to exclude __device__ and __host__ specifiers if compiling with gcc
+// Note: __CUDACC__ macro tests are used to exclude __device__ and __host__ specifiers if compiling with gcc
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -28,6 +28,7 @@ enum PieceType {
   CHECKER_KING,
 };
 
+// Represents a location on a board
 struct Loc {
   uint8_t row;
   uint8_t col;
@@ -70,6 +71,8 @@ struct BoardItem {
 };
 
 struct Move;
+
+// Represents the current state of the game, including the board and current turn
 struct State {
   BoardItem board[BOARD_SIZE][BOARD_SIZE];
   PlayerId turn;
@@ -127,6 +130,7 @@ struct State {
   std::vector<Move> moves() const;
 };
 
+// Represents a move, independant from any particular board state
 struct Move {
   Loc from;
   Loc to;
@@ -139,7 +143,7 @@ struct Move {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  Move(Loc from, Loc to, uint8_t jumps, bool promoted=false, PieceType newType=CHECKER) :
+  Move(Loc from, Loc to, uint8_t jumps=0, bool promoted=false, PieceType newType=CHECKER) :
     from(from), to(to), jumps(jumps), promoted(promoted), newType(newType) {}
 
   // Default constructor must be empty to avoid a race condition when initializing shared memory
@@ -155,11 +159,13 @@ struct Move {
   bool conflictsWith(const Move &other);
 };
 
+// Get the next player in the turn sequence
 #ifdef __CUDACC__
   __host__ __device__
 #endif
 PlayerId nextTurn(PlayerId);
 
+// Overload << operator for printing
 std::ostream &operator<<(std::ostream&, PlayerId);
 std::ostream &operator<<(std::ostream&, PieceType);
 std::ostream &operator<<(std::ostream&, Loc);
