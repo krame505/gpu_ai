@@ -15,7 +15,13 @@ CCFILES		:= state.cpp mcts.cpp player.cpp driver.cpp
 # Header files / anything that should trigger a full rebuild
 C_DEPS          := colors.h mcts.hpp playout.hpp state.hpp player.cpp
 
+#SMVERSIONFLAGS  := -arch=sm_20
+
 include ../../common/common.mk
 
+# Some overrides...
 # Enable C++11 for compiling .cpp files
 CXXFLAGS        += -std=gnu++11
+
+NVCCFLAGS       += -dc
+LINK            := $(NVCC)
