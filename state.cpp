@@ -5,11 +5,6 @@
 #include <cassert>
 using namespace std;
 
-void Loc::assertValid() const {
-  assert(row < BOARD_SIZE);
-  assert(col < BOARD_SIZE);
-}
-
 ostream &operator<<(ostream &os, PlayerId pi) {
   switch (pi) {
   case PLAYER_1:

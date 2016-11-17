@@ -44,6 +44,9 @@ struct Loc {
   Loc() {} //: row((uint8_t)-1), col((uint8_t)-1) {}
 
   // Assert that this location is within the bounds of the board
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
   void assertValid() const;
 };
 

@@ -1,9 +1,7 @@
 // Contains the implementation of functions that run on the host or device
 #include "state.hpp"
 
-// TODO: Set up some sort of error capture mechanism to check asserts in device code
-#include <cassert>
-using namespace std;
+#include <assert.h>
 
 __host__ __device__ PlayerId nextTurn(PlayerId turn) {
   switch (turn) {
@@ -16,28 +14,31 @@ __host__ __device__ PlayerId nextTurn(PlayerId turn) {
   }
 }
 
+__host__ __device__ void Loc::assertValid() const {
+  assert(row < BOARD_SIZE);
+  assert(col < BOARD_SIZE);
+}
+
 __host__ __device__ void State::move(const Move &move) {
-  // Error checking on host
-#ifndef __CUDA_ARCH__
+  // Error checking
   move.to.assertValid();
   move.from.assertValid();
   assert(board[move.from.row][move.from.col].occupied);
   assert(!board[move.to.row][move.to.col].occupied);
   assert(board[move.from.row][move.from.col].owner == turn);
-#endif
 
   board[move.to.row][move.to.col] =
     BoardItem(true, move.newType, board[move.from.row][move.from.col].owner);
   board[move.from.row][move.from.col].occupied = false;
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
-#ifndef __CUDA_ARCH__
+
+    // Error checking
     Loc intermediate = move.intermediate[i];
     removed.assertValid();
     intermediate.assertValid();
     assert(board[removed.row][removed.col].occupied);
     assert(!board[intermediate.row][intermediate.col].occupied);
-#endif
 
     board[removed.row][removed.col].occupied = false;
   }
