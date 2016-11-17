@@ -127,6 +127,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
       else {
         // Handle case when a player can't make any moves
       }
+      state.move(move);
     }
   }
 }

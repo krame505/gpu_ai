@@ -37,10 +37,11 @@ struct Loc {
 #endif
   Loc(uint8_t row, uint8_t col) : row(row), col(col) {}
 
+  // Default constructor must be empty to avoid a race condition when initializing shared memory
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  Loc() : row((uint8_t)-1), col((uint8_t)-1) {}
+  Loc() {} //: row((uint8_t)-1), col((uint8_t)-1) {}
 };
 
 struct BoardItem {
