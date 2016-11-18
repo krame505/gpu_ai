@@ -29,7 +29,12 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   __shared__ Move directMoves[NUM_PLAYERS][MAX_MOVES];
   __shared__ Move captureMoves[NUM_PLAYERS][MAX_MOVES];
 
-  while (!state.isFinished()) {
+  __shared__ bool gameOver;
+
+  if (threadIdx.x == 0)
+    gameOver = false;
+
+  do {
     PlayerId locOwner = state[loc].owner;
 
     // Generate direct and capture moves for this location
@@ -125,11 +130,16 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
         move = directMoves[state.turn][curand(&generators[id]) % numDirectMoves[state.turn]];
       }
       else {
-        // Handle case when a player can't make any moves
+        gameOver = true; // No moves, game is over
       }
-      state.move(move);
+
+      // Perform the move if there is one
+      if (!gameOver)
+	state.move(move);
     }
-  }
+  } while (!gameOver);
+
+  // TODO: Figure out who won
 }
 
 std::vector<PlayerId> playouts(std::vector<State> states) {

@@ -7,6 +7,20 @@
 #include <cassert>
 using namespace std;
 
+vector<Move> State::moves() const {
+  vector<Move> result;
+  Move moves[MAX_LOC_MOVES];
+  for (uint8_t row = 0; row < BOARD_SIZE; row++) {
+    for (uint8_t col = 0; col < BOARD_SIZE; col++) {
+        //TODO: fix locMoves so that only the moves for the current player are
+        //considered
+      uint8_t numMoves = locMoves(Loc(row, col), moves);
+      result.insert(result.end(), &moves[0], &moves[numMoves]);
+    }
+  }
+  return result;
+}
+
 PlayerId State::result() const {
   int numPieces[NUM_PLAYERS] = {0, 0};
   int numKings[NUM_PLAYERS]  = {0, 0};
@@ -34,21 +48,6 @@ PlayerId State::result() const {
 
 bool State::isFinished() const {
   return moves().size() == 0;
-  //return false; // TODO
-}
-
-vector<Move> State::moves() const {
-  vector<Move> result;
-  Move moves[MAX_LOC_MOVES];
-  for (uint8_t row = 0; row < BOARD_SIZE; row++) {
-    for (uint8_t col = 0; col < BOARD_SIZE; col++) {
-        //TODO: fix locMoves so that only the moves for the current player are
-        //considered
-      uint8_t numMoves = locMoves(Loc(row, col), moves);
-      result.insert(result.end(), &moves[0], &moves[numMoves]);
-    }
-  }
-  return result;
 }
 
 ostream &operator<<(ostream &os, PlayerId pi) {

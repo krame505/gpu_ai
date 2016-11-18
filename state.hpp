@@ -44,19 +44,11 @@ struct Loc {
 #endif
   Loc() {} //: row((uint8_t)-1), col((uint8_t)-1) {}
 
-  // Assert that this location is within the bounds of the board
+  // Return true if this location is within the bounds of the board 
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  void assertValid() const;
-
-  
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  bool isValid() const {
-      return (row < BOARD_SIZE && col < BOARD_SIZE);
-  }
+  bool isValid() const;
 };
 
 // Represents the contents of the location on the board, either a piece or an empty squate
@@ -72,10 +64,11 @@ struct BoardItem {
     occupied(occupied), type(type), owner(owner) {}
 
   // Default constructor must be empty to avoid a race condition when initializing shared memory
+  // TODO: nvcc is claiming that this constructor is non-empty...
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  BoardItem() {}  
+  BoardItem() {}
 };
 
 struct Move;
@@ -109,18 +102,6 @@ struct State {
 #endif
   bool isValidMove(Move move) const;
 
-  // Return true if the game is finished
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  bool isFinished() const;
-
-  // Return the winner, or PLAYER_NONE if a draw
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  PlayerId result() const;
-
   // Generate the possible direct (i.e. not capture) moves from a location
 #ifdef __CUDACC__
   __host__ __device__
@@ -141,6 +122,12 @@ struct State {
   uint8_t locMoves(Loc, Move[MAX_LOC_MOVES]) const;
 
   std::vector<Move> moves() const;
+
+  // Return true if the game is finished
+  bool isFinished() const;
+
+  // Return the winner, or PLAYER_NONE if a draw
+  PlayerId result() const;
 };
 
 // Represents a move, independant from any particular board state

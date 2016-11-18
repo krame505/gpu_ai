@@ -5,15 +5,14 @@
 
 #include <assert.h>
 
-__host__ __device__ void Loc::assertValid() const {
-  assert(row < BOARD_SIZE);
-  assert(col < BOARD_SIZE);
+__host__ __device__ bool Loc::isValid() const {
+  return (row < BOARD_SIZE && col < BOARD_SIZE);
 }
 
 __host__ __device__ void State::move(const Move &move) {
   // Error checking
-  move.to.assertValid();
-  move.from.assertValid();
+  assert(move.to.isValid());
+  assert(move.from.isValid());
   assert(board[move.from.row][move.from.col].occupied);
   assert(!board[move.to.row][move.to.col].occupied);
   assert(board[move.from.row][move.from.col].owner == turn);
@@ -26,8 +25,8 @@ __host__ __device__ void State::move(const Move &move) {
 
     // Error checking
     Loc intermediate = move.intermediate[i];
-    removed.assertValid();
-    intermediate.assertValid();
+    assert(removed.isValid());
+    assert(intermediate.isValid());
     assert(board[removed.row][removed.col].occupied);
     assert(!board[intermediate.row][intermediate.col].occupied);
 
@@ -38,14 +37,8 @@ __host__ __device__ void State::move(const Move &move) {
 }
 
 
-__host__ __device__ PlayerId State::result() const {
-  //return PLAYER_NONE; // TODO
-}
-
-
 // This is taken from State::move but asserts just return false
-__host__ __device__ bool State::isValidMove(Move move) const
-{
+__host__ __device__ bool State::isValidMove(Move move) const {
   // Error checking
   if (!move.to.isValid() || !move.from.isValid())
     return false;
