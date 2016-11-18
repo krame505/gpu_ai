@@ -73,14 +73,24 @@ __host__ __device__ bool State::isValidMove(Move move) const
 
 __host__ __device__ uint8_t State::locDirectMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
+  const int dx[] = {1, 1, -1, -1};
+  const int dy[] = {1, -1, 1, -1};
 
   if (!(*this)[loc].occupied)
     return 0;
 
   if ((*this)[loc].type == CHECKER_KING) {
-
+    for(int i = 0; i < 4; i++) {
+      Loc toLoc(loc.row + dx[i], loc.col + dy[i]);
+      Move tmpMove(loc, toLoc);
+      if (isValidMove(tmpMove))
+        result[count++] = tmpMove;
+    }
   } else {
+    // TODO: add possible moves for non-king pieces - move depends on player
   }
+
+  return count;
 }
 
 __host__ __device__ uint8_t State::locCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
