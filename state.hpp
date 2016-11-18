@@ -106,22 +106,46 @@ struct State {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t locDirectMoves(Loc, Move[MAX_LOC_MOVES]) const;
+  uint8_t genLocDirectMoves(Loc, Move[MAX_LOC_MOVES]) const;
 
   // Generate the possible capture moves from a location
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t locCaptureMoves(Loc, Move[MAX_LOC_MOVES]) const;
+  uint8_t genLocCaptureMoves(Loc, Move[MAX_LOC_MOVES]) const;
 
   // Generate the possible moves from a location
-  // TODO: I don't think this ever will get called from the device?
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t locMoves(Loc, Move[MAX_LOC_MOVES]) const;
+  uint8_t genLocMoves(Loc, Move[MAX_LOC_MOVES]) const;
 
-  std::vector<Move> moves() const;
+  // Generate all the possible direct (i.e. not capture) moves for the given players
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  void genDirectMoves(uint8_t[NUM_PLAYERS],
+		      Move[NUM_PLAYERS][MAX_MOVES],
+		      bool genMoves[NUM_PLAYERS] = NULL) const;
+
+  // Generate all the possible capture moves
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  void genCaptureMoves(uint8_t[NUM_PLAYERS],
+		       Move[NUM_PLAYERS][MAX_MOVES],
+		       bool genMoves[NUM_PLAYERS] = NULL) const;
+
+  // Generate all the possible moves
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  void genMoves(uint8_t[NUM_PLAYERS],
+		Move[NUM_PLAYERS][MAX_MOVES],
+		bool genMoves[NUM_PLAYERS] = NULL) const;
+
+  // Generate a vector of all the moves for the current turn
+  std::vector<Move> getMoves() const;
 
   // Return true if the game is finished
   bool isFinished() const;

@@ -13,7 +13,8 @@ CUFILES		:= state.cu playout.cu
 # C/C++ source files (compiled with gcc / c++)
 CCFILES		:= state.cpp mcts.cpp player.cpp driver.cpp
 # Header files / anything that should trigger a full rebuild
-C_DEPS          := colors.h mcts.hpp playout.hpp state.hpp player.cpp
+C_DEPS          := colors.h mcts.hpp playout.hpp state.hpp player.hpp
+CU_DEPS         := playout.hpp state.hpp
 
 #SMVERSIONFLAGS  := -arch=sm_20
 

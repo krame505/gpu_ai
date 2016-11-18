@@ -8,7 +8,7 @@
 using namespace std;
 
 Move RandomPlayer::getMove(const State &state) const {
-  vector<Move> moves = state.moves();
+  vector<Move> moves = state.getMoves();
   return moves[rand() % moves.size()];
 }
 
@@ -20,7 +20,7 @@ Move HumanPlayer::getMove(const State &state) const {
     cin.getline(input, 100);
 
     string error;
-    vector<Move> moves = state.moves();
+    vector<Move> moves = state.getMoves();
     unsigned len = strlen(input);
 
     unsigned i = 0;

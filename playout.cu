@@ -40,8 +40,8 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     // Generate direct and capture moves for this location
     Move locDirectMoves[MAX_LOC_MOVES];
     Move locCaptureMoves[MAX_LOC_MOVES];
-    uint8_t numLocDirectMoves  = state.locDirectMoves(loc, locDirectMoves);
-    uint8_t numLocCaptureMoves = state.locCaptureMoves(loc, locCaptureMoves);
+    uint8_t numLocDirectMoves  = state.genLocDirectMoves(loc, locDirectMoves);
+    uint8_t numLocCaptureMoves = state.genLocCaptureMoves(loc, locCaptureMoves);
 
     for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
       if (locOwner == (PlayerId)i) {

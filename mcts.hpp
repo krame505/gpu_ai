@@ -13,7 +13,7 @@ public:
     parent(parent),
     trials(0),
     totalTrials(0) {
-    for (Move m : state.moves()) {
+    for (Move m : state.getMoves()) {
       moves.push_back(m);
       children.push_back(NULL);
     }

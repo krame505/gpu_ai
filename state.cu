@@ -37,7 +37,7 @@ __host__ __device__ void State::move(const Move &move) {
 }
 
 
-// This is taken from State::move but asserts just return false
+// This is taken from State::move but just returns false when an assertion would have failed
 __host__ __device__ bool State::isValidMove(Move move) const {
   // Error checking
   if (!move.to.isValid() || !move.from.isValid())
@@ -64,7 +64,7 @@ __host__ __device__ bool State::isValidMove(Move move) const {
   return true;
 }
 
-__host__ __device__ uint8_t State::locDirectMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
+__host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
   const int dx[] = {1, 1, -1, -1};
   const int dy[] = {1, -1, 1, -1};
@@ -73,7 +73,7 @@ __host__ __device__ uint8_t State::locDirectMoves(Loc loc, Move result[MAX_LOC_M
     return 0;
 
   if ((*this)[loc].type == CHECKER_KING) {
-    for(int i = 0; i < 4; i++) {
+    for (uint8_t i = 0; i < 4; i++) {
       Loc toLoc(loc.row + dx[i], loc.col + dy[i]);
       Move tmpMove(loc, toLoc);
       if (isValidMove(tmpMove))
@@ -86,14 +86,70 @@ __host__ __device__ uint8_t State::locDirectMoves(Loc loc, Move result[MAX_LOC_M
   return count;
 }
 
-__host__ __device__ uint8_t State::locCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
+__host__ __device__ uint8_t State::genLocCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
   //return 0; // TODO
 }
 
-__host__ __device__ uint8_t State::locMoves(Loc l, Move result[MAX_LOC_MOVES]) const {
-  uint8_t numDirect = locDirectMoves(l, result);
-  uint8_t numCapture = locCaptureMoves(l, result + numDirect);
-  return numDirect + numCapture;
+__host__ __device__ uint8_t State::genLocMoves(Loc l, Move result[MAX_LOC_MOVES]) const {
+  uint8_t numMoves = genLocCaptureMoves(l, result);
+  if (numMoves == 0)
+    numMoves = genLocDirectMoves(l, result);
+  return numMoves;
+}
+
+__host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
+					       Move result[NUM_PLAYERS][MAX_MOVES],
+					       bool genMoves[NUM_PLAYERS]) const {
+#ifdef __CUDA_ARCH__
+
+#else
+  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+    for (uint8_t j = 0; j < BOARD_SIZE; j++) {
+      Loc loc(i, j);
+      PlayerId owner = (*this)[loc].owner;
+      if (!genMoves || genMoves[owner])
+	numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
+    }
+  }
+
+#endif
+}
+
+__host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
+						Move result[NUM_PLAYERS][MAX_MOVES],
+						bool genMoves[NUM_PLAYERS]) const {
+#ifdef __CUDA_ARCH__
+
+#else
+  // TODO: Check capture moves have max length
+  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+    for (uint8_t j = 0; j < BOARD_SIZE; j++) {
+      Loc loc(i, j);
+      PlayerId owner = (*this)[loc].owner;
+      if (!genMoves || genMoves[owner])
+	numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
+    }
+  }
+
+#endif
+}
+
+__host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
+				      Move result[NUM_PLAYERS][MAX_MOVES],
+				      bool genMoves[NUM_PLAYERS]) const {
+  genCaptureMoves(numMoves, result, genMoves);
+
+#ifdef __CUDA_ARCH__
+  if (threadIdx.x < NUM_PLAYERS) {
+    genMoves[threadIdx.x] &= !numMoves[threadIdx.x];
+  }
+#else
+  for (int i = 0; i < NUM_PLAYERS; i++) {
+    genMoves[i] &= !numMoves[i];
+  }
+#endif
+
+  genDirectMoves(numMoves, result, genMoves);
 }
 
 __host__ __device__ bool Move::conflictsWith(const Move &other) {
