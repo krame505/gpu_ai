@@ -110,6 +110,9 @@ struct State {
   bool isValidMove(Move move) const;
 
   // Return true if the game is finished
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
   bool isFinished() const;
 
   // Return the winner, or PLAYER_NONE if a draw

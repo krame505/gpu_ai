@@ -1,4 +1,4 @@
-
+#include <getopt.h>
 #include "state.hpp"
 #include "player.hpp"
 
@@ -43,7 +43,31 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 }
 
 // TODO: Some sort of command-line interface to specify player types
-int main() {
+int main(int argc, char **argv) {
+    static struct option our_options[] = 
+    {
+	{"black", required_argument, 0, 'r'},
+	{"red", required_argument, 0, 'b'},
+	{0, 0, 0, 0}
+    };
+
+    int c, option_index;
+    while ((c = getopt_long(argc, argv, "r:b:", our_options, &option_index)) != -1)
+    {
+	switch (c)
+	{
+	case 'b':
+	    printf("Black has option %s\n", optarg);
+	    break;
+	case 'r':
+	    printf("Red has option %s\n", optarg);
+	    break;
+	case '?':
+	    break;
+	}
+    }
+
+
   RandomPlayer player1;
   RandomPlayer player2;
   
