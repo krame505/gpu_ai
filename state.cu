@@ -157,7 +157,7 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
       PlayerId owner = (*this)[loc].owner;
-      if (!genMoves || genMoves[owner])
+      if (genMoves == NULL || genMoves[owner])
 	numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
     }
   }
@@ -196,14 +196,17 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 
 #else
   Move locMoves[BOARD_SIZE][BOARD_SIZE][MAX_MOVES];
-  uint8_t maxJumps;
+  uint8_t locNumMoves[BOARD_SIZE][BOARD_SIZE];
+  uint8_t maxJumps = 0;
 
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
-      PlayerId owner = (*this)[loc].owner;
-      if (!genMoves || genMoves[owner])
-	numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
+      locNumMoves[i][j] = genLocDirectMoves(loc, locMoves[i][j]);
+      for (int k = 0; k < locNumMoves[i][j]; k++) {
+	if (locMoves[i][j][k].jumps > maxJumps)
+	  locMoves[i][j][k].jumps = maxJumps;
+      }
     }
   }
 
@@ -211,8 +214,16 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
       PlayerId owner = (*this)[loc].owner;
-      if (!genMoves || genMoves[owner])
-	numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
+      if (genMoves == NULL || genMoves[owner]) {
+	uint8_t l = 0;
+	for (uint8_t k = 0; k < locNumMoves[i][j]; k++) {
+	  Move move = locMoves[i][j][k];
+	  if (move.jumps == maxJumps) {
+	    result[owner][l] = locMoves[i][j][k];
+	    l++;
+	  }
+	}
+      }
     }
   }
 
@@ -220,8 +231,22 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 }
 
 __host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
-				      Move result[NUM_PLAYERS][MAX_MOVES],
-				      bool genMoves[NUM_PLAYERS]) const {
+					 Move result[NUM_PLAYERS][MAX_MOVES],
+					 bool genMoves[NUM_PLAYERS]) const {
+#ifdef __CUDA_ARCH__
+  __shared__ bool genMovesDefault[NUM_PLAYERS];
+  if (threadIdx.x < NUM_PLAYERS) {
+    genMovesDefault[threadIdx.x] = true;
+  }
+  
+#else
+  bool genMovesDefault[NUM_PLAYERS] = {true, true};
+  
+#endif
+
+  if (!genMoves)
+    genMoves = genMovesDefault;
+
   genCaptureMoves(numMoves, result, genMoves);
 
 #ifdef __CUDA_ARCH__
