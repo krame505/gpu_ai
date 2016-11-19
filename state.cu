@@ -101,6 +101,56 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
 					       Move result[NUM_PLAYERS][MAX_MOVES],
 					       bool genMoves[NUM_PLAYERS]) const {
 #ifdef __CUDA_ARCH__
+  INIT_KERNEL_VARS
+
+  __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
+
+  // Generate the moves for this location
+  Move locMoves[MAX_LOC_MOVES];
+
+  uint8_t numLocMoves = genLocDirectMoves(loc, locMoves);
+  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+    if ((*this)[loc].owner == (PlayerId)i) {
+      indices[i][id] = numLocMoves;
+    }
+    else {
+      indices[i][id] = 0;
+    }
+  }
+
+  // Perform exclusive scans to get indices to copy moves into the shared arrays
+  for (uint8_t stride = 1; stride <= NUM_LOCS; stride <<= 1) {
+    __syncthreads();
+    uint8_t i = (id + 1) * stride - 1; // TODO: Check that this is correct...
+    if (i < NUM_LOCS) {
+      for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
+	indices[j][i] += indices[j][i - stride];
+      }
+    }
+  }
+
+  __syncthreads();
+
+  if (id < NUM_PLAYERS) {
+    numMoves[id] = indices[id][NUM_LOCS - 1];
+    indices[id][NUM_LOCS - 1] = 0;
+  }
+
+  for (uint8_t stride = NUM_LOCS / 2; stride > 0; stride >>= 1) {
+    __syncthreads();
+    int i = (id + 1) * stride - 1;
+    uint8_t temp;
+    for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
+      temp = indices[j][i];
+      indices[j][i] += indices[j][i - stride];
+      indices[j][i - stride] = temp;
+    }
+  }
+
+  // Copy generated moves to shared arrays
+  for (uint8_t i = 0; i < numLocMoves; i++) {
+    result[turn][i + indices[turn][id]] = locMoves[i];
+  }
 
 #else
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
@@ -119,9 +169,44 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 						Move result[NUM_PLAYERS][MAX_MOVES],
 						bool genMoves[NUM_PLAYERS]) const {
 #ifdef __CUDA_ARCH__
+  // Do all the same stuff as genDirectMoves
+  // Perform a reduction to calculate the max capture move length possible for each player
+  // Each thread copies its capture moves of maximum length to a new local array
+  // Perform another scan to calculate indices and copy the new arrays back to captureMoves
+
+  // for (unsigned i = NUM_LOCS / 2; i > 0; i >>= 1) {
+  //   __syncthreads();
+  //   if (i > id) {
+  //     for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+  //       if (captureMoveIndices[i][id + i] > captureMoveIndices[i][id])
+  //         captureMoveIndices[i][id] = captureMoveIndices[i][id + i];
+  //     }
+  //   }
+  // }
+
+  // The number of capture moves for a location is 0 if there are any other locations with more capture moves
+  // for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+  //   captureMoveIndices[i][id] = 0;
+  // }
+  // if (numLocCaptureMoves > numCaptureMoves[locOwner])
+  //   numLocCaptureMoves = 0;
+  // captureMoveIndices[locOwner][id] = numLocCaptureMoves;
+
+  assert(false); // TODO
 
 #else
-  // TODO: Check capture moves have max length
+  Move locMoves[BOARD_SIZE][BOARD_SIZE][MAX_MOVES];
+  uint8_t maxJumps;
+
+  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+    for (uint8_t j = 0; j < BOARD_SIZE; j++) {
+      Loc loc(i, j);
+      PlayerId owner = (*this)[loc].owner;
+      if (!genMoves || genMoves[owner])
+	numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
+    }
+  }
+
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
