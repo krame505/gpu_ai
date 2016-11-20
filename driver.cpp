@@ -64,6 +64,7 @@ int main(int argc, char **argv) {
     };
 
   int c, option_index;
+  bool optionsAllValid = true;
   while ((c = getopt_long(argc, argv, "b:r:h", our_options, &option_index)) != -1)
   {
     switch (c)
@@ -120,8 +121,15 @@ int main(int argc, char **argv) {
       printHelp();
       return 0;
     case '?':
+      optionsAllValid = false;
       break;
     }
+  }
+
+  if (!optionsAllValid)
+  {
+    printHelp();
+    return 0;
   }
 
   if (player1 == NULL)
