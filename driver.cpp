@@ -1,4 +1,5 @@
 #include <getopt.h>
+#include <cstring>
 #include "state.hpp"
 #include "player.hpp"
 
@@ -42,36 +43,99 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
-// TODO: Some sort of command-line interface to specify player types
+void printHelp() {
+  printf("Usage: run_ai [--red|-r human|random|mcts] [--black|-b human|random|mcts] [--help]\n");
+}
+
 int main(int argc, char **argv) {
-    static struct option our_options[] = 
+  printf("run_ai : GPU-based checkers player with MCTS\n");
+  printf("EE 5351, Fall 2016 Group Project\n");
+  printf("Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum\n\n");
+
+  Player *player1 = NULL;
+  Player *player2 = NULL;
+  
+  static struct option our_options[] = 
     {
-	{"black", required_argument, 0, 'r'},
-	{"red", required_argument, 0, 'b'},
-	{0, 0, 0, 0}
+      {"black", required_argument, NULL, 'b'},
+      {"red", required_argument, NULL, 'r'},
+      {"help", no_argument, NULL, 'h'},
+      {0, 0, 0, 0}
     };
 
-    int c, option_index;
-    while ((c = getopt_long(argc, argv, "r:b:", our_options, &option_index)) != -1)
+  int c, option_index;
+  while ((c = getopt_long(argc, argv, "b:r:h", our_options, &option_index)) != -1)
+  {
+    switch (c)
     {
-	switch (c)
-	{
-	case 'b':
-	    printf("Black has option %s\n", optarg);
-	    break;
-	case 'r':
-	    printf("Red has option %s\n", optarg);
-	    break;
-	case '?':
-	    break;
-	}
+    case 'b':
+      printf("Player 1 ('black' player) is ");
+      if (strcmp(optarg, "human") == 0)
+      {
+	printf("human\n");
+	player1 = new HumanPlayer;
+      }
+      else if (strcmp(optarg, "random") == 0)
+      {
+	printf("random\n");
+	player1 = new RandomPlayer;
+      }
+      else if (strcmp(optarg, "mcts") == 0)
+      {
+	printf("mcts\n");
+	player1 = new MCTSPlayer;
+      }
+      else
+      {
+	printf("unrecognized type '%s'\n", optarg);
+	printHelp();
+	return 1;
+      }
+      break;
+    case 'r':
+      printf("Player 2 ('red' player) is ");
+      if (strcmp(optarg, "human") == 0)
+      {
+	printf("human\n");
+	player2 = new HumanPlayer;
+      }
+      else if (strcmp(optarg, "random") == 0)
+      {
+	printf("random\n");
+	player2 = new RandomPlayer;
+      }
+      else if (strcmp(optarg, "mcts") == 0)
+      {
+	printf("mcts\n");
+	player2 = new MCTSPlayer;
+      }
+      else
+      {
+	printf("unrecognized type '%s'\n", optarg);
+	printHelp();
+	return 1;
+      }
+      break;
+    case 'h':
+      printHelp();
+      return 0;
+    case '?':
+      break;
     }
+  }
 
+  if (player1 == NULL)
+  {
+    printf("No type specified for player 1 ('black'), defaulting to random\n");
+    player1 = new RandomPlayer;
+  }
+  if (player2 == NULL)
+  {
+    printf("No type specified for player 2 ('red'), defaulting to random\n");
+    player2 = new RandomPlayer;
+  }
 
-  RandomPlayer player1;
-  RandomPlayer player2;
-  
-  Player *players[NUM_PLAYERS] = {&player1, &player2};
+  Player *players[NUM_PLAYERS] = {player1, player2};
   playGame(players);
 
   return 0;
