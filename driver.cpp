@@ -162,5 +162,9 @@ int main(int argc, char **argv) {
   Player *players[NUM_PLAYERS] = {player1, player2};
   playGame(players);
 
+  // Free players as we are done now
+  delete player1;
+  delete player2;
+
   return 0;
 }
