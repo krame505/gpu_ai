@@ -5,6 +5,11 @@
 
 using namespace std;
 
+// playGame: Implements the game logic.
+// Inputs
+// players: Array of pointers to Player classes (human, random, or MCTS)
+// verbose (optional): Enable verbose output.
+// Return: The PlayerId of the winning player (or PLAYER_NONE if there is a draw)
 PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   // Unspecified BoardItems are initialized to 0
   State state = {
@@ -19,18 +24,23 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
     PLAYER_1
   };
 
+  // Game is over when there are no more possible moves
   while (!state.isFinished()) {
     if (verbose) {
       cout << state << endl;
     }
     
+    // Get which player's turn it is from the state
     Player *player = players[(unsigned)state.turn];
+    // Calculate the next move
     Move move = player->getMove(state);
     cout << move << endl;
+    // Apply that move to the state
     state.move(move);
     cout << endl;
   }
 
+  // Game over: check the state to see who won the game
   PlayerId result = state.result();
   if (verbose) {
     if (result == PLAYER_NONE) {
@@ -43,18 +53,20 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
+// printHelp: Output the help message if requested or if there are bad command-line arguments
 void printHelp() {
-  printf("Usage: run_ai [--red|-r human|random|mcts] [--black|-b human|random|mcts] [--help]\n");
+  cout << "Usage: run_ai [--red|-r human|random|mcts] [--black|-b human|random|mcts] [--help]" << endl;
 }
 
 int main(int argc, char **argv) {
-  printf("run_ai : GPU-based checkers player with MCTS\n");
-  printf("EE 5351, Fall 2016 Group Project\n");
-  printf("Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum\n\n");
+  cout << "run_ai : GPU-based checkers player with MCTS" << endl;
+  cout << "EE 5351, Fall 2016 Group Project" << endl;
+  cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl << endl;
 
   Player *player1 = NULL;
   Player *player2 = NULL;
-  
+
+  // Possible options for getopt_long
   static struct option our_options[] = 
     {
       {"black", required_argument, NULL, 'b'},
@@ -63,6 +75,7 @@ int main(int argc, char **argv) {
       {0, 0, 0, 0}
     };
 
+  // Parse the command line options and set up player1 and player2
   int c, option_index;
   bool optionsAllValid = true;
   while ((c = getopt_long(argc, argv, "b:r:h", our_options, &option_index)) != -1)
@@ -70,49 +83,49 @@ int main(int argc, char **argv) {
     switch (c)
     {
     case 'b':
-      printf("Player 1 ('black' player) is ");
+      cout << "Player 1 ('black' player) is ";
       if (strcmp(optarg, "human") == 0)
       {
-	printf("human\n");
+	cout << "human" << endl;
 	player1 = new HumanPlayer;
       }
       else if (strcmp(optarg, "random") == 0)
       {
-	printf("random\n");
+	cout << "random" << endl;
 	player1 = new RandomPlayer;
       }
       else if (strcmp(optarg, "mcts") == 0)
       {
-	printf("mcts\n");
+	cout << "mcts" << endl;
 	player1 = new MCTSPlayer;
       }
       else
       {
-	printf("unrecognized type '%s'\n", optarg);
+	cout << "unrecognized type '" << optarg << "'" << endl;
 	printHelp();
 	return 1;
       }
       break;
     case 'r':
-      printf("Player 2 ('red' player) is ");
+      cout << "Player 2 ('red' player) is ";
       if (strcmp(optarg, "human") == 0)
       {
-	printf("human\n");
+	cout << "human" << endl;
 	player2 = new HumanPlayer;
       }
       else if (strcmp(optarg, "random") == 0)
       {
-	printf("random\n");
+	cout << "random" << endl;
 	player2 = new RandomPlayer;
       }
       else if (strcmp(optarg, "mcts") == 0)
       {
-	printf("mcts\n");
+	cout << "mcts" << endl;
 	player2 = new MCTSPlayer;
       }
       else
       {
-	printf("unrecognized type '%s'\n", optarg);
+	cout << "unrecognized type '" << optarg << "'" << endl;
 	printHelp();
 	return 1;
       }
@@ -126,23 +139,26 @@ int main(int argc, char **argv) {
     }
   }
 
+  // If an invalid option was passed, print help and exit
   if (!optionsAllValid)
   {
     printHelp();
-    return 0;
+    return 1;
   }
 
+  // Assume random players if not otherwise specified
   if (player1 == NULL)
   {
-    printf("No type specified for player 1 ('black'), defaulting to random\n");
+    cout << "No type specified for player 1 ('black'), defaulting to random" << endl;
     player1 = new RandomPlayer;
   }
   if (player2 == NULL)
   {
-    printf("No type specified for player 2 ('red'), defaulting to random\n");
+    cout << "No type specified for player 2 ('red'), defaulting to random" << endl;
     player2 = new RandomPlayer;
   }
 
+  // Run the game
   Player *players[NUM_PLAYERS] = {player1, player2};
   playGame(players);
 
