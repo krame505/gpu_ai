@@ -183,56 +183,56 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
   // Each thread copies its capture moves of maximum length to a new local array
   // Perform another scan to calculate indices and copy the new arrays back to captureMoves
 
-	INIT_KERNEL_VARS
+  INIT_KERNEL_VARS
 
-	__shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
+    __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
 
-	// Generate the captures for this location
-	Move locMoves[MAX_LOC_MOVES];
+  // Generate the captures for this location
+  Move locMoves[MAX_LOC_MOVES];
 
-	uint8_t numLocCapture = genLocCaptureMoves(loc, locMoves);
-	for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-		if((*this)[loc].owner == (PlayerId)i) { 
-			indices[i][id] = numLocCapture;
-		}
-		else {
-			indices[i][id] = 0;
-		}
-	}
+  uint8_t numLocCapture = genLocCaptureMoves(loc, locMoves);
+  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+    if((*this)[loc].owner == (PlayerId)i) { 
+      indices[i][id] = numLocCapture;
+    }
+    else {
+      indices[i][id] = 0;
+    }
+  }
 
-	// Perform exclusive scans to get indices to copy captures into the shared arrays
-	for (uint8_t stride = 1; stride <= NUM_LOCS; stride <<= 1) {
-		__syncthreads();
-		uint8_t i = (id + 1) * stride - 1;
-		if (i < NUM_LOCS) {
-			for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-				indices[j][i] += indices[j][i - stride];
-			}
-		}
-	}
+  // Perform exclusive scans to get indices to copy captures into the shared arrays
+  for (uint8_t stride = 1; stride <= NUM_LOCS; stride <<= 1) {
+    __syncthreads();
+    uint8_t i = (id + 1) * stride - 1;
+    if (i < NUM_LOCS) {
+      for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
+	indices[j][i] += indices[j][i - stride];
+      }
+    }
+  }
 
-	__syncthreads();
+  __syncthreads();
 
-	if (id < NUM_PLAYERS) {
-		numMoves[id] = indices[id][NUM_LOCS - 1];
-		indices[id][NUM_LOCS - 1] = 0;
-	}
+  if (id < NUM_PLAYERS) {
+    numMoves[id] = indices[id][NUM_LOCS - 1];
+    indices[id][NUM_LOCS - 1] = 0;
+  }
 
-	for (uint8_t stride = NUM_LOCS/2; stride > 0; stride >>= 1) {
-		__syncthreads();
-		int i = (id + 1) * stride - 1;
-		uint8_t temp;
-		for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-			temp = indices[j][i];
-			indices[j][i] += indices[j][i - stride];
-			indices[j][i - stride] = temp;
-		}
-	}
+  for (uint8_t stride = NUM_LOCS/2; stride > 0; stride >>= 1) {
+    __syncthreads();
+    int i = (id + 1) * stride - 1;
+    uint8_t temp;
+    for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
+      temp = indices[j][i];
+      indices[j][i] += indices[j][i - stride];
+      indices[j][i - stride] = temp;
+    }
+  }
 
-	// Copy generated captures to shared arrays
-	for (uint8_t i = 0; i < numLocCapture; i++) {
-		result[turn][i + indices[turn][id]] = locMoves[i];
-	}
+  // Copy generated captures to shared arrays
+  for (uint8_t i = 0; i < numLocCapture; i++) {
+    result[turn][i + indices[turn][id]] = locMoves[i];
+  }
 
 
   // for (unsigned i = NUM_LOCS / 2; i > 0; i >>= 1) {
