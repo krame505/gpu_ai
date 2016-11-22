@@ -85,7 +85,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
     uint8_t start = item.owner == PLAYER_1 ? 0 : 2;
     uint8_t end   = item.owner == PLAYER_1 ? 2 : 4;
     for (uint8_t i = start; i < end; i++) {
-      Move tmpMove(loc, Loc(loc.row + rx[i], loc.col + dc[i]));
+      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]));
       if (isValidMove(tmpMove))
         result[count++] = tmpMove;
     }
