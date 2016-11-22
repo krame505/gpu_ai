@@ -52,7 +52,9 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     }
   } while (!gameOver);
 
-  results[id] = state.result();
+  // TODO: Implement State::result to make use of parallelism
+  if (threadIdx.x == 0)
+    results[id] = state.result();
 }
 
 std::vector<PlayerId> playouts(std::vector<State> states) {

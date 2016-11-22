@@ -340,10 +340,10 @@ __host__ __device__ PlayerId nextTurn(PlayerId turn) {
 
 
 __host__ __device__ PlayerId State::result() const {
-#ifdef __CUDA_ARCH__
-  // TODO: Implement this
+  //#ifdef __CUDA_ARCH__
+  // TODO: Implement this seperately to make use of parallelism
 
-#else
+  //#else
   int numPieces[NUM_PLAYERS] = {0, 0};
   int numKings[NUM_PLAYERS]  = {0, 0};
 
@@ -366,5 +366,5 @@ __host__ __device__ PlayerId State::result() const {
     return numPieces[PLAYER_1] > numPieces[PLAYER_2] ? PLAYER_1 : PLAYER_2;
   }
 
-#endif
+  //#endif
 }
