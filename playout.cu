@@ -56,7 +56,22 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
 }
 
 std::vector<PlayerId> playouts(std::vector<State> states) {
+  // Device variables
+  State *devStates;
+  PlayerId *devResults;
+  cudaMalloc(&devStates, states.size() * sizeof(State));
+  cudaMalloc(&devResults, states.size() * sizeof(PlayerId));
+
+  // Copy states for playouts to device
+  cudaMemcpy(devStates, states.data(), states.size() * sizeof(State), cudaMemcpyHostToDevice);
+
+  // Invoke the kernel
+  playoutKernel<<<NUM_LOCS, states.size()>>>(devStates, devResults);
+
+  // Copy the results back to the host
   PlayerId results[states.size()];
-  //playoutKernel<<NUM_LOCS, states.size()>>>(states.begin(), results); // TODO: Why doesn't this line compile?  
+  cudaMemcpy(results, devResults, states.size() * sizeof(PlayerId), cudaMemcpyDeviceToHost);
+
+  // Return a vector constructed from the contents of the array
   return std::vector<PlayerId>(results, results + states.size());
 }
