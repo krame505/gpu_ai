@@ -158,6 +158,9 @@ struct State {
   bool isFinished() const;
 
   // Return the winner, or PLAYER_NONE if a draw
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
   PlayerId result() const;
 };
 

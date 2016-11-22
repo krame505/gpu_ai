@@ -52,7 +52,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     }
   } while (!gameOver);
 
-  // TODO: Figure out who won
+  results[id] = state.result();
 }
 
 std::vector<PlayerId> playouts(std::vector<State> states) {

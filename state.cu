@@ -337,3 +337,34 @@ __host__ __device__ PlayerId nextTurn(PlayerId turn) {
     return PLAYER_NONE;
   }
 }
+
+
+__host__ __device__ PlayerId State::result() const {
+#ifdef __CUDA_ARCH__
+  // TODO: Implement this
+
+#else
+  int numPieces[NUM_PLAYERS] = {0, 0};
+  int numKings[NUM_PLAYERS]  = {0, 0};
+
+  for (int i = 0; i < BOARD_SIZE; i++) {
+    for (int j = 0; j < BOARD_SIZE; j++) {
+      if (board[i][j].occupied) {
+	numPieces[board[i][j].owner]++;
+	if (board[i][j].type == CHECKER_KING)
+	  numKings[board[i][j].owner]++;
+      }
+    }
+  }
+  
+  if (numPieces[PLAYER_1] == numPieces[PLAYER_2]) {
+    if (numKings[PLAYER_1] == numKings[PLAYER_2])
+      return PLAYER_NONE;
+    else
+      return numKings[PLAYER_1] > numKings[PLAYER_2] ? PLAYER_1 : PLAYER_2;
+  } else {
+    return numPieces[PLAYER_1] > numPieces[PLAYER_2] ? PLAYER_1 : PLAYER_2;
+  }
+
+#endif
+}
