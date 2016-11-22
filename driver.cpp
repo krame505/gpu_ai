@@ -2,6 +2,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
+#include <vector>
 #include "state.hpp"
 #include "player.hpp"
 
@@ -60,15 +61,14 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
-void playGameTest(unsigned int numTests, unsigned int randomMoves)
+void playGameTest(unsigned int numTests)
 {
-  clock_t t1, t2;
-  t1 = clock();
-
-  int wins[3] = {0, 0, 0};
+  vector<State> ourStates;
 
   for (unsigned int n = 0; n < numTests; n ++)
   {
+    unsigned int randomMoves = rand() % 100; // TODO : Is 100 max random moves reasonable?  How long is an average checkers game?
+
     State state = {
       {{{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
        {{true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}},
@@ -103,27 +103,19 @@ void playGameTest(unsigned int numTests, unsigned int randomMoves)
     delete player1;
     delete player2;
    
-    // Then switch to MCTS for the rest of the game (what we really want to test)
+    ourStates.push_back(state);
+  }
 
-    player1 = new MCTSPlayer;
-    player2 = new MCTSPlayer;
-    players[0] = player1;
-    players[1] = player2;
+  clock_t t1, t2;
+  t1 = clock();
+  vector<PlayerId> playoutResults = playouts(ourStates);
+  t2 = clock();
+  double etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
 
-    while (!state.isFinished())
-    {
-      // Get which player's turn it is from the state
-      Player *player = players[(unsigned)state.turn];
-      // Calculate the next move
-      Move move = player->getMove(state);
-      // Apply that move to the state
-      state.move(move);
-    }
-
-    // Tally the results
-    
-    PlayerId result = state.result();
-    switch (result)
+  int wins[3] = {0, 0, 0};
+  for (unsigned int n = 0; n < playoutResults.size(); n ++)
+  {
+    switch (playoutResults[n])
     {
     case PLAYER_NONE:
       wins[0] ++;
@@ -135,14 +127,7 @@ void playGameTest(unsigned int numTests, unsigned int randomMoves)
       wins[2] ++;
       break;
     }
-
-    delete player1;
-    delete player2;
   }
-
-  // Calculate the total running time
-  t2 = clock();
-  double etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
 
   cout << "Games drawn: " << wins[0] << endl;
   cout << "Player 1 wins: " << wins[1] << endl;
@@ -152,10 +137,12 @@ void playGameTest(unsigned int numTests, unsigned int randomMoves)
 
 // printHelp: Output the help message if requested or if there are bad command-line arguments
 void printHelp() {
-  cout << "Usage: run_ai [--mode|-m single|test] [--playouts|-p N] [--random|-R N] [--red|-r human|random|mcts] [--black|-b human|random|mcts] [--help]" << endl;
+  cout << "Usage: run_ai [--mode|-m single|test] [--playouts|-p N] [--red|-r human|random|mcts] [--black|-b human|random|mcts] [--help]" << endl;
 }
 
 int main(int argc, char **argv) {
+  srand(2016); // TODO: Should we randomize to time(NULL) instead?
+  
   cout << "run_ai : GPU-based checkers player with MCTS" << endl;
   cout << "EE 5351, Fall 2016 Group Project" << endl;
   cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl << endl;
@@ -164,14 +151,13 @@ int main(int argc, char **argv) {
   Player *player2 = NULL;
 
   runMode theRunMode = Single;
-  unsigned int numTests = 1, randomMoves = 0;
+  unsigned int numTests = 1;
 
   // Possible options for getopt_long
   static struct option our_options[] = 
     {
       {"mode", required_argument, NULL, 'm'},
       {"playouts", required_argument, NULL, 'p'},
-      {"random", required_argument, NULL, 'R'},
       {"black", required_argument, NULL, 'b'},
       {"red", required_argument, NULL, 'r'},
       {"help", no_argument, NULL, 'h'},
@@ -181,7 +167,7 @@ int main(int argc, char **argv) {
   // Parse the command line options and set up player1 and player2
   int c, option_index;
   bool optionsAllValid = true;
-  while ((c = getopt_long(argc, argv, "m:p:R:b:r:h", our_options, &option_index)) != -1)
+  while ((c = getopt_long(argc, argv, "m:p:b:r:h", our_options, &option_index)) != -1)
   {
     switch (c)
     {
@@ -203,9 +189,6 @@ int main(int argc, char **argv) {
       break;
     case 'p':
       numTests = atoi(optarg);
-      break;
-    case 'R':
-      randomMoves = atoi(optarg);
       break;
     case 'b':
       if (strcmp(optarg, "human") == 0)
@@ -287,8 +270,8 @@ int main(int argc, char **argv) {
   }
   else
   {
-    cout << "Playing " << numTests << " games with " << randomMoves << " random opening moves each" << endl;
-    playGameTest(numTests, randomMoves);
+    cout << "Playing " << numTests << " random moves" << endl;
+    playGameTest(numTests);
   }
 
   // Free players as we are done now
