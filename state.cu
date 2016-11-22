@@ -64,27 +64,36 @@ __host__ __device__ bool State::isValidMove(Move move) const {
   return true;
 }
 
+
 __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
-  const int dx[] = {1, 1, -1, -1};
-  const int dy[] = {1, -1, 1, -1};
+  const int dr[] = {1, -1, 1, -1};
+  const int dc[] = {-1, -1, 1, 1};
+  // NOTE: player 1 is moving down, player 2 is moving up - fix if this assumption is wrong
 
   if (!(*this)[loc].occupied)
     return 0;
 
   if ((*this)[loc].type == CHECKER_KING) {
     for (uint8_t i = 0; i < 4; i++) {
-      Loc toLoc(loc.row + dx[i], loc.col + dy[i]);
-      Move tmpMove(loc, toLoc);
+      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]));
       if (isValidMove(tmpMove))
         result[count++] = tmpMove;
     }
   } else {
-    // TODO: add possible moves for non-king pieces - move depends on player
+    BoardItem item = (*this)[loc];
+    uint8_t start = item.owner == PLAYER_1 ? 0 : 2;
+    uint8_t end   = item.owner == PLAYER_1 ? 2 : 4;
+    for (uint8_t i = start; i < end; i++) {
+      Move tmpMove(loc, Loc(loc.row + rx[i], loc.col + dc[i]));
+      if (isValidMove(tmpMove))
+        result[count++] = tmpMove;
+    }
   }
 
   return count;
 }
+
 
 __host__ __device__ uint8_t State::genLocCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
   //return 0; // TODO
