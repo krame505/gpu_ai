@@ -135,6 +135,9 @@ void playGameTest(unsigned int numTests, unsigned int randomMoves)
       wins[2] ++;
       break;
     }
+
+    delete player1;
+    delete player2;
   }
 
   // Calculate the total running time
@@ -169,6 +172,7 @@ int main(int argc, char **argv) {
       {"mode", required_argument, NULL, 'm'},
       {"playouts", required_argument, NULL, 'p'},
       {"random", required_argument, NULL, 'R'},
+      {"black", required_argument, NULL, 'b'},
       {"red", required_argument, NULL, 'r'},
       {"help", no_argument, NULL, 'h'},
       {0, 0, 0, 0}
