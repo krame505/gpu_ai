@@ -100,7 +100,7 @@ ostream &operator<<(ostream &os, State s) {
   }
   os << "\n";
   for (int i = 0; i < BOARD_SIZE; i++) {
-    os << (BOARD_SIZE - i) << " ";
+    os << (i + 1) << " ";
     for (int j = 0; j < BOARD_SIZE; j++) {
       // TODO: check parity of background colors is correct
       os << EFFECT(BACKGROUND(!((i + j) % 2)));
@@ -109,13 +109,13 @@ ostream &operator<<(ostream &os, State s) {
       }
       else {
         os << EFFECT(FOREGROUND(BLUE));
-        os << string(1, 'a' + j) << (BOARD_SIZE - i);
+        os << string(1, 'a' + j) << (i + 1);
       }
       os << EFFECT(FOREGROUND(DEFAULT));
       os << EFFECT(BACKGROUND(DEFAULT));
       os << " ";
     }
-    os << (BOARD_SIZE - i) << "\n";
+    os << (i + 1) << "\n";
   }
   for (int i = 0; i < BOARD_SIZE; i++) {
     os << "  " << string(1, 'a' + i);
