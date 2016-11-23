@@ -67,8 +67,8 @@ __host__ __device__ bool State::isValidMove(Move move) const {
 
 __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
-  const int dr[] = {1, -1, 1, -1};
-  const int dc[] = {-1, -1, 1, 1};
+  const int dc[] = {1, -1, 1, -1};
+  const int dr[] = {1, 1, -1, -1};
   // NOTE: player 1 is moving down, player 2 is moving up - fix if this assumption is wrong
 
   if (!(*this)[loc].occupied)
