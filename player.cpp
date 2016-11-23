@@ -39,44 +39,33 @@ Move HumanPlayer::getMove(const State &state) const {
       moves.clear();
     }
 
-    if (len > 2) {
-      Loc from(input[1] - '1', input[0] - 'a');
-      if (from.row >= BOARD_SIZE || from.col >= BOARD_SIZE) {
-        error = "Invalid source location";
-        moves.clear();
-      }
-      // TODO: Check if intermediate locations are open when doing jump moves 
-      moves.erase(remove_if(moves.begin(), moves.end(),
-                            [state, from](Move m) {
-                              if (state[from].occupied) {
-                                State state2 = state;
-                                state2.move(m);
-                                return !state2[from].occupied;
-                              }
-                              return true;
-                            }),
-                  moves.end());
-      i += 2;
-      if (input[i] == ' ')
-        i++;
+    Loc from(7 - (input[1] - '1'), input[0] - 'a');
+    if (from.row >= BOARD_SIZE || from.col >= BOARD_SIZE) {
+      error = "Invalid source location";
+      moves.clear();
     }
+    for (unsigned int n = 0; n < moves.size(); n ++) {
+      if (moves[n].from.row != from.row || moves[n].from.col != from.col) {
+        moves.erase(moves.begin() + n);
+        n --;
+      }
+    }
+    i += 2;
+    if (input[i] == ' ')
+      i++;
 
     if (i < len) {
-      to = Loc(input[i + 1] - '1', input[i] - 'a');
+      to = Loc(7 - (input[i + 1] - '1'), input[i] - 'a');
       if (to.row >= BOARD_SIZE || to.col >= BOARD_SIZE) {
         error = "Invalid destination";
         moves.clear();
       }
-      moves.erase(remove_if(moves.begin(), moves.end(),
-                            [state, to](Move m) {
-                              if (!state[to].occupied) {
-                                State state2 = state;
-                                state2.move(m);
-                                return state2[to].occupied;
-                              }
-                              return true;
-                            }),
-                  moves.end());
+      for (unsigned int n = 0; n < moves.size(); n ++) {
+        if (moves[n].to.row != to.row || moves[n].to.col != to.col) {
+          moves.erase(moves.begin() + n);
+          n --;
+        }
+      }
     }
 
     if (moves.size() == 0) {
