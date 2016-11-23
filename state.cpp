@@ -46,7 +46,7 @@ ostream &operator<<(ostream &os, PieceType pt) {
 }
 
 ostream &operator<<(ostream &os, Loc loc) {
-  return os << string(1, 'a' + loc.col) << (loc.row + 1);
+  return os << string(1, 'a' + loc.col) << (BOARD_SIZE - loc.row);
 }
 
 ostream &operator<<(ostream &os, Move m) {
