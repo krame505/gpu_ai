@@ -39,23 +39,26 @@ Move HumanPlayer::getMove(const State &state) const {
       moves.clear();
     }
 
-    Loc from(7 - (input[1] - '1'), input[0] - 'a');
-    if (from.row >= BOARD_SIZE || from.col >= BOARD_SIZE) {
-      error = "Invalid source location";
-      moves.clear();
-    }
-    for (unsigned int n = 0; n < moves.size(); n ++) {
-      if (moves[n].from.row != from.row || moves[n].from.col != from.col) {
-        moves.erase(moves.begin() + n);
-        n --;
+    if (len > 2)
+    {
+      Loc from(BOARD_SIZE - (input[1] - '0'), input[0] - 'a');
+      if (from.row >= BOARD_SIZE || from.col >= BOARD_SIZE) {
+        error = "Invalid source location";
+        moves.clear();
       }
+      for (unsigned int n = 0; n < moves.size(); n ++) {
+        if (moves[n].from.row != from.row || moves[n].from.col != from.col) {
+          moves.erase(moves.begin() + n);
+          n --;
+        }
+      }
+      i += 2;
+      if (input[i] == ' ')
+        i++;
     }
-    i += 2;
-    if (input[i] == ' ')
-      i++;
 
     if (i < len) {
-      to = Loc(7 - (input[i + 1] - '1'), input[i] - 'a');
+      to = Loc(BOARD_SIZE - (input[i + 1] - '0'), input[i] - 'a');
       if (to.row >= BOARD_SIZE || to.col >= BOARD_SIZE) {
         error = "Invalid destination";
         moves.clear();
