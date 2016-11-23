@@ -267,7 +267,7 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
-      locNumMoves[i][j] = genLocDirectMoves(loc, locMoves[i][j]);
+      locNumMoves[i][j] = genLocCaptureMoves(loc, locMoves[i][j]);
       for (int k = 0; k < locNumMoves[i][j]; k++) {
 	if (locMoves[i][j][k].jumps > maxJumps)
 	  locMoves[i][j][k].jumps = maxJumps;
