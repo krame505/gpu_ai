@@ -96,7 +96,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 
 
 __host__ __device__ uint8_t State::genLocCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
-  //return 0; // TODO
+  return 0; // TODO
 }
 
 __host__ __device__ uint8_t State::genLocMoves(Loc l, Move result[MAX_LOC_MOVES]) const {
@@ -162,6 +162,10 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
   }
 
 #else
+  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+    numMoves[i] = 0;
+  }
+
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
@@ -271,6 +275,10 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
     }
   }
 
+  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+    numMoves[i] = 0;
+  }
+
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
@@ -281,6 +289,7 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 	  Move move = locMoves[i][j][k];
 	  if (move.jumps == maxJumps) {
 	    result[owner][l] = locMoves[i][j][k];
+	    numMoves[owner]++;
 	    l++;
 	  }
 	}
