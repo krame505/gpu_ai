@@ -39,10 +39,10 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
     }
     
     // Get which player's turn it is from the state
-    Player *player = players[(unsigned)state.turn];
+    Player *player = players[state.turn];
     // Calculate the next move
     Move move = player->getMove(state);
-    cout << move << endl;
+    cout << state.turn << " moved " << move << endl;
     // Apply that move to the state
     state.move(move);
     cout << endl;
@@ -167,21 +167,16 @@ int main(int argc, char **argv) {
   // Parse the command line options and set up player1 and player2
   int c, option_index;
   bool optionsAllValid = true;
-  while ((c = getopt_long(argc, argv, "m:p:b:r:h", our_options, &option_index)) != -1)
-  {
-    switch (c)
-    {
+  while ((c = getopt_long(argc, argv, "m:p:b:r:h", our_options, &option_index)) != -1) {
+    switch (c) {
     case 'm':
-      if (strcmp(optarg, "single") == 0)
-      {
+      if (strcmp(optarg, "single") == 0) {
 	theRunMode = Single;
       }
-      else if (strcmp(optarg, "test") == 0)
-      {
+      else if (strcmp(optarg, "test") == 0) {
 	theRunMode = Test;
       }
-      else
-      {
+      else {
 	cout << "Unrecognized run mode '" << optarg << "'" << endl;
 	printHelp();
 	return 1;
@@ -191,40 +186,32 @@ int main(int argc, char **argv) {
       numTests = atoi(optarg);
       break;
     case 'b':
-      if (strcmp(optarg, "human") == 0)
-      {
+      if (strcmp(optarg, "human") == 0) {
 	player1 = new HumanPlayer;
       }
-      else if (strcmp(optarg, "random") == 0)
-      {
+      else if (strcmp(optarg, "random") == 0) {
 	player1 = new RandomPlayer;
       }
-      else if (strcmp(optarg, "mcts") == 0)
-      {
+      else if (strcmp(optarg, "mcts") == 0) {
 	player1 = new MCTSPlayer;
       }
-      else
-      {
+      else {
 	cout << "Unrecognized player type '" << optarg << "'" << endl;
 	printHelp();
 	return 1;
       }
       break;
     case 'r':
-      if (strcmp(optarg, "human") == 0)
-      {
+      if (strcmp(optarg, "human") == 0) {
 	player2 = new HumanPlayer;
       }
-      else if (strcmp(optarg, "random") == 0)
-      {
+      else if (strcmp(optarg, "random") == 0) {
 	player2 = new RandomPlayer;
       }
-      else if (strcmp(optarg, "mcts") == 0)
-      {
+      else if (strcmp(optarg, "mcts") == 0) {
 	player2 = new MCTSPlayer;
       }
-      else
-      {
+      else {
 	cout << "Unrecognized player type '" << optarg << "'" << endl;
 	printHelp();
 	return 1;
@@ -240,22 +227,18 @@ int main(int argc, char **argv) {
   }
 
   // If an invalid option was passed, print help and exit
-  if (!optionsAllValid)
-  {
+  if (!optionsAllValid) {
     printHelp();
     return 1;
   }
 
   // Run the game
-  if (theRunMode == Single)
-  {
+  if (theRunMode == Single) {
     // Assume random players if not otherwise specified
-    if (player1 == NULL)
-    {
+    if (player1 == NULL) {
       player1 = new RandomPlayer;
     }
-    if (player2 == NULL)
-    {
+    if (player2 == NULL) {
       player2 = new RandomPlayer;
     }
 
@@ -268,8 +251,7 @@ int main(int argc, char **argv) {
     Player *players[NUM_PLAYERS] = {player1, player2};
     playGame(players);
   }
-  else
-  {
+  else {
     cout << "Playing " << numTests << " random moves" << endl;
     playGameTest(numTests);
   }
