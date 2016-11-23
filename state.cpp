@@ -68,10 +68,17 @@ ostream &operator<<(ostream &os, BoardItem bi) {
   switch (bi.type) {
   case CHECKER:
     switch (bi.owner) {
+#ifdef NOUNICODE
+    case PLAYER_1:
+      return os << "o";
+    case PLAYER_2:
+      return os << "O";
+#else
     case PLAYER_1:
       return os << "⛂";
     case PLAYER_2:
       return os << "⛀";
+#endif
     default:
       break;
     }
@@ -79,10 +86,17 @@ ostream &operator<<(ostream &os, BoardItem bi) {
 
   case CHECKER_KING:
     switch (bi.owner) {
+#ifdef NOUNICODE
+    case PLAYER_1:
+      return os << "k";
+    case PLAYER_2:
+      return os << "K";
+#else
     case PLAYER_1:
       return os << "⛃";
     case PLAYER_2:
       return os << "⛁";
+#endif
     default:
       break;
     }
@@ -102,7 +116,6 @@ ostream &operator<<(ostream &os, State s) {
   for (int i = 0; i < BOARD_SIZE; i++) {
     os << (BOARD_SIZE - i) << " ";
     for (int j = 0; j < BOARD_SIZE; j++) {
-      // TODO: check parity of background colors is correct
       os << EFFECT(BACKGROUND(!((i + j) % 2)));
       if (s.board[i][j].occupied) {
         os << s.board[i][j] << " ";

@@ -26,3 +26,7 @@ CXXFLAGS        += -std=gnu++11
 
 NVCCFLAGS       += -dc
 LINK            := $(NVCC)
+
+ifeq ($(nounicode),1)
+  CXXFLAGS      += -DNOUNICODE
+endif

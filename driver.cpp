@@ -137,7 +137,7 @@ void playGameTest(unsigned int numTests)
 
 // printHelp: Output the help message if requested or if there are bad command-line arguments
 void printHelp() {
-  cout << "Usage: run_ai [--mode|-m single|test] [--playouts|-p N] [--red|-r human|random|mcts] [--black|-b human|random|mcts] [--help]" << endl;
+  cout << "Usage: run_ai [--mode|-m single|test] [--playouts|-p N] [--white|-w human|random|mcts] [--black|-n human|random|mcts] [--help]" << endl;
 }
 
 int main(int argc, char **argv) {
@@ -158,8 +158,8 @@ int main(int argc, char **argv) {
     {
       {"mode", required_argument, NULL, 'm'},
       {"playouts", required_argument, NULL, 'p'},
+      {"white", required_argument, NULL, 'w'},
       {"black", required_argument, NULL, 'b'},
-      {"red", required_argument, NULL, 'r'},
       {"help", no_argument, NULL, 'h'},
       {0, 0, 0, 0}
     };
@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
   // Parse the command line options and set up player1 and player2
   int c, option_index;
   bool optionsAllValid = true;
-  while ((c = getopt_long(argc, argv, "m:p:b:r:h", our_options, &option_index)) != -1) {
+  while ((c = getopt_long(argc, argv, "m:p:w:b:h", our_options, &option_index)) != -1) {
     switch (c) {
     case 'm':
       if (strcmp(optarg, "single") == 0) {
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
     case 'p':
       numTests = atoi(optarg);
       break;
-    case 'b':
+    case 'w':
       if (strcmp(optarg, "human") == 0) {
 	player1 = new HumanPlayer;
       }
@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
 	return 1;
       }
       break;
-    case 'r':
+    case 'b':
       if (strcmp(optarg, "human") == 0) {
 	player2 = new HumanPlayer;
       }
@@ -244,9 +244,9 @@ int main(int argc, char **argv) {
 
     cout << "Playing single game of ";
     player1->PrintType();
-    cout << " Player 1 ('black') and ";
+    cout << " Player 1 ('white') and ";
     player2->PrintType();
-    cout << " Player 2 ('red')" << endl;
+    cout << " Player 2 ('black')" << endl;
 
     Player *players[NUM_PLAYERS] = {player1, player2};
     playGame(players);
