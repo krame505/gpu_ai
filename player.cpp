@@ -15,12 +15,20 @@ Move RandomPlayer::getMove(const State &state) const {
 Move HumanPlayer::getMove(const State &state) const {
   char input[100];
 
-  cout << "Move for " << state.turn << ": ";
   while (true) {
-    cin.getline(input, 100);
 
     string error;
     vector<Move> moves = state.getMoves();
+
+    cout << "Valid moves:" << endl;
+    for (unsigned int n = 0; n < moves.size(); n ++)
+    {
+      cout << "Move " << n << ": " << moves[n] << endl;
+    }
+
+    cout << "Move for " << state.turn << ": ";
+    cin.getline(input, 100);
+
     unsigned len = strlen(input);
 
     unsigned i = 0;
@@ -73,12 +81,12 @@ Move HumanPlayer::getMove(const State &state) const {
 
     if (moves.size() == 0) {
       if (error.size())
-        cout << error << ", try again: ";
+        cout << error << ", try again" << endl;
       else
-        cout << "Invalid move, try again: ";
+        cout << "Invalid move, try again" << endl;
     }
     else if (moves.size() > 1) {
-      cout << "Ambiguous move: ";
+      cout << "Ambiguous move" << endl;
     }
     else {
       return moves[0];
