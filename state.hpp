@@ -56,6 +56,11 @@ struct Loc {
   __host__ __device__
 #endif
   bool isValid() const;
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator ==(Loc loc) {return row == loc.row && col == loc.col;}
 };
 
 // Represents the contents of the location on the board, either a piece or an empty squate
@@ -121,6 +126,21 @@ struct State {
 #endif
   uint8_t genLocCaptureMoves(Loc, Move[MAX_LOC_MOVES]) const;
 
+
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocCaptureReg(Loc, Move[MAX_LOC_MOVES], uint8_t count = 0, bool first = true) const;
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocCaptureKing(Loc, Move[MAX_LOC_MOVES], uint8_t count = 0, bool first = true) const;
+
+
+
+
   // Generate the possible moves from a location
 #ifdef __CUDACC__
   __host__ __device__
@@ -179,6 +199,20 @@ struct Move {
 #endif
   Move(Loc from, Loc to, uint8_t jumps=0, bool promoted=false, PieceType newType=CHECKER) :
     from(from), to(to), jumps(jumps), promoted(promoted), newType(newType) {}
+
+
+  // add a jump to a new location - updates removed and intermediate steps
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  void addJump(Loc newTo) {
+    if (jumps > 1)
+      intermediate[jumps] = to;
+
+    removed[jumps++] = Loc((newTo.row - to.row) / 2 + to.row,
+                           (newTo.col - to.col) / 2 + to.col);
+    to = newTo;
+  }
 
   // Default constructor must be empty to avoid a race condition when initializing shared memory
 #ifdef __CUDACC__

@@ -9,6 +9,7 @@ __host__ __device__ bool Loc::isValid() const {
   return (row < BOARD_SIZE && col < BOARD_SIZE);
 }
 
+
 __host__ __device__ void State::move(const Move &move) {
   // Error checking
   assert(move.to.isValid());
@@ -95,8 +96,102 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 }
 
 
-__host__ __device__ uint8_t State::genLocCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const {
-  return 0; // TODO
+__host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
+  if (!(*this)[loc].occupied)
+    return 0;
+
+  result[0] = Move(loc, loc);
+  if ((*this)[loc].type == CHECKER)
+    return genLocCaptureReg(loc, result);
+  else
+    return genLocCaptureKing(loc, result);
+}
+
+
+__device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
+
+  // add an item if have jumped one piece already and it is the longest jump
+  // possible (i.e. the set of jumps is not a proper subset of another possible
+  // set of jumps) - can do with a DFS
+
+  Loc toLeft, toRight;
+  Move jumpToLeft = result[count], jumpToRight = result[count];
+
+  if ((*this)[loc].owner == PLAYER_1) {
+    toLeft  = Loc(loc.row + 2, loc.col - 2);
+    toRight = Loc(loc.row + 2, loc.col + 2);
+  } else {
+    toLeft  = Loc(loc.row - 2, loc.col - 2);
+    toRight = Loc(loc.row - 2, loc.col + 2);
+  }
+
+  jumpToLeft.addJump(toLeft);
+  jumpToRight.addJump(toRight);
+
+  // no valid jumps but one was made at one point - save the move made at 
+  // results[count] and indicate that it was successful by incrementing count
+  if (!isValidMove(jumpToLeft) && !isValidMove(jumpToRight) && !first) {
+    return count + 1;
+  }
+
+  // left branch is valid - at the very least save the jump in the result array
+  // and explore this branch to see if more jumps can be made
+  if (isValidMove(jumpToLeft)) {
+    result[count] = jumpToLeft;
+    count = genLocCaptureReg(toLeft, result, count, false);
+  }
+
+  // ditto for right branch
+  if (isValidMove(jumpToRight)) {
+    result[count] = jumpToRight;
+    count = genLocCaptureReg(toRight, result, count, false);
+  }
+
+  return count;
+}
+
+
+__device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
+  Loc locs[4] = { Loc(loc.row + 2, loc.col + 2), Loc(loc.row + 2, loc.col - 2),
+                  Loc(loc.row - 2, loc.col + 2), Loc(loc.row - 2, loc.col - 2) };
+  Move moves[4] = { result[count], result[count], result[count], result[count] };
+
+  for (uint8_t i = 0; i < 4; i++)
+    moves[i].addJump(locs[i]);
+
+  // check for end condition - either no other possible jumps or a cycle found
+  if (result[count].jumps > 0) {
+    
+    // cycle in jumps - not a necessary condition for stopping but it makes
+    // some things easier - sorry :(
+    if (loc == result[count].from)
+      return count + 1;
+
+    // check that at least 3 jumps fail (there could be only one succeeding one
+    // - the jump to get to this location in the first place
+    for (uint8_t i = 0; i < 4; i++) {
+      bool end = true;
+      for (uint8_t j = 0; j < 4; j++) {
+        if (isValidMove(moves[i]) || i == j) {
+          end = false;
+          break;
+        }
+      }
+      if (end)
+        return count + 1;
+    }
+  }
+
+
+  // same thing as genLocCaptureReg
+  for (uint8_t i = 0; i < 4; i++) {
+    if (isValidMove(moves[i])) {
+      result[count] = moves[i];
+      count = genLocCaptureKing(locs[i], result, count, false);
+    }
+  }
+
+  return count;
 }
 
 __host__ __device__ uint8_t State::genLocMoves(Loc l, Move result[MAX_LOC_MOVES]) const {
