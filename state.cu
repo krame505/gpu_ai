@@ -60,6 +60,9 @@ __host__ __device__ bool State::isValidMove(Move move) const {
     if (!board[removed.row][removed.col].occupied || 
          board[intermediate.row][intermediate.col].occupied)
       return false;
+
+    if (board[removed.row][removed.col].owner == board[move.from.row][move.from.col].owner)
+      return false;
   }
 
   return true;
