@@ -3,7 +3,6 @@
 #include "state.hpp"
 #include "playout.hpp"
 
-#include <array>
 #include <vector>
 
 class GameTree {
@@ -28,12 +27,16 @@ public:
         delete n;
   }
 
+  std::vector<Move> getMoves() const {
+    return moves;
+  }
+
   std::vector<GameTree*> getChildren() const {
     return children;
   }
 
-  // Compute the fraction of wins for each player
-  std::array<double, NUM_PLAYERS> getScores() const;
+  // Compute the fraction of wins for a player
+  double getScore(PlayerId player) const;
 
   // Compute the Upper Confidence Bound 1 scoring algorithm
   double ucb1() const;

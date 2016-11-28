@@ -87,5 +87,21 @@ Move HumanPlayer::getMove(const State &state) const {
 }
 
 Move MCTSPlayer::getMove(const State &state) const {
-  // TODO
+  vector<unsigned> trials(MCTS_NUM_ITERATIONS, MCTS_NUM_TRIALS);
+  GameTree *theTree = buildTree(state, trials);
+
+  vector<GameTree*> children = theTree->getChildren();
+  
+  double highestScore = 0.0;
+  unsigned int highestChild = 0;
+    
+  for (unsigned int n = 0; n < children.size(); n ++) {
+    if (children[n]->getScore(state.turn) > highestScore) {
+      highestScore = children[n]->getScore(state.turn);
+      highestChild = n;
+    }
+  }
+
+  vector<Move> moves = theTree->getMoves();
+  return moves[highestChild];
 }

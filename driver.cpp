@@ -63,6 +63,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 
 void playGameTest(unsigned int numTests) {
   vector<State> ourStates;
+  RandomPlayer thePlayer;
 
   for (unsigned int n = 0; n < numTests; n++) {
     unsigned int randomMoves = rand() % 100; // TODO : Is 100 max random moves reasonable?  How long is an average checkers game?
@@ -81,25 +82,16 @@ void playGameTest(unsigned int numTests) {
 
     // Carry out the opening random moves
 
-    Player *player1 = new RandomPlayer;
-    Player *player2 = new RandomPlayer;
-    Player *players[NUM_PLAYERS] = {player1, player2};
-
     for (unsigned int m = 0; m < randomMoves; m ++) {
       if (state.isFinished())
 	break;
 
-      // Get which player's turn it is from the state
-      Player *player = players[(unsigned)state.turn];
       // Calculate the next move
-      Move move = player->getMove(state);
+      Move move = thePlayer.getMove(state);
       // Apply that move to the state
       state.move(move);
     }
 
-    delete player1;
-    delete player2;
-   
     ourStates.push_back(state);
   }
 
@@ -110,6 +102,45 @@ void playGameTest(unsigned int numTests) {
   double etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
 
   int wins[3] = {0, 0, 0};
+  for (unsigned int n = 0; n < playoutResults.size(); n++) {
+    switch (playoutResults[n]) {
+    case PLAYER_NONE:
+      wins[0] ++;
+      break;
+    case PLAYER_1:
+      wins[1] ++;
+      break;
+    case PLAYER_2:
+      wins[2] ++;
+      break;
+    }
+  }
+
+  cout << "GPU Results" << endl;
+  cout << "Games drawn: " << wins[0] << endl;
+  cout << "Player 1 wins: " << wins[1] << endl;
+  cout << "Player 2 wins: " << wins[2] << endl;
+  cout << "Elapsed time: " << etime << " seconds" << endl;
+
+  playoutResults.clear();
+
+  t1 = clock();
+  for (unsigned int n = 0; n < ourStates.size(); n++) {
+    while (true) {
+      if (ourStates[n].isFinished())
+        break;
+
+      // Calculate the next move
+      Move move = thePlayer.getMove(ourStates[n]);
+      // Apply that move to the state
+      ourStates[n].move(move);
+    }
+    playoutResults.push_back(ourStates[n].result());
+  }
+  t2 = clock();
+  etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
+
+  wins[0] = 0; wins[1] = 0; wins[2] = 0;
   for (unsigned int n = 0; n < playoutResults.size(); n++) {
     switch (playoutResults[n]) {
     case PLAYER_NONE:
@@ -124,6 +155,7 @@ void playGameTest(unsigned int numTests) {
     }
   }
 
+  cout << "CPU Results" << endl;
   cout << "Games drawn: " << wins[0] << endl;
   cout << "Player 1 wins: " << wins[1] << endl;
   cout << "Player 2 wins: " << wins[2] << endl;
