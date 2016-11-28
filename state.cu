@@ -111,7 +111,6 @@ __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_L
     return genLocCaptureReg(loc, result);
   else
     return genLocCaptureKing(loc, result);
-  }
 }
 
 
