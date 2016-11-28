@@ -14,22 +14,25 @@ __host__ __device__ void State::move(const Move &move) {
   // Error checking
   assert(move.to.isValid());
   assert(move.from.isValid());
-  assert(board[move.from.row][move.from.col].occupied);
-  assert(!board[move.to.row][move.to.col].occupied);
-  assert(board[move.from.row][move.from.col].owner == turn);
+  assert((*this)[move.from].occupied);
+  assert(!(*this)[move.to].occupied);
+  assert((*this)[move.from].owner == turn);
 
-  board[move.to.row][move.to.col] =
-    BoardItem(true, move.newType, board[move.from.row][move.from.col].owner);
+  (*this)[move.to] =
+    BoardItem(true, move.newType, (*this)[move.from].owner);
   board[move.from.row][move.from.col].occupied = false;
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
 
     // Error checking
-    Loc intermediate = move.intermediate[i];
     assert(removed.isValid());
-    assert(intermediate.isValid());
-    assert(board[removed.row][removed.col].occupied);
-    assert(!board[intermediate.row][intermediate.col].occupied);
+    assert((*this)[removed].occupied);
+    
+    if (i < move.jumps - 1) {
+      Loc intermediate = move.intermediate[i];
+      assert(intermediate.isValid());
+      assert(!(*this)[intermediate].occupied);
+    }
 
     board[removed.row][removed.col].occupied = false;
   }
@@ -40,7 +43,6 @@ __host__ __device__ void State::move(const Move &move) {
 
 // This is taken from State::move but just returns false when an assertion would have failed
 __host__ __device__ bool State::isValidMove(Move move) const {
-  // Error checking
   if (!move.to.isValid() || !move.from.isValid())
     return false;
 
@@ -51,18 +53,17 @@ __host__ __device__ bool State::isValidMove(Move move) const {
 
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
-
-    // Error checking
-    Loc intermediate = move.intermediate[i];
-    if (!removed.isValid() || !intermediate.isValid())
+    if (!removed.isValid() ||
+	!(*this)[removed].occupied ||
+	(*this)[removed].owner == (*this)[move.from].owner)
       return false;
-
-    if (!(*this)[removed].occupied || 
-        (*this)[intermediate].occupied)
+    
+    if (i < move.jumps - 1) {
+      Loc intermediate = move.intermediate[i];
+      if (!intermediate.isValid() ||
+	  (*this)[intermediate].occupied)
       return false;
-
-    if ((*this)[removed].owner == (*this)[move.from].owner)
-      return false;
+    }
   }
 
   return true;
@@ -172,7 +173,7 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
   if (!first) {
     if (loc == result[count].from)
       foundLoop = true;
-    for (n = 0; n < (result[count].jumps - 1); n ++) {
+    for (n = 0; n < result[count].jumps - 1; n ++) {
       if (loc == result[count].intermediate[n])
         foundLoop = true;
     }
@@ -189,7 +190,11 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
   for (uint8_t i = 0; i < 4; i++)
     moves[i].addJump(locs[i]);
 
-  if (!first && !isValidMove(moves[0]) && !isValidMove(moves[1]) && !isValidMove(moves[2]) && !isValidMove(moves[3])) {
+  if (!first &&
+      !isValidMove(moves[0]) &&
+      !isValidMove(moves[1]) &&
+      !isValidMove(moves[2]) &&
+      !isValidMove(moves[3])) {
     result[count].newType = CHECKER_KING;
     return count + 1;
   }
@@ -447,8 +452,25 @@ __host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
   genDirectMoves(numMoves, result, genMoves);
 }
 
-__host__ __device__ bool Move::conflictsWith(const Move &other) {
-  //return false; // TODO
+__host__ __device__ bool Move::operator==(Move move) {
+  if (from != move.from ||
+      to != move.to ||
+      jumps != move.jumps ||
+      promoted != move.promoted ||
+      newType != move.newType) {
+    return false;
+  }
+  for (int i = 0; i < jumps; i++) {
+    if (removed[i] != move.removed[i]) {
+      return false;
+    }
+  }
+  for (int i = 0; i < jumps - 1; i++) {
+    if (intermediate[i] != move.intermediate[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 __host__ __device__ void Move::addJump(Loc newTo) {
@@ -458,6 +480,10 @@ __host__ __device__ void Move::addJump(Loc newTo) {
   removed[jumps++] = Loc((newTo.row - to.row) / 2 + to.row,
 			 (newTo.col - to.col) / 2 + to.col);
   to = newTo;
+}
+
+__host__ __device__ bool Move::conflictsWith(const Move &other) {
+  //return false; // TODO
 }
 
 __host__ __device__ PlayerId nextTurn(PlayerId turn) {
@@ -470,7 +496,6 @@ __host__ __device__ PlayerId nextTurn(PlayerId turn) {
     return PLAYER_NONE;
   }
 }
-
 
 __host__ __device__ PlayerId State::result() const {
   //#ifdef __CUDA_ARCH__

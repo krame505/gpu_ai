@@ -54,12 +54,6 @@ struct Loc {
 #endif
   Loc() {} //: row((uint8_t)-1), col((uint8_t)-1) {}
 
-  // Return true if this location is within the bounds of the board 
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  bool isValid() const;
-
 #ifdef __CUDACC__
   __host__ __device__
 #endif
@@ -69,6 +63,12 @@ struct Loc {
   __host__ __device__
 #endif
   bool operator!=(Loc loc) {return !((*this) == loc);}
+
+  // Return true if this location is within the bounds of the board 
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool isValid() const;
 };
 
 // Represents the contents of the location on the board, either a piece or an empty squate
@@ -197,7 +197,7 @@ struct Move {
   Loc from;
   Loc to;
   Loc removed[MAX_MOVE_JUMPS];
-  Loc intermediate[MAX_MOVE_JUMPS];
+  Loc intermediate[MAX_MOVE_JUMPS - 1];
   uint8_t jumps;
   bool promoted;
   PieceType newType; // Type after the move - same as original type if no promotion
@@ -214,6 +214,16 @@ struct Move {
 #endif
   Move() {}
 
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator==(Move move);
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator!=(Move move) {return !((*this) == move);}
+
   // add a jump to a new location - updates removed and intermediate steps
 #ifdef __CUDACC__
   __host__ __device__
@@ -225,28 +235,6 @@ struct Move {
   __host__ __device__
 #endif
   bool conflictsWith(const Move &other);
-
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  bool operator ==(Move move) {
-    if (from != move.from || to != move.to || jumps != move.jumps || promoted != move.promoted || newType != move.newType) {
-      return false;
-    }
-    for (int n = 0; n < jumps; n ++) {
-      if (removed[n] != move.removed[n]) {
-        return false;
-      }
-    }
-    for (int n = 0; n < (jumps - 1); n ++) {
-      if (intermediate[n] != move.intermediate[n]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool operator !=(Move move) {return !((*this) == move);}
 };
 
 // Get the next player in the turn sequence
