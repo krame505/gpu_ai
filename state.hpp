@@ -64,6 +64,11 @@ struct Loc {
   __host__ __device__
 #endif
   bool operator ==(Loc loc) {return row == loc.row && col == loc.col;}
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator !=(Loc loc) {return !((*this) == loc);}
 };
 
 // Represents the contents of the location on the board, either a piece or an empty squate
@@ -228,6 +233,28 @@ struct Move {
   __host__ __device__
 #endif
   bool conflictsWith(const Move &other);
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator ==(Move move) {
+    if (from != move.from || to != move.to || jumps != move.jumps || promoted != move.promoted || newType != move.newType) {
+      return false;
+    }
+    for (int n = 0; n < jumps; n ++) {
+      if (removed[n] != move.removed[n]) {
+        return false;
+      }
+    }
+    for (int n = 0; n < (jumps - 1); n ++) {
+      if (intermediate[n] != move.intermediate[n]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool operator !=(Move move) {return !((*this) == move);}
 };
 
 // Get the next player in the turn sequence

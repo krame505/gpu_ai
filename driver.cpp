@@ -2,9 +2,11 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
+#include <cassert>
 #include <vector>
 #include "state.hpp"
 #include "player.hpp"
+#include "genMovesTest.hpp"
 
 using namespace std;
 
@@ -92,6 +94,7 @@ void playGameTest(unsigned int numTests) {
       state.move(move);
     }
 
+    assert(genMovesTest(state));
     ourStates.push_back(state);
   }
 

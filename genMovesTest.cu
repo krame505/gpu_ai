@@ -45,7 +45,17 @@ bool genMovesTest(State state) {
   Move result[NUM_PLAYERS][MAX_MOVES];
   state.genMoves(numMoves, result);
 
-  // TODO: Compare the results
+  unsigned n, m;
+  for (n = 0; n < NUM_PLAYERS; n ++) {
+    if (numMovesResult[n] != numMoves[n]) {
+      return false;
+    }
+    for (m = 0; m < numMoves[n]; m ++) {
+      if (movesResult[m + (n * MAX_MOVES)] != result[n][m]) {
+        return false;
+      }
+    }
+  }
 
   return true;
 }
