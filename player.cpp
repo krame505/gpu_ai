@@ -1,3 +1,4 @@
+
 #include "player.hpp"
 
 #include <string.h>
@@ -21,8 +22,7 @@ Move HumanPlayer::getMove(const State &state) const {
     vector<Move> moves = state.getMoves();
 
     cout << "Valid moves:" << endl;
-    for (unsigned int n = 0; n < moves.size(); n ++)
-    {
+    for (unsigned int n = 0; n < moves.size(); n++) {
       cout << "Move " << n << ": " << moves[n] << endl;
     }
 
@@ -34,22 +34,21 @@ Move HumanPlayer::getMove(const State &state) const {
     unsigned i = 0;
     Loc to(BOARD_SIZE, BOARD_SIZE); // Out of bounds
 
-    if (len < 2 || len == 3 || len > 5) {
+    if (len == 1 || len == 3 || len > 5) {
       error = "Invalid move syntax";
       moves.clear();
     }
 
-    if (len > 2)
-    {
+    if (len > 2) {
       Loc from(BOARD_SIZE - (input[1] - '0'), input[0] - 'a');
       if (from.row >= BOARD_SIZE || from.col >= BOARD_SIZE) {
         error = "Invalid source location";
         moves.clear();
       }
-      for (unsigned int n = 0; n < moves.size(); n ++) {
+      for (unsigned int n = 0; n < moves.size(); n++) {
         if (moves[n].from.row != from.row || moves[n].from.col != from.col) {
           moves.erase(moves.begin() + n);
-          n --;
+          n--;
         }
       }
       i += 2;
@@ -63,10 +62,10 @@ Move HumanPlayer::getMove(const State &state) const {
         error = "Invalid destination";
         moves.clear();
       }
-      for (unsigned int n = 0; n < moves.size(); n ++) {
+      for (unsigned int n = 0; n < moves.size(); n++) {
         if (moves[n].to.row != to.row || moves[n].to.col != to.col) {
           moves.erase(moves.begin() + n);
-          n --;
+          n--;
         }
       }
     }
