@@ -87,36 +87,21 @@ Move HumanPlayer::getMove(const State &state) const {
 }
 
 Move MCTSPlayer::getMove(const State &state) const {
-  vector<Move> availableMoves = state.getMoves();
-  vector<State> nextState;
-  for (unsigned int n = 0; n < availableMoves.size(); n ++) {
-    nextState[n] = state;
-    nextState[n].move(availableMoves[n]);
-  }
+  vector<unsigned> trials(MCTS_NUM_ITERATIONS, MCTS_NUM_TRIALS);
+  GameTree *theTree = buildTree(state, trials);
 
-  vector<PlayerId> results = playouts(nextState);
-  int numVictories = 0;
-  for (unsigned int n = 0; n < results.size(); n ++) {
-    // Check if the move is one that will lead to victory for this player
-    if (state.turn == results[n]) {
-      numVictories ++;
+  vector<GameTree*> children = theTree->getChildren();
+  
+  double highestScore = 0.0;
+  unsigned int highestChild = 0;
+    
+  for (unsigned int n = 0; n < children.size(); n ++) {
+    if (children[n]->getScore(state.turn) > highestScore) {
+      highestScore = children[n]->getScore(state.turn);
+      highestChild = n;
     }
   }
 
-  if (numVictories > 0) {
-    // Randomly pick from one of the victories (TODO: Pick the move that has the highest probability of victory?)
-    int theMove = rand() % numVictories;
-    for (unsigned int n = 0; n < results.size(); n ++)
-    {
-      if (state.turn == results[n]) {
-        if (theMove == 0)
-          return availableMoves[n];
-        else
-          theMove --;
-      }
-    }
-  }
-
-  // Otherwise just pick a random move
-  return availableMoves[rand() % availableMoves.size()];
+  vector<Move> moves = theTree->getMoves();
+  return moves[highestChild];
 }
