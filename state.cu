@@ -258,7 +258,8 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
 
 #else
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-    numMoves[i] = 0;
+    if (genMoves == NULL || genMoves[i])
+      numMoves[i] = 0;
   }
 
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
