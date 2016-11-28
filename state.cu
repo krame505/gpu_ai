@@ -4,7 +4,6 @@
 #include "state.hpp"
 
 #include <assert.h>
-#include <stdio.h>
 
 __host__ __device__ bool Loc::isValid() const {
   return (row < BOARD_SIZE && col < BOARD_SIZE);
@@ -168,7 +167,18 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
 __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
   // cycle in jumps - not a necessary condition for stopping but it makes
   // some things easier - sorry :(
-  if (loc == result[count].from && !first) {
+  bool foundLoop = false;
+  int n;
+  if (!first) {
+    if (loc == result[count].from)
+      foundLoop = true;
+    for (n = 0; n < (result[count].jumps - 1); n ++) {
+      if (loc == result[count].intermediate[n])
+        foundLoop = true;
+    }
+  }
+
+  if (foundLoop) {
     result[count].newType = CHECKER_KING;
     return count + 1;
   }
