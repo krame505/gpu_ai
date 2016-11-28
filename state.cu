@@ -451,6 +451,15 @@ __host__ __device__ bool Move::conflictsWith(const Move &other) {
   //return false; // TODO
 }
 
+__host__ __device__ void Move::addJump(Loc newTo) {
+  if (jumps > 0)
+    intermediate[jumps] = to;
+  
+  removed[jumps++] = Loc((newTo.row - to.row) / 2 + to.row,
+			 (newTo.col - to.col) / 2 + to.col);
+  to = newTo;
+}
+
 __host__ __device__ PlayerId nextTurn(PlayerId turn) {
   switch (turn) {
   case PLAYER_1:
