@@ -4,6 +4,7 @@
 #include "state.hpp"
 
 #include <assert.h>
+#include <stdio.h>
 
 __host__ __device__ bool Loc::isValid() const {
   return (row < BOARD_SIZE && col < BOARD_SIZE);
@@ -110,6 +111,7 @@ __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_L
     return genLocCaptureReg(loc, result);
   else
     return genLocCaptureKing(loc, result);
+  }
 }
 
 
@@ -165,6 +167,13 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
 
 
 __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
+  // cycle in jumps - not a necessary condition for stopping but it makes
+  // some things easier - sorry :(
+  if (loc == result[count].from && !first) {
+    result[count].newType = CHECKER_KING;
+    return count + 1;
+  }
+
   Loc locs[4] = { Loc(loc.row + 2, loc.col + 2), Loc(loc.row + 2, loc.col - 2),
                   Loc(loc.row - 2, loc.col + 2), Loc(loc.row - 2, loc.col - 2) };
   Move moves[4] = { result[count], result[count], result[count], result[count] };
@@ -172,31 +181,11 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
   for (uint8_t i = 0; i < 4; i++)
     moves[i].addJump(locs[i]);
 
-  // check for end condition - either no other possible jumps or a cycle found
-  if (result[count].jumps > 0) {
-    
-    // cycle in jumps - not a necessary condition for stopping but it makes
-    // some things easier - sorry :(
-    if (loc == result[count].from)
-      return count + 1;
-
-    // check that at least 3 jumps fail (there could be only one succeeding one
-    // - the jump to get to this location in the first place
-    for (uint8_t i = 0; i < 4; i++) {
-      bool end = true;
-      for (uint8_t j = 0; j < 4; j++) {
-        if (isValidMove(moves[i]) || i == j) {
-          end = false;
-          break;
-        }
-      }
-      if (end)
-        return count + 1;
-    }
+  if (!first && !isValidMove(moves[0]) && !isValidMove(moves[1]) && !isValidMove(moves[2]) && !isValidMove(moves[3])) {
+    result[count].newType = CHECKER_KING;
+    return count + 1;
   }
 
-
-  // same thing as genLocCaptureReg
   for (uint8_t i = 0; i < 4; i++) {
     if (isValidMove(moves[i])) {
       result[count] = moves[i];

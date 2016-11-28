@@ -50,6 +50,10 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
     cout << endl;
   }
 
+  if (verbose) {
+    cout << state << endl;
+  }
+
   // Game over: check the state to see who won the game
   PlayerId result = state.result();
   if (verbose) {
