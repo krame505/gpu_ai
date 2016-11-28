@@ -2,7 +2,6 @@
 #include "mcts.hpp"
 #include "playout.hpp"
 
-#include <array>
 #include <vector>
 #include <cassert>
 #include <cmath>
@@ -92,12 +91,8 @@ void GameTree::update(vector<PlayerId> results) {
   }
 }
 
-array<double, NUM_PLAYERS> GameTree::getScores() const {
-  array<double, NUM_PLAYERS> result;
-  for (unsigned i = 0; i < NUM_PLAYERS; i++) {
-    result[i] = (double)wins[i] / totalTrials;
-  }
-  return result;
+double GameTree::getScore(PlayerId player) const {
+  return (double)wins[player] / totalTrials;
 }
 
 double GameTree::ucb1() const {
