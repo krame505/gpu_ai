@@ -44,9 +44,9 @@ __host__ __device__ bool State::isValidMove(Move move) const {
   if (!move.to.isValid() || !move.from.isValid())
     return false;
 
-  if (!board[move.from.row][move.from.col].occupied || 
-       board[move.to.row][move.to.col].occupied || 
-       board[move.from.row][move.from.col].owner != turn)
+  if (!(*this)[move.from].occupied || 
+      (*this)[move.to].occupied || 
+      (*this)[move.from].owner != turn)
     return false;
 
   for (uint8_t i = 0; i < move.jumps; i++) {
@@ -57,11 +57,11 @@ __host__ __device__ bool State::isValidMove(Move move) const {
     if (!removed.isValid() || !intermediate.isValid())
       return false;
 
-    if (!board[removed.row][removed.col].occupied || 
-         board[intermediate.row][intermediate.col].occupied)
+    if (!(*this)[removed].occupied || 
+        (*this)[intermediate].occupied)
       return false;
 
-    if (board[removed.row][removed.col].owner == board[move.from.row][move.from.col].owner)
+    if ((*this)[removed].owner == (*this)[move.from].owner)
       return false;
   }
 
