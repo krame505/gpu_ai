@@ -366,7 +366,7 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
       locNumMoves[i][j] = genLocCaptureMoves(loc, locMoves[i][j]);
       for (int k = 0; k < locNumMoves[i][j]; k++) {
 	if (locMoves[i][j][k].jumps > maxJumps)
-	  locMoves[i][j][k].jumps = maxJumps;
+	  maxJumps = locMoves[i][j][k].jumps;
       }
     }
   }
@@ -375,12 +375,12 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
     numMoves[i] = 0;
   }
 
+  uint8_t l = 0;
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
       PlayerId owner = (*this)[loc].owner;
       if (genMoves == NULL || genMoves[owner]) {
-	uint8_t l = 0;
 	for (uint8_t k = 0; k < locNumMoves[i][j]; k++) {
 	  Move move = locMoves[i][j][k];
 	  if (move.jumps == maxJumps) {
