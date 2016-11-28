@@ -87,5 +87,36 @@ Move HumanPlayer::getMove(const State &state) const {
 }
 
 Move MCTSPlayer::getMove(const State &state) const {
-  // TODO
+  vector<Move> availableMoves = state.getMoves();
+  vector<State> nextState;
+  for (unsigned int n = 0; n < availableMoves.size(); n ++) {
+    nextState[n] = state;
+    nextState[n].move(availableMoves[n]);
+  }
+
+  vector<PlayerId> results = playouts(nextState);
+  int numVictories = 0;
+  for (unsigned int n = 0; n < results.size(); n ++) {
+    // Check if the move is one that will lead to victory for this player
+    if (state.turn == results[n]) {
+      numVictories ++;
+    }
+  }
+
+  if (numVictories > 0) {
+    // Randomly pick from one of the victories (TODO: Pick the move that has the highest probability of victory?)
+    int theMove = rand() % numVictories;
+    for (unsigned int n = 0; n < results.size(); n ++)
+    {
+      if (state.turn == results[n]) {
+        if (theMove == 0)
+          return availableMoves[n];
+        else
+          theMove --;
+      }
+    }
+  }
+
+  // Otherwise just pick a random move
+  return availableMoves[rand() % availableMoves.size()];
 }
