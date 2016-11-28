@@ -80,7 +80,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 
   if ((*this)[loc].type == CHECKER_KING) {
     for (uint8_t i = 0; i < 4; i++) {
-      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]));
+      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]), 0, false, CHECKER_KING);
       if (isValidMove(tmpMove))
         result[count++] = tmpMove;
     }
@@ -89,7 +89,9 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
     uint8_t start = item.owner == PLAYER_1 ? 0 : 2;
     uint8_t end   = item.owner == PLAYER_1 ? 2 : 4;
     for (uint8_t i = start; i < end; i++) {
-      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]));
+      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]), 0, 
+                   loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0), 
+                   (loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0)) ? CHECKER_KING : CHECKER);
       if (isValidMove(tmpMove))
         result[count++] = tmpMove;
     }
@@ -134,6 +136,14 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
   // no valid jumps but one was made at one point - save the move made at 
   // results[count] and indicate that it was successful by incrementing count
   if (!isValidMove(jumpToLeft) && !isValidMove(jumpToRight) && !first) {
+    if ((*this)[result[0].from].owner == PLAYER_1 && result[count].to.row == (BOARD_SIZE - 1)) {
+      result[count].promoted = true;
+      result[count].newType = CHECKER_KING;
+    }
+    if ((*this)[result[0].from].owner == PLAYER_2 && result[count].to.row == 0) {
+      result[count].promoted = true;
+      result[count].newType = CHECKER_KING;
+    }
     return count + 1;
   }
 
