@@ -61,12 +61,10 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
-void playGameTest(unsigned int numTests)
-{
+void playGameTest(unsigned int numTests) {
   vector<State> ourStates;
 
-  for (unsigned int n = 0; n < numTests; n ++)
-  {
+  for (unsigned int n = 0; n < numTests; n++) {
     unsigned int randomMoves = rand() % 100; // TODO : Is 100 max random moves reasonable?  How long is an average checkers game?
 
     State state = {
@@ -87,8 +85,7 @@ void playGameTest(unsigned int numTests)
     Player *player2 = new RandomPlayer;
     Player *players[NUM_PLAYERS] = {player1, player2};
 
-    for (unsigned int m = 0; m < randomMoves; m ++)
-    {
+    for (unsigned int m = 0; m < randomMoves; m ++) {
       if (state.isFinished())
 	break;
 
@@ -113,18 +110,16 @@ void playGameTest(unsigned int numTests)
   double etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
 
   int wins[3] = {0, 0, 0};
-  for (unsigned int n = 0; n < playoutResults.size(); n ++)
-  {
-    switch (playoutResults[n])
-    {
+  for (unsigned int n = 0; n < playoutResults.size(); n++) {
+    switch (playoutResults[n]) {
     case PLAYER_NONE:
-      wins[0] ++;
+      wins[0]++;
       break;
     case PLAYER_1:
-      wins[1] ++;
+      wins[1]++;
       break;
     case PLAYER_2:
-      wins[2] ++;
+      wins[2]++;
       break;
     }
   }
@@ -151,7 +146,7 @@ int main(int argc, char **argv) {
   Player *player2 = NULL;
 
   runMode theRunMode = Single;
-  unsigned int numTests = 1;
+  unsigned int numTests = 1000;
 
   // Possible options for getopt_long
   static struct option our_options[] = 
@@ -252,7 +247,7 @@ int main(int argc, char **argv) {
     playGame(players);
   }
   else {
-    cout << "Playing " << numTests << " random moves" << endl;
+    cout << "Running " << numTests << " random playouts" << endl;
     playGameTest(numTests);
   }
 
