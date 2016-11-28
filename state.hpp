@@ -214,7 +214,7 @@ struct Move {
   __host__ __device__
 #endif
   void addJump(Loc newTo) {
-    if (jumps > 1)
+    if (jumps > 0)
       intermediate[jumps] = to;
 
     removed[jumps++] = Loc((newTo.row - to.row) / 2 + to.row,

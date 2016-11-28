@@ -179,8 +179,7 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
   }
 
   if (foundLoop) {
-    result[count].newType = CHECKER_KING;
-    return count + 1;
+    return count;
   }
 
   Loc locs[4] = { Loc(loc.row + 2, loc.col + 2), Loc(loc.row + 2, loc.col - 2),
