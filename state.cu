@@ -238,7 +238,7 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
 
   __syncthreads();
 
-  if (id < NUM_PLAYERS) {
+  if (id < NUM_PLAYERS && (genMoves == NULL || genMoves[id])) {
     numMoves[id] = indices[id][NUM_LOCS - 1];
     indices[id][NUM_LOCS - 1] = 0;
   }
@@ -248,15 +248,19 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
     int i = (id + 1) * stride - 1;
     uint8_t temp;
     for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-      temp = indices[j][i];
-      indices[j][i] += indices[j][i - stride];
-      indices[j][i - stride] = temp;
+      if (genMoves == NULL || genMoves[j]) {
+	temp = indices[j][i];
+	indices[j][i] += indices[j][i - stride];
+	indices[j][i - stride] = temp;
+      }
     }
   }
 
   // Copy generated moves to shared arrays
   for (uint8_t i = 0; i < numLocMoves; i++) {
-    result[turn][i + indices[turn][id]] = locMoves[i];
+    if (genMoves == NULL || genMoves[turn]) {
+      result[turn][i + indices[turn][id]] = locMoves[i];
+    }
   }
 
 #else
@@ -316,7 +320,7 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 
   __syncthreads();
 
-  if (id < NUM_PLAYERS) {
+  if (id < NUM_PLAYERS && (genMoves == NULL || genMoves[id])) {
     numMoves[id] = indices[id][NUM_LOCS - 1];
     indices[id][NUM_LOCS - 1] = 0;
   }
@@ -326,15 +330,19 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
     int i = (id + 1) * stride - 1;
     uint8_t temp;
     for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-      temp = indices[j][i];
-      indices[j][i] += indices[j][i - stride];
-      indices[j][i - stride] = temp;
+      if (genMoves == NULL || genMoves[j]) {
+	temp = indices[j][i];
+	indices[j][i] += indices[j][i - stride];
+	indices[j][i - stride] = temp;
+      }
     }
   }
 
   // Copy generated captures to shared arrays
   for (uint8_t i = 0; i < numLocCapture; i++) {
-    result[turn][i + indices[turn][id]] = locMoves[i];
+    if (genMoves == NULL || genMoves[turn]) {
+      result[turn][i + indices[turn][id]] = locMoves[i];
+    }
   }
 
 
@@ -375,7 +383,8 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
   }
 
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-    numMoves[i] = 0;
+    if (genMoves == NULL || genMoves[i])
+      numMoves[i] = 0;
   }
 
   uint8_t l = 0;
