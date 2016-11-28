@@ -120,7 +120,7 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
   Loc toLeft, toRight;
   Move jumpToLeft = result[count], jumpToRight = result[count];
 
-  if ((*this)[loc].owner == PLAYER_1) {
+  if ((*this)[result[0].from].owner == PLAYER_1) {
     toLeft  = Loc(loc.row + 2, loc.col - 2);
     toRight = Loc(loc.row + 2, loc.col + 2);
   } else {
