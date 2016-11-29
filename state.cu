@@ -18,9 +18,11 @@ __host__ __device__ void State::move(const Move &move) {
   assert(!(*this)[move.to].occupied);
   assert((*this)[move.from].owner == turn);
 
-  (*this)[move.to] =
-    BoardItem(true, move.newType, (*this)[move.from].owner);
+  board[move.to.row][move.to.col].occupied = true;
+  board[move.to.row][move.to.col].type = move.newType;
+  board[move.to.row][move.to.col].owner = turn;
   board[move.from.row][move.from.col].occupied = false;
+
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
 
