@@ -52,9 +52,11 @@ ostream &operator<<(ostream &os, Loc loc) {
 ostream &operator<<(ostream &os, Move m) {
   os << m.from << " to " << m.to;
   if (m.jumps) {
-    os << " via";
-    for (unsigned i = 0; i < m.jumps; i++) {
-      os << " " << m.intermediate[i];
+    if (m.jumps > 1) {
+      os << " via";
+      for (int i = 0; i < m.jumps - 1; i++) {
+        os << " " << m.intermediate[i];
+      }
     }    
     os << ", captured";
     for (unsigned i = 0; i < m.jumps; i++) {
