@@ -9,8 +9,8 @@ using namespace std;
 
 vector<State> GameTree::select(unsigned trials) {
   assert(!state.isFinished());
-  this->trials = trials;
 
+  // Create new children if any are null
   vector<unsigned> newNodes;
   for (unsigned i = 0; i < children.size() && newNodes.size() < trials; i++) {
     if (children[i] == NULL) {
@@ -21,32 +21,22 @@ vector<State> GameTree::select(unsigned trials) {
     }
   }
 
-  unsigned assignedTrials[children.size()] = {0};
-  unsigned totalAssignedTrials = 0;
+  unsigned childAssignedTrials[children.size()] = {0};
+  assignedTrials = 0;
 
   // If there are new children created, assign all trials evenly between them
   if (newNodes.size() > 0) {
     for (unsigned newNode : newNodes) {
-      assignedTrials[newNode] = (double)trials / newNodes.size();
-      totalAssignedTrials += assignedTrials[newNode];
+      childAssignedTrials[newNode] = (double)trials / newNodes.size();
+      assignedTrials += childAssignedTrials[newNode];
     }
     
     for (unsigned newNode : newNodes) {
-      if (totalAssignedTrials >= trials)
+      if (assignedTrials >= trials)
         break;
-      assignedTrials[newNode]++;
+      childAssignedTrials[newNode]++;
+      assignedTrials++;
     }
-    
-    assert(totalAssignedTrials == trials);
-  
-    vector<State> result;
-    for (unsigned i = 0; i < children.size(); i++) {
-      children[i]->trials = assignedTrials[i];
-      for (unsigned j = 0; j < assignedTrials[i]; j++) {
-        result.push_back(state);
-      }
-    }
-    return result;
   }
   // If there are no new children, assign trials based on UCB1 scoring
   else {
@@ -59,34 +49,42 @@ vector<State> GameTree::select(unsigned trials) {
     }
 
     for (unsigned i = 0; i < children.size(); i++) {
-      assignedTrials[i] = trials * (weights[i] / totalWeights);
-      totalAssignedTrials += assignedTrials[i];
+      childAssignedTrials[i] = trials * (weights[i] / totalWeights);
+      assignedTrials += childAssignedTrials[i];
     }
 
-    for (unsigned i = 0; i < trials - totalAssignedTrials; i++)
-      assignedTrials[i]++;
-    
-    assert(totalAssignedTrials == trials);
-  
-    vector<State> result;
-    for (unsigned i = 0; i < children.size(); i++) {
-      if (assignedTrials[i] != 0) {
-        vector<State> childTrials = children[i]->select(assignedTrials[i]);
-        result.insert(result.end(), childTrials.begin(), childTrials.end());
-      }
+    for (unsigned i = 0; i < trials - assignedTrials; i++) {
+      childAssignedTrials[i]++;
+      assignedTrials++;
     }
-    return result;
   }
+
+  assert(assignedTrials == trials);
+  
+  vector<State> result;
+  for (unsigned i = 0; i < children.size(); i++) {
+    if (childAssignedTrials[i] > 1) {
+      vector<State> childTrials = children[i]->select(childAssignedTrials[i]);
+      result.insert(result.end(), childTrials.begin(), childTrials.end());
+    }
+    else if (childAssignedTrials[i] == 1) {
+      children[i]->assignedTrials = 1;
+      result.push_back(state);
+    }
+  }
+  return result;
 }
 
-void GameTree::update(vector<PlayerId> results) {
-  totalTrials += trials;
+void GameTree::update(const vector<PlayerId> &results) {
+  totalTrials += assignedTrials;
   auto it = results.begin();
-  for (unsigned i = 0; i < children.size(); i++) {
-    vector<PlayerId> childResults(it, it += children[i]->trials);
-    children[i]->update(childResults);
-    for (unsigned j = 0; j < NUM_PLAYERS; j++) {
-      wins[j] += children[i]->wins[j];
+  for (GameTree *child : children) {
+    if (child != NULL) {
+      vector<PlayerId> childResults(it, it += child->assignedTrials);
+      child->update(childResults);
+      for (unsigned i = 0; i < NUM_PLAYERS; i++) {
+	wins[i] += child->wins[i];
+      }
     }
   }
 }
@@ -101,10 +99,10 @@ double GameTree::ucb1() const {
     return INFINITY;
   else
     return (double)wins[state.turn] / totalTrials +
-      sqrt(2.0L * log(parent->trials) / totalTrials);
+      sqrt(2.0L * log(parent->totalTrials) / totalTrials);
 }
 
-GameTree *buildTree(State state, vector<unsigned> trials) {
+GameTree *buildTree(State state, const vector<unsigned> &trials) {
   GameTree *tree = new GameTree(state, NULL);
   for (unsigned numPlayouts : trials) {
     vector<State> playoutStates = tree->select(numPlayouts);
