@@ -18,24 +18,24 @@ __host__ __device__ void State::move(const Move &move) {
   assert(!(*this)[move.to].occupied);
   assert((*this)[move.from].owner == turn);
 
-  board[move.to.row][move.to.col].occupied = true;
-  board[move.to.row][move.to.col].type = move.promoted ? CHECKER_KING : (*this)[move.from].type;
-  board[move.to.row][move.to.col].owner = (*this)[move.from].owner;
-  board[move.from.row][move.from.col].occupied = false;
-
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
 
     // Error checking
     assert(removed.isValid());
     assert((*this)[removed].occupied);
-    
+
     Loc intermediate = move.intermediate[i];
     assert(intermediate.isValid());
     assert(!(*this)[intermediate].occupied);
 
     board[removed.row][removed.col].occupied = false;
   }
+
+  board[move.to.row][move.to.col].occupied = true;
+  board[move.to.row][move.to.col].type = move.promoted ? CHECKER_KING : (*this)[move.from].type;
+  board[move.to.row][move.to.col].owner = (*this)[move.from].owner;
+  board[move.from.row][move.from.col].occupied = false;
 
   turn = nextTurn(turn);
 }
