@@ -2,6 +2,9 @@
 #include "genMovesTest.hpp"
 #include "state.hpp"
 
+#include <iostream>
+using namespace std;
+
 __global__ void genMovesKernel(State *globalState, Move *globalMoves, uint8_t *globalNumMoves) {
   __shared__ State state;
   __shared__ uint8_t numMoves[NUM_PLAYERS];
@@ -45,17 +48,42 @@ bool genMovesTest(State state) {
   Move result[NUM_PLAYERS][MAX_MOVES];
   state.genMoves(numMoves, result);
 
+  bool match = true;
+
   unsigned n, m;
   for (n = 0; n < NUM_PLAYERS; n ++) {
     if (numMovesResult[n] != numMoves[n]) {
-      return false;
+      match = false;
+      break;
     }
     for (m = 0; m < numMoves[n]; m ++) {
       if (movesResult[m + (n * MAX_MOVES)] != result[n][m]) {
-        return false;
+        match = false;
+        break;
       }
     }
   }
 
-  return true;
+  if (!match) {
+    cout << "Mismatch in CPU and GPU genMoves()" << endl;
+    cout << state << endl;
+
+    cout << "CPU Moves" << endl;
+    for (n = 0; n < NUM_PLAYERS; n ++) {
+      cout << "Player " << (n + 1) << " moves: " << (int)numMoves[n] << endl;
+      for (m = 0; m < numMoves[n]; m ++) {
+        cout << result[n][m] << endl;
+      }
+    }
+
+    cout << "GPU Moves" << endl;
+    for (n = 0; n < NUM_PLAYERS; n ++) {
+      cout << "Player " << (n + 1) << " moves: " << (int)numMovesResult[n] << endl;
+      for (m = 0; m < numMovesResult[n]; m ++) {
+        cout << movesResult[m + (n * MAX_MOVES)] << endl;
+      }
+    }
+  }
+
+  return match;
 }
