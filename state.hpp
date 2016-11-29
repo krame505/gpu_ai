@@ -77,6 +77,7 @@ struct BoardItem {
   PieceType type;
   PlayerId owner;
 
+  /*
 #ifdef __CUDACC__
   __host__ __device__
 #endif
@@ -88,7 +89,7 @@ struct BoardItem {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  BoardItem() {}
+  BoardItem() {}*/
 };
 
 struct Move;
@@ -133,8 +134,6 @@ struct State {
   __host__ __device__
 #endif
   uint8_t genLocCaptureMoves(Loc, Move[MAX_LOC_MOVES]) const;
-
-
 
 #ifdef __CUDACC__
   __host__ __device__
