@@ -58,7 +58,7 @@ ostream &operator<<(ostream &os, Move m) {
     }
   }
   if (m.promoted)
-    os << ", promoted to " << m.newType;
+    os << ", promoted to king";
   return os;
 }
 

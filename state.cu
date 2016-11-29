@@ -19,8 +19,8 @@ __host__ __device__ void State::move(const Move &move) {
   assert((*this)[move.from].owner == turn);
 
   board[move.to.row][move.to.col].occupied = true;
-  board[move.to.row][move.to.col].type = move.newType;
-  board[move.to.row][move.to.col].owner = turn;
+  board[move.to.row][move.to.col].type = move.promoted ? CHECKER_KING : (*this)[move.from].type;
+  board[move.to.row][move.to.col].owner = (*this)[move.from].owner;
   board[move.from.row][move.from.col].occupied = false;
 
   for (uint8_t i = 0; i < move.jumps; i++) {
@@ -85,7 +85,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 
   if ((*this)[loc].type == CHECKER_KING) {
     for (uint8_t i = 0; i < 4; i++) {
-      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]), 0, false, CHECKER_KING);
+      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]));
       if (isValidMove(tmpMove))
         result[count++] = tmpMove;
     }
@@ -95,8 +95,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
     uint8_t end   = item.owner == PLAYER_1 ? 2 : 4;
     for (uint8_t i = start; i < end; i++) {
       Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]), 0, 
-                   loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0), 
-                   (loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0)) ? CHECKER_KING : CHECKER);
+                   loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0));
       if (isValidMove(tmpMove))
         result[count++] = tmpMove;
     }
@@ -143,11 +142,9 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
   if (!isValidMove(jumpToLeft) && !isValidMove(jumpToRight) && !first) {
     if ((*this)[result[0].from].owner == PLAYER_1 && result[count].to.row == (BOARD_SIZE - 1)) {
       result[count].promoted = true;
-      result[count].newType = CHECKER_KING;
     }
     if ((*this)[result[0].from].owner == PLAYER_2 && result[count].to.row == 0) {
       result[count].promoted = true;
-      result[count].newType = CHECKER_KING;
     }
     return count + 1;
   }
@@ -182,7 +179,6 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
       !isValidMove(moves[1]) &&
       !isValidMove(moves[2]) &&
       !isValidMove(moves[3])) {
-    result[count].newType = CHECKER_KING;
     return count + 1;
   }
 
@@ -443,8 +439,7 @@ __host__ __device__ bool Move::operator==(Move move) {
   if (from != move.from ||
       to != move.to ||
       jumps != move.jumps ||
-      promoted != move.promoted ||
-      newType != move.newType) {
+      promoted != move.promoted) {
     return false;
   }
   for (int i = 0; i < jumps; i++) {

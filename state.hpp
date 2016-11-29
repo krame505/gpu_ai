@@ -200,13 +200,12 @@ struct Move {
   Loc intermediate[MAX_MOVE_JUMPS - 1];
   uint8_t jumps;
   bool promoted;
-  PieceType newType; // Type after the move - same as original type if no promotion
 
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  Move(Loc from, Loc to, uint8_t jumps=0, bool promoted=false, PieceType newType=CHECKER) :
-    from(from), to(to), jumps(jumps), promoted(promoted), newType(newType) {}
+  Move(Loc from, Loc to, uint8_t jumps=0, bool promoted=false) :
+    from(from), to(to), jumps(jumps), promoted(promoted) {}
 
   // Default constructor must be empty to avoid a race condition when initializing shared memory
 #ifdef __CUDACC__
