@@ -35,7 +35,7 @@ bool genMovesTest(State state) {
   cudaMemcpy(devState, &state, sizeof(State), cudaMemcpyHostToDevice);
 
   // Invoke the kernel
-  genMovesKernel<<<1, 1>>>(devState, devMoves, devNumMoves);
+  genMovesKernel<<<NUM_LOCS, 1>>>(devState, devMoves, devNumMoves);
 
   // Copy the results back to the host
   Move movesResult[NUM_PLAYERS * MAX_MOVES];
