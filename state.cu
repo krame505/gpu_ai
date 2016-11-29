@@ -50,7 +50,8 @@ __host__ __device__ bool State::isValidMove(Move move) const {
 
   if (!(*this)[move.from].occupied || 
       (*this)[move.to].occupied || 
-      (*this)[move.from].owner != turn)
+      (*this)[move.from].owner != turn ||
+      move.from == move.to)
     return false;
 
   for (uint8_t i = 0; i < move.jumps; i++) {
@@ -63,7 +64,8 @@ __host__ __device__ bool State::isValidMove(Move move) const {
     if (i < move.jumps - 1) {
       Loc intermediate = move.intermediate[i];
       if (!intermediate.isValid() ||
-	  (*this)[intermediate].occupied)
+	  (*this)[intermediate].occupied ||
+          intermediate == move.to)
       return false;
     }
   }
@@ -168,23 +170,6 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
 
 
 __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
-  // cycle in jumps - not a necessary condition for stopping but it makes
-  // some things easier - sorry :(
-  bool foundLoop = false;
-  int n;
-  if (!first) {
-    if (loc == result[count].from)
-      foundLoop = true;
-    for (n = 0; n < result[count].jumps - 1; n ++) {
-      if (loc == result[count].intermediate[n])
-        foundLoop = true;
-    }
-  }
-
-  if (foundLoop) {
-    return count;
-  }
-
   Loc locs[4] = { Loc(loc.row + 2, loc.col + 2), Loc(loc.row + 2, loc.col - 2),
                   Loc(loc.row - 2, loc.col + 2), Loc(loc.row - 2, loc.col - 2) };
   Move moves[4] = { result[count], result[count], result[count], result[count] };
