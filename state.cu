@@ -30,11 +30,9 @@ __host__ __device__ void State::move(const Move &move) {
     assert(removed.isValid());
     assert((*this)[removed].occupied);
     
-    if (i < move.jumps - 1) {
-      Loc intermediate = move.intermediate[i];
-      assert(intermediate.isValid());
-      assert(!(*this)[intermediate].occupied);
-    }
+    Loc intermediate = move.intermediate[i];
+    assert(intermediate.isValid());
+    assert(!(*this)[intermediate].occupied);
 
     board[removed.row][removed.col].occupied = false;
   }
@@ -443,22 +441,16 @@ __host__ __device__ bool Move::operator==(Move move) {
     return false;
   }
   for (int i = 0; i < jumps; i++) {
-    if (removed[i] != move.removed[i]) {
+    if (removed[i] != move.removed[i])
       return false;
-    }
-  }
-  for (int i = 0; i < jumps - 1; i++) {
-    if (intermediate[i] != move.intermediate[i]) {
+    if (intermediate[i] != move.intermediate[i])
       return false;
-    }
   }
   return true;
 }
 
 __host__ __device__ void Move::addJump(Loc newTo) {
-  if (jumps > 0)
-    intermediate[jumps] = to;
-  
+  intermediate[jumps] = to;
   removed[jumps++] = Loc((newTo.row - to.row) / 2 + to.row,
 			 (newTo.col - to.col) / 2 + to.col);
   to = newTo;

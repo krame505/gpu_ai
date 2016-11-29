@@ -197,7 +197,7 @@ struct Move {
   Loc from;
   Loc to;
   Loc removed[MAX_MOVE_JUMPS];
-  Loc intermediate[MAX_MOVE_JUMPS - 1];
+  Loc intermediate[MAX_MOVE_JUMPS];
   uint8_t jumps;
   bool promoted;
 
