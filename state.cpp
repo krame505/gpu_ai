@@ -27,6 +27,8 @@ ostream &operator<<(ostream &os, PlayerId pi) {
     return os << "Player 1";
   case PLAYER_2:
     return os << "Player 2";
+  case PLAYER_NONE:
+    return os << "Player NONE";
   default:
     assert(false);
     return os; // Unreachable, but to make -Wall shut up

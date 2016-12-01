@@ -10,26 +10,29 @@ public:
   virtual ~Player() {};
 
   virtual Move getMove(const State&) const = 0;
-  virtual void PrintType() { std::cout << "none"; }
+  virtual std::string getName() = 0;
 };
 
 class HumanPlayer : public Player {
 public:
   ~HumanPlayer() {};
+
   Move getMove(const State&) const;
-  void PrintType() { std::cout << "human"; }
+  std::string getName() { return "human"; }
 };
 
 class RandomPlayer : public Player {
 public:
   ~RandomPlayer() {};
+
   Move getMove(const State&) const;
-  void PrintType() { std::cout << "random"; }
+  std::string getName() { return "random"; }
 };
 
 class MCTSPlayer : public Player {
 public:
   ~MCTSPlayer() {};
+
   Move getMove(const State&) const;
-  void PrintType() { std::cout << "mcts"; }
+  std::string getName() { return "mcts"; }
 };

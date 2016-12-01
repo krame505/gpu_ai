@@ -277,10 +277,8 @@ int main(int argc, char **argv) {
     }
 
     cout << "Playing single game of ";
-    player1->PrintType();
-    cout << " Player 1 ('white') and ";
-    player2->PrintType();
-    cout << " Player 2 ('black')" << endl;
+    cout << player1->getName() << " Player 1 ('white') and ";
+    cout << player2->getName() << " Player 2 ('black')" << endl;
 
     Player *players[NUM_PLAYERS] = {player1, player2};
     playGame(players);
