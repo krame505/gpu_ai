@@ -22,25 +22,28 @@ public:
         delete n;
   }
 
-  std::vector<Move> getMoves() const {
-    return moves;
-  }
+  // std::vector<Move> getMoves() const {
+  //   return moves;
+  // }
 
-  std::vector<GameTree*> getChildren() const {
-    return children;
-  }
-
-  // Compute the fraction of wins for a player
-  double getScore(PlayerId player) const;
-
-  // Compute the Upper Confidence Bound 1 scoring algorithm
-  double ucb1() const;
+  // std::vector<GameTree*> getChildren() const {
+  //   return children;
+  // }
 
   // Distrubute trials to perform based on UCB1, creating nodes as needed
   std::vector<State> select(unsigned trials);
   
   // Update the entire tree with the playout results
   void update(const std::vector<PlayerId>&);
+
+  // Compute the Upper Confidence Bound 1 scoring algorithm
+  double ucb1() const;
+
+  // Compute the fraction of wins for a player
+  double getScore(PlayerId player) const;
+
+  // Compute the best move for a player based scores for children
+  Move getOptMove(PlayerId player) const;
   
 private:
   const State state;
