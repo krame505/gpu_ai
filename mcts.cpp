@@ -8,59 +8,77 @@
 using namespace std;
 
 vector<State> GameTree::select(unsigned trials) {
-  assert(!state.isFinished());
+  // If this is a terminal state, then all assigned playouts must happen from this state
+  if (state.isFinished()) {
+    assignedTrials = trials;
+    return vector<State>(trials, state);
+  }
 
-  // Create new children if any are null
-  vector<unsigned> newNodes;
-  for (unsigned i = 0; i < children.size() && newNodes.size() < trials; i++) {
-    if (children[i] == NULL) {
-      State newState = state;
-      newState.move(moves[i]);
-      children[i] = new GameTree(newState, this);
-      newNodes.push_back(i);
+  // Create children if this node has not yet been expanded
+  if (!expanded) {
+    for (unsigned i = 0; i < children.size(); i++) {
+      if (children[i] == NULL) {
+	State newState = state;
+	newState.move(moves[i]);
+	children[i] = new GameTree(newState, this);
+      }
     }
+    expanded = true;
   }
 
   unsigned childAssignedTrials[children.size()] = {0};
   assignedTrials = 0;
 
-  // If there are new children created, assign all trials evenly between them
-  if (newNodes.size() > 0) {
-    for (unsigned newNode : newNodes) {
-      childAssignedTrials[newNode] = (double)trials / newNodes.size();
-      assignedTrials += childAssignedTrials[newNode];
-    }
-    
-    for (unsigned newNode : newNodes) {
-      if (assignedTrials >= trials)
-        break;
-      childAssignedTrials[newNode]++;
-      assignedTrials++;
-    }
+  // Calculate weights for all children
+  double weights[children.size()];
+  double totalWeights = 0;
+  unsigned numUntried = 0;
+  for (unsigned i = 0; i < children.size(); i++) {
+    weights[i] = children[i]->ucb1();
+    totalWeights += weights[i];
+    if (children[i]->totalTrials == 0)
+      numUntried++;
   }
-  // If there are no new children, assign trials based on UCB1 scoring
-  else {
-    double weights[children.size()];
-    double totalWeights = 0;
 
-    for (unsigned i = 0; i < children.size(); i++) {
-      weights[i] = children[i]->ucb1();
-      totalWeights += weights[i];
+  // Assign trials based on fractions of weights, rounding down
+  for (unsigned i = 0; i < children.size(); i++) {
+    if (totalWeights == 0) {
+      childAssignedTrials[i] = trials / children.size();
     }
-
-    for (unsigned i = 0; i < children.size(); i++) {
+    else if (totalWeights == INFINITY) {
+      assert(numUntried > 0);
+      if (children[i]->totalTrials == 0)
+	childAssignedTrials[i] = trials / numUntried;
+      else
+	childAssignedTrials[i] = 0;
+    }
+    else {
       childAssignedTrials[i] = trials * (weights[i] / totalWeights);
-      assignedTrials += childAssignedTrials[i];
     }
+    assignedTrials += childAssignedTrials[i];
+  }
 
-    for (unsigned i = 0; i < trials - assignedTrials; i++) {
-      childAssignedTrials[i]++;
-      assignedTrials++;
+  // Assign extra trials in sorted order of weights
+  // Kinda inefficent but number of children is small
+  bool assigned[children.size()] = {false};
+  while (assignedTrials < trials) {
+    double maxWeight = -INFINITY;
+    int opt = -1;
+    for (unsigned i = 0; i < children.size(); i++) {
+      if (!assigned[i] && weights[i] > maxWeight) {
+	maxWeight = weights[i];
+	opt = i;
+      }
     }
+    assert(opt != -1);      
+    assigned[opt] = true;
+    childAssignedTrials[opt]++;
+    assignedTrials++;
   }
 
   assert(assignedTrials == trials);
   
+  // Recursively assign trials to children
   vector<State> result;
   for (unsigned i = 0; i < children.size(); i++) {
     if (childAssignedTrials[i] > 1) {
@@ -71,31 +89,56 @@ vector<State> GameTree::select(unsigned trials) {
       children[i]->assignedTrials = 1;
       result.push_back(state);
     }
+    else {
+      children[i]->assignedTrials = 0;
+    }
   }
+
   return result;
 }
 
 void GameTree::update(const vector<PlayerId> &results) {
+  assert(results.size() == assignedTrials);
+
   totalTrials += assignedTrials;
-  auto it = results.begin();
-  for (GameTree *child : children) {
-    if (child != NULL) {
-      vector<PlayerId> childResults(it, it += child->assignedTrials);
+  if (assignedTrials > 1) {
+    // Maintain an iterator to the input results vector
+    auto it = results.begin();
+    for (GameTree *child : children) {
+      // Copy the next child->assignedTrials results into childResults
+      vector<PlayerId> childResults(it, it + child->assignedTrials);
+      it += child->assignedTrials;
+
+      // Recursively perform an update
       child->update(childResults);
+	
+      // Update the current wins with the child's wins
       for (unsigned i = 0; i < NUM_PLAYERS; i++) {
 	wins[i] += child->wins[i];
       }
     }
   }
+  else if (assignedTrials == 1)
+    wins[results[0]]++;
 }
 
 double GameTree::getScore(PlayerId player) const {
-  return (double)wins[player] / totalTrials;
+  if (state.isFinished()) {
+    PlayerId result = state.result();
+    if (result == player)
+      return 1;
+    else
+      return 0;
+  }
+  else
+    return (double)wins[player] / totalTrials;
 }
 
 double GameTree::ucb1() const {
   assert(parent != NULL);
-  if (totalTrials == 0)
+  if (state.isFinished())
+    return 0;
+  else if (totalTrials == 0)
     return INFINITY;
   else
     return (double)wins[state.turn] / totalTrials +

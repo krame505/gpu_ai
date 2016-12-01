@@ -14,9 +14,6 @@ public:
       moves.push_back(m);
       children.push_back(NULL);
     }
-    for (unsigned i = 0; i < NUM_PLAYERS; i++) {
-      wins[i] = 0;
-    }
   }
 
   ~GameTree() {
@@ -48,12 +45,13 @@ public:
 private:
   const State state;
   const GameTree *parent;
+  bool expanded = false;
   std::vector<Move> moves;
   std::vector<GameTree*> children;
 
   unsigned assignedTrials = 0; // Trials assigned in last pass
   unsigned totalTrials    = 0; // Total (finished) trials from this tree
-  unsigned wins[NUM_PLAYERS];
+  unsigned wins[NUM_PLAYERS] = {0};
 };
 
 // Build a tree by performing a series of trials with the number of playouts in a vector
