@@ -27,10 +27,12 @@ vector<PlayerId> hostPlayouts(vector<State> states) {
   vector<future<vector<PlayerId>>> results;
 
   for (auto it = states.begin(); it < states.end(); it += blockSize) {
+    vector<State> threadStates;
     if (it + blockSize < states.end())
-      results.push_back(async(worker, vector<State>(it, it + blockSize)));
+      threadStates = vector<State>(it, it + blockSize);
     else
-      results.push_back(async(worker, vector<State>(it, states.end())));
+      threadStates = vector<State>(it, states.end());
+    results.push_back(async(launch::async, worker, threadStates));
   }
  
   vector<PlayerId> result;
