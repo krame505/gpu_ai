@@ -2,8 +2,10 @@
 
 #include "state.hpp"
 #include "mcts.hpp"
+#include "playout.hpp"
 
 #include <vector>
+#include <functional>
 
 class Player {
 public:
@@ -31,8 +33,14 @@ public:
 
 class MCTSPlayer : public Player {
 public:
+  MCTSPlayer(std::function<std::vector<PlayerId>(std::vector<State>)> playouts=devicePlayouts) :
+    playouts(playouts)
+  {}
   ~MCTSPlayer() {};
 
   Move getMove(const State&) const;
   std::string getName() { return "mcts"; }
+
+private:
+  std::function<std::vector<PlayerId>(std::vector<State>)> playouts;
 };

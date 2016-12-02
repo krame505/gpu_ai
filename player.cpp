@@ -17,7 +17,6 @@ Move HumanPlayer::getMove(const State &state) const {
   char input[100];
 
   while (true) {
-
     string error;
     vector<Move> moves = state.getMoves();
 
@@ -87,7 +86,7 @@ Move HumanPlayer::getMove(const State &state) const {
 
 Move MCTSPlayer::getMove(const State &state) const {
   vector<unsigned> trials(MCTS_NUM_ITERATIONS, MCTS_NUM_TRIALS);
-  GameTree *tree = buildTree(state, trials);
+  GameTree *tree = buildTree(state, trials, playouts);
   Move move = tree->getOptMove(state.turn);
 
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {

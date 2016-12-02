@@ -98,13 +98,13 @@ void playGameTest(unsigned int numTests) {
       state.move(move);
     }
 
-    assert(genMovesTest(state));
+    //assert(genMovesTest(state));
     ourStates.push_back(state);
   }
 
   clock_t t1, t2;
   t1 = clock();
-  vector<PlayerId> playoutResults = playouts(ourStates);
+  vector<PlayerId> playoutResults = devicePlayouts(ourStates);
   t2 = clock();
   double etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
 
@@ -132,18 +132,7 @@ void playGameTest(unsigned int numTests) {
   playoutResults.clear();
 
   t1 = clock();
-  for (unsigned int n = 0; n < ourStates.size(); n++) {
-    while (true) {
-      if (ourStates[n].isFinished())
-        break;
-
-      // Calculate the next move
-      Move move = thePlayer.getMove(ourStates[n]);
-      // Apply that move to the state
-      ourStates[n].move(move);
-    }
-    playoutResults.push_back(ourStates[n].result());
-  }
+  playoutResults = hostPlayouts(ourStates);
   t2 = clock();
   etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
 
@@ -171,7 +160,30 @@ void playGameTest(unsigned int numTests) {
 
 // printHelp: Output the help message if requested or if there are bad command-line arguments
 void printHelp() {
-  cout << "Usage: run_ai [--mode|-m single|test] [--playouts|-p N] [--white|-w human|random|mcts] [--black|-n human|random|mcts] [--help]" << endl;
+  cout << "Usage: run_ai [--mode|-m single|test] [--playouts|-p N] [--white|-w human|random|mcts] [--black|-b human|random|mcts] [--help]" << endl;
+}
+
+Player *getPlayer(string name) {
+  if (name == "human") {
+    return new HumanPlayer;
+  }
+  else if (name == "random") {
+    return new RandomPlayer;
+  }
+  else if (name == "mcts") {
+    return new MCTSPlayer;
+  }
+  else if (name == "mcts_host") {
+    return new MCTSPlayer(hostPlayouts);
+  }
+  else if (name == "mcts_device") {
+    return new MCTSPlayer(devicePlayouts);
+  }
+  else {
+    cout << "Unrecognized player type '" << name << "'" << endl;
+    printHelp();
+    exit(1);
+  }
 }
 
 int main(int argc, char **argv) {
@@ -220,36 +232,10 @@ int main(int argc, char **argv) {
       numTests = atoi(optarg);
       break;
     case 'w':
-      if (strcmp(optarg, "human") == 0) {
-	player1 = new HumanPlayer;
-      }
-      else if (strcmp(optarg, "random") == 0) {
-	player1 = new RandomPlayer;
-      }
-      else if (strcmp(optarg, "mcts") == 0) {
-	player1 = new MCTSPlayer;
-      }
-      else {
-	cout << "Unrecognized player type '" << optarg << "'" << endl;
-	printHelp();
-	return 1;
-      }
+      player1 = getPlayer(string(optarg));
       break;
     case 'b':
-      if (strcmp(optarg, "human") == 0) {
-	player2 = new HumanPlayer;
-      }
-      else if (strcmp(optarg, "random") == 0) {
-	player2 = new RandomPlayer;
-      }
-      else if (strcmp(optarg, "mcts") == 0) {
-	player2 = new MCTSPlayer;
-      }
-      else {
-	cout << "Unrecognized player type '" << optarg << "'" << endl;
-	printHelp();
-	return 1;
-      }
+      player2 = getPlayer(string(optarg));
       break;
     case 'h':
       printHelp();

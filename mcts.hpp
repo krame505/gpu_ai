@@ -4,6 +4,7 @@
 #include "playout.hpp"
 
 #include <vector>
+#include <functional>
 
 class GameTree {
 public:
@@ -58,4 +59,5 @@ private:
 };
 
 // Build a tree by performing a series of trials with the number of playouts in a vector
-GameTree *buildTree(State, const std::vector<unsigned> &trials);
+GameTree *buildTree(State, const std::vector<unsigned> &trials,
+		    std::function<std::vector<PlayerId>(std::vector<State>)> playouts);

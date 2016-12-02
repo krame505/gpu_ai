@@ -113,17 +113,13 @@ void GameTree::update(const vector<PlayerId> &results) {
 
       // Recursively perform an update
       child->update(childResults);
-	
-      // Update the current wins with the child's wins
-      for (unsigned i = 0; i < NUM_PLAYERS; i++) {
-	wins[i] += child->wins[i];
-      }
     }
   }
-  else {
-    for (PlayerId result : results)
+
+  // Update wins with the results
+  for (PlayerId result : results)
+    if (result != PLAYER_NONE)
       wins[result]++;
-  }
 }
 
 double GameTree::ucb1() const {
@@ -152,7 +148,7 @@ double GameTree::getScore(PlayerId player) const {
 Move GameTree::getOptMove(PlayerId player) const {
   double highestScore = -INFINITY;
   Move bestMove;
-    
+  
   for (unsigned i = 0; i < children.size(); i++) {
     if (children[i]->getScore(player) > highestScore) {
       highestScore = children[i]->getScore(player);
@@ -165,7 +161,8 @@ Move GameTree::getOptMove(PlayerId player) const {
   return bestMove;
 }
 
-GameTree *buildTree(State state, const vector<unsigned> &trials) {
+GameTree *buildTree(State state, const vector<unsigned> &trials,
+		    function<vector<PlayerId>(vector<State>)> playouts) {
   GameTree *tree = new GameTree(state, NULL);
   for (unsigned numPlayouts : trials) {
     vector<State> playoutStates = tree->select(numPlayouts);
