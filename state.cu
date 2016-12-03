@@ -282,10 +282,16 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
   // Perform a reduction to calculate the max capture move length possible for each player
   // Each thread copies its capture moves of maximum length to a new local array
   // Perform another scan to calculate indices and copy the new arrays back to captureMoves
+  // The maximum number of jumps a single piece can perform is 9
+
 
   INIT_KERNEL_VARS
 
     __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
+    int tx = threadIdx.x;
+   // int loc = blockIdx.x * blockDim.x + threadIdx.x;
+    uint8_t max[NUM_LOCS];
+    uint8_t results[NUM_LOCS];
 
   // Generate the captures for this location
   Move locMoves[MAX_LOC_MOVES];
@@ -306,7 +312,7 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
     uint8_t i = (id + 1) * stride - 1;
     if (i < NUM_LOCS) {
       for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-	indices[j][i] += indices[j][i - stride];
+      	indices[j][i] += indices[j][i - stride];
       }
     }
   }
@@ -338,24 +344,21 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
     }
   }
 
+ // for (uint8_t i = 0; i < numLocCapture; i++) {
+    for (unsigned int stride = blockDim.x/2; stride >= 1; stride >>= 1) {
 
-  // for (unsigned i = NUM_LOCS / 2; i > 0; i >>= 1) {
-  //   __syncthreads();
-  //   if (i > id) {
-  //     for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-  //       if (captureMoveIndices[i][id + i] > captureMoveIndices[i][id])
-  //         captureMoveIndices[i][id] = captureMoveIndices[i][id + i];
-  //     }
-  //   }
-  // }
+       __syncthreads();
 
-  // The number of capture moves for a location is 0 if there are any other locations with more capture moves
-  // for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-  //   captureMoveIndices[i][id] = 0;
-  // }
-  // if (numLocCaptureMoves > numCaptureMoves[locOwner])
-  //   numLocCaptureMoves = 0;
-  // captureMoveIndices[locOwner][id] = numLocCaptureMoves;
+       if (tx < stride) {
+        if (max[tx] > max[tx  + stride]) {
+          max[tx] = max[tx + stride];
+        }
+      }
+       __syncthreads();
+    } 
+    if (tx == 0) {
+       results[tx] = max[0];
+    }
 
   assert(false); // TODO
 
