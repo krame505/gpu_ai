@@ -30,3 +30,8 @@ LINK            := $(NVCC)
 ifeq ($(nounicode),1)
   CXXFLAGS      += -DNOUNICODE
 endif
+
+# Disable asserts
+ifneq ($(dbg),1)
+  CXXFLAGS      += -DNDEBUG
+endif
