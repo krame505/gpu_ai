@@ -19,11 +19,9 @@ vector<State> GameTree::select(unsigned trials) {
     // If there is more than 1 trial to allocate then expand this node and allocate trials to the new children
     if (trials > 1) {
       for (unsigned i = 0; i < children.size(); i++) {
-	if (children[i] == NULL) {
-	  State newState = state;
-	  newState.move(moves[i]);
-	  children[i] = new GameTree(newState, this);
-	}
+	State newState = state;
+	newState.move(moves[i]);
+	children[i] = new GameTree(newState, this);
       }
       expanded = true;
     }

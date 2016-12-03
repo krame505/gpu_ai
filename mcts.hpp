@@ -18,9 +18,9 @@ public:
   }
 
   ~GameTree() {
-    for (GameTree *n : children)
-      if (n != NULL)
-        delete n;
+    if (expanded)
+      for (GameTree *n : children)
+	delete n;
   }
 
   // std::vector<Move> getMoves() const {
