@@ -4,6 +4,7 @@
 #include "state.hpp"
 
 #include <assert.h>
+#include <stdio.h>
 
 __host__ __device__ bool Loc::isValid() const {
   return (row < BOARD_SIZE && col < BOARD_SIZE);
@@ -450,6 +451,7 @@ __host__ __device__ bool Move::operator==(Move move) {
 }
 
 __host__ __device__ void Move::addJump(Loc newTo) {
+  assert(jumps < MAX_MOVE_JUMPS);
   intermediate[jumps] = newTo;
   removed[jumps++] = Loc((newTo.row - to.row) / 2 + to.row,
 			 (newTo.col - to.col) / 2 + to.col);
