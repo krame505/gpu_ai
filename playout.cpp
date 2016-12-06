@@ -3,8 +3,8 @@
 #include "player.hpp"
 
 #include <vector>
-#include <cassert>
 #include <future>
+#include <cassert>
 using namespace std;
 
 #define NUM_THREADS 8
