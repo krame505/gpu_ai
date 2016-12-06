@@ -27,11 +27,17 @@ CXXFLAGS        += -std=gnu++11
 NVCCFLAGS       += -dc
 LINK            := $(NVCC)
 
+# Misc. special control flags
+CXXFLAGS        += -DVERBOSE
+
 ifeq ($(nounicode),1)
   CXXFLAGS      += -DNOUNICODE
 endif
 
-# Disable asserts
 ifneq ($(dbg),1)
-  CXXFLAGS      += -DNDEBUG
+# Disable asserts
+  COMMONFLAGS      += -DNDEBUG
+# Highest level of optimization
+  COMMONFLAGS      += -O3
+else
 endif

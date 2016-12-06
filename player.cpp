@@ -21,8 +21,8 @@ Move HumanPlayer::getMove(const State &state) const {
     vector<Move> moves = state.getMoves();
 
     cout << "Valid moves:" << endl;
-    for (unsigned int n = 0; n < moves.size(); n++) {
-      cout << "Move " << n << ": " << moves[n] << endl;
+    for (Move &m : moves) {
+      cout << m << endl;
     }
 
     cout << "Move for " << state.turn << ": ";
@@ -85,14 +85,20 @@ Move HumanPlayer::getMove(const State &state) const {
 }
 
 Move MCTSPlayer::getMove(const State &state) const {
-  vector<unsigned> trials(numIterations, numTrials);
-  GameTree *tree = buildTree(state, trials, playouts);
+  // Don't bother running MCTS if there is only 1 possible move
+  vector<Move> moves = state.getMoves();
+  if (moves.size() == 1)
+    return moves[0];
+
+  GameTree *tree = buildTree(state, numPlayouts, timeout, playouts);
   Move move = tree->getOptMove(state.turn);
 
+#ifdef VERBOSE
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     PlayerId player = (PlayerId)i;
     cout << player << " score: " << tree->getScore(player) << endl;
   }
+#endif
 
   delete tree;
   return move;

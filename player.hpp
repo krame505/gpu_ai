@@ -7,8 +7,8 @@
 #include <vector>
 #include <functional>
 
-#define MCTS_DEFAULT_NUM_ITERATIONS 8
-#define MCTS_DEFAULT_NUM_TRIALS 100
+#define MCTS_DEFAULT_TIMEOUT 10 // Seconds
+#define MCTS_DEFAULT_NUM_PLAYOUTS 200
 
 class Player {
 public:
@@ -36,15 +36,15 @@ public:
 
 class MCTSPlayer : public Player {
 public:
-  MCTSPlayer(unsigned numIterations,
-	     unsigned numTrials,
+  MCTSPlayer(unsigned numPlayouts,
+	     unsigned timeout,
 	     std::function<std::vector<PlayerId>(std::vector<State>)> playouts=devicePlayouts) :
-    numIterations(numIterations),
-    numTrials(numTrials),
+    numPlayouts(numPlayouts),
+    timeout(timeout),
     playouts(playouts)
   {}
   MCTSPlayer(std::function<std::vector<PlayerId>(std::vector<State>)> playouts=devicePlayouts) :
-    MCTSPlayer(MCTS_DEFAULT_NUM_ITERATIONS, MCTS_DEFAULT_NUM_TRIALS, playouts)
+    MCTSPlayer(MCTS_DEFAULT_NUM_PLAYOUTS, MCTS_DEFAULT_TIMEOUT, playouts)
   {}
   ~MCTSPlayer() {};
 
@@ -52,7 +52,7 @@ public:
   std::string getName() { return "mcts"; }
 
 private:
-  unsigned numIterations;
-  unsigned numTrials;
+  unsigned numPlayouts;
+  unsigned timeout;
   std::function<std::vector<PlayerId>(std::vector<State>)> playouts;
 };

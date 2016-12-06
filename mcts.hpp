@@ -8,10 +8,10 @@
 
 class GameTree {
 public:
-  GameTree(State state, GameTree *const parent) :
+  GameTree(State state, GameTree *const parent=NULL) :
     state(state),
     parent(parent) {
-    for (Move m : state.getMoves()) {
+    for (Move &m : state.getMoves()) {
       moves.push_back(m);
       children.push_back(NULL);
     }
@@ -23,16 +23,8 @@ public:
 	delete n;
   }
 
-  // std::vector<Move> getMoves() const {
-  //   return moves;
-  // }
-
-  // std::vector<GameTree*> getChildren() const {
-  //   return children;
-  // }
-
   // Distrubute trials to perform based on UCB1, creating nodes as needed
-  std::vector<State> select(unsigned trials);
+  std::vector<State> select(unsigned trials, bool parallel=true);
   
   // Update the entire tree with the playout results
   void update(const std::vector<PlayerId>&);
@@ -46,8 +38,8 @@ public:
   // Compute the best move for a player based scores for children
   Move getOptMove(PlayerId player) const;
   
-private:
   const State state;
+private:
   const GameTree *parent;
   bool expanded = false;
   std::vector<Move> moves;
@@ -60,4 +52,8 @@ private:
 
 // Build a tree by performing a series of trials with the number of playouts in a vector
 GameTree *buildTree(State, const std::vector<unsigned> &trials,
+		    std::function<std::vector<PlayerId>(std::vector<State>)> playouts);
+
+// Build a tree by performing a series of trials until a timeout
+GameTree *buildTree(State, unsigned numPlayouts, unsigned timeout,
 		    std::function<std::vector<PlayerId>(std::vector<State>)> playouts);

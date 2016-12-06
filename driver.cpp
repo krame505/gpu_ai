@@ -174,7 +174,10 @@ Player *getPlayer(string name) {
     return new MCTSPlayer;
   }
   else if (name == "mcts_host") {
-    return new MCTSPlayer(hostPlayouts);
+    return new MCTSPlayer(5000, 7, hostPlayouts);
+  }
+  else if (name == "mcts_host1") {
+    return new MCTSPlayer(50, 7, hostPlayouts);
   }
   else if (name == "mcts_device") {
     return new MCTSPlayer(devicePlayouts);

@@ -3,11 +3,13 @@
 #include "playout.hpp"
 
 #include <vector>
+#include <future>
 #include <cassert>
 #include <cmath>
+#include <ctime>
 using namespace std;
 
-vector<State> GameTree::select(unsigned trials) {
+vector<State> GameTree::select(unsigned trials, bool parallel) {
   // If this is a terminal state, then all assigned playouts must happen from this state
   if (state.isFinished()) {
     assignedTrials = trials;
@@ -88,10 +90,29 @@ vector<State> GameTree::select(unsigned trials) {
   assert(assignedTrials == trials);
   
   // Recursively assign trials to children
+  vector<vector<State>> results;
+  if (parallel) {
+    auto selectFn = [this, &childAssignedTrials](unsigned i) {
+      return children[i]->select(childAssignedTrials[i], false);
+    };
+
+    vector<future<vector<State>>> futureResults;
+    for (unsigned i = 0; i < children.size(); i++) {
+      futureResults.push_back(async(launch::async, selectFn, i));
+    }
+    for (future<vector<State>> &res : futureResults) {
+      results.push_back(res.get());
+    }
+  }
+  else {
+    for (unsigned i = 0; i < children.size(); i++) {
+      results.push_back(children[i]->select(childAssignedTrials[i], false));
+    }
+  }
+
   vector<State> result;
   for (unsigned i = 0; i < children.size(); i++) {
-    vector<State> childTrials = children[i]->select(childAssignedTrials[i]);
-    result.insert(result.end(), childTrials.begin(), childTrials.end());
+    result.insert(result.end(), results[i].begin(), results[i].end());
   }
 
   return result;
@@ -161,11 +182,47 @@ Move GameTree::getOptMove(PlayerId player) const {
 
 GameTree *buildTree(State state, const vector<unsigned> &trials,
 		    function<vector<PlayerId>(vector<State>)> playouts) {
-  GameTree *tree = new GameTree(state, NULL);
+  GameTree *tree = new GameTree(state);
+
+#ifdef VERBOSE
+  time_t start, end;
+  time(&start);
+#endif
+
   for (unsigned numPlayouts : trials) {
     vector<State> playoutStates = tree->select(numPlayouts);
     vector<PlayerId> results = playouts(playoutStates);
     tree->update(results);
   }
+
+#ifdef VERBOSE
+  time(&end);
+  cout << "Time: " << difftime(end, start) << " seconds" << endl;
+#endif
+
+  return tree;
+}
+
+GameTree *buildTree(State state, unsigned numPlayouts, unsigned timeout,
+		    function<vector<PlayerId>(vector<State>)> playouts) {
+  GameTree *tree = new GameTree(state);
+
+  time_t start, current;
+  time(&start);
+  unsigned iterations = 0;
+  do {
+    vector<State> playoutStates = tree->select(numPlayouts);
+    vector<PlayerId> results = playouts(playoutStates);
+    tree->update(results);
+
+    time(&current);
+    iterations++;
+  } while (difftime(current, start) < timeout);
+
+#ifdef VERBOSE
+  cout << "Finished " << iterations << " iterations" << endl;
+  cout << "Time: " << difftime(current, start) << " seconds" << endl;
+#endif
+
   return tree;
 }
