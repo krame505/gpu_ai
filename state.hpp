@@ -61,7 +61,7 @@ struct Loc {
 #endif
   bool operator!=(Loc loc) {return !((*this) == loc);}
 
-  // Return true if this location is within the bounds of the board 
+  // Return true if this location is within the bounds of the board
 #ifdef __CUDACC__
   __host__ __device__
 #endif
@@ -115,10 +115,17 @@ struct State {
 #endif
   void move(const Move &move);
 
+  // Return true if the move is validly constructed and can be applied to the current state
 #ifdef __CUDACC__
   __host__ __device__
 #endif
   bool isValidMove(Move move) const;
+
+  // Return true if the to location offset by deltaRow and deltaCol can be validly jumped
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool isValidJump(Move move, Loc jumped, Loc newTo, bool checkCycles) const;
 
   // Generate the possible direct (i.e. not capture) moves from a location
 #ifdef __CUDACC__
@@ -246,3 +253,9 @@ std::ostream &operator<<(std::ostream&, Loc);
 std::ostream &operator<<(std::ostream&, BoardItem);
 std::ostream &operator<<(std::ostream&, Move);
 std::ostream &operator<<(std::ostream&, State);
+
+// For debugging... gdb doesn't like calling overloaded operators
+void printLoc(const Loc &loc);
+void printMove(const Move &move);
+void printState(const State &state);
+

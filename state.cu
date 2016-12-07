@@ -60,12 +60,31 @@ __host__ __device__ bool State::isValidMove(Move move) const {
 	(*this)[removed].owner == (*this)[move.from].owner)
       return false;
     
-    if (i < move.jumps - 1) {
-      Loc intermediate = move.intermediate[i];
-      if (!intermediate.isValid() ||
-	  (*this)[intermediate].occupied ||
-          intermediate == move.to)
+    Loc intermediate = move.intermediate[i];
+    if (!intermediate.isValid() ||
+	(*this)[intermediate].occupied)
       return false;
+  }
+
+  return true;
+}
+
+__host__ __device__ bool State::isValidJump(Move move, Loc jumped, Loc newTo, bool checkCycles) const {
+  if (!newTo.isValid() || !jumped.isValid())
+    return false;
+
+  assert(2 * jumped.row - move.to.row == newTo.row);
+  assert(2 * jumped.col - move.to.col == newTo.col);
+
+  if (!(*this)[jumped].occupied || 
+      (*this)[jumped].owner == turn ||
+      (*this)[newTo].occupied)
+    return false;
+
+  if (checkCycles) {
+    for (int8_t i = move.jumps - 1; i >= 0; i--) {
+      if (newTo == move.intermediate[i])
+	return false;
     }
   }
 
@@ -105,7 +124,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 
 
 __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
-  if (!(*this)[loc].occupied)
+  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
     return 0;
 
   result[0] = Move(loc, loc);
@@ -122,23 +141,32 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
   // possible (i.e. the set of jumps is not a proper subset of another possible
   // set of jumps) - can do with a DFS
 
-  Loc toLeft, toRight;
-  Move jumpToLeft = result[count], jumpToRight = result[count];
+  Move prevMove = result[count];
 
+  int8_t deltaRowLeft, deltaColLeft, deltaRowRight, deltaColRight;
   if ((*this)[result[0].from].owner == PLAYER_1) {
-    toLeft  = Loc(loc.row + 2, loc.col - 2);
-    toRight = Loc(loc.row + 2, loc.col + 2);
+    deltaRowLeft = 1;
+    deltaColLeft = -1;
+    deltaRowRight = 1;
+    deltaColRight = 1;
   } else {
-    toLeft  = Loc(loc.row - 2, loc.col - 2);
-    toRight = Loc(loc.row - 2, loc.col + 2);
+    deltaRowLeft = -1;
+    deltaColLeft = -1;
+    deltaRowRight = -1;
+    deltaColRight = 1;
   }
 
-  jumpToLeft.addJump(toLeft);
-  jumpToRight.addJump(toRight);
+  Loc jumpedLeft(loc.row + deltaRowLeft, loc.col + deltaColLeft);
+  Loc jumpedRight(loc.row + deltaRowRight, loc.col + deltaColRight);
+  Loc toLeft(loc.row + 2 * deltaRowLeft, loc.col + 2 * deltaColLeft);
+  Loc toRight(loc.row + 2 * deltaRowRight, loc.col + 2 * deltaColRight);
+
+  bool leftValid  = isValidJump(result[count], jumpedLeft, toLeft, false);
+  bool rightValid = isValidJump(result[count], jumpedRight, toRight, false);
 
   // no valid jumps but one was made at one point - save the move made at 
   // results[count] and indicate that it was successful by incrementing count
-  if (!isValidMove(jumpToLeft) && !isValidMove(jumpToRight) && !first) {
+  if (!leftValid && !rightValid && !first) {
     if ((*this)[result[0].from].owner == PLAYER_1 && result[count].to.row == (BOARD_SIZE - 1)) {
       result[count].promoted = true;
     }
@@ -150,14 +178,16 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
 
   // left branch is valid - at the very least save the jump in the result array
   // and explore this branch to see if more jumps can be made
-  if (isValidMove(jumpToLeft)) {
-    result[count] = jumpToLeft;
+  if (leftValid) {
+    result[count] = prevMove;
+    result[count].addJump(toLeft);
     count = genLocCaptureReg(toLeft, result, count, false);
   }
 
   // ditto for right branch
-  if (isValidMove(jumpToRight)) {
-    result[count] = jumpToRight;
+  if (rightValid) {
+    result[count] = prevMove;
+    result[count].addJump(toRight);
     count = genLocCaptureReg(toRight, result, count, false);
   }
 
@@ -166,25 +196,33 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
 
 
 __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
-  Loc locs[4] = { Loc(loc.row + 2, loc.col + 2), Loc(loc.row + 2, loc.col - 2),
-                  Loc(loc.row - 2, loc.col + 2), Loc(loc.row - 2, loc.col - 2) };
-  Move moves[4] = { result[count], result[count], result[count], result[count] };
+  Move prevMove = result[count];
 
-  for (uint8_t i = 0; i < 4; i++)
-    moves[i].addJump(locs[i]);
+  int8_t deltaRows[4] = {1, 1, -1, -1};
+  int8_t deltaCols[4] = {1, -1, 1, -1};
 
-  if (!first &&
-      !isValidMove(moves[0]) &&
-      !isValidMove(moves[1]) &&
-      !isValidMove(moves[2]) &&
-      !isValidMove(moves[3])) {
-    return count + 1;
+  Loc toLocs[4];
+  bool isValid[4];
+
+  for (uint8_t i = 0; i < 4; i++) {
+    Loc jumped(loc.row + deltaRows[i], loc.col + deltaCols[i]);
+    toLocs[i] = Loc(loc.row + 2 * deltaRows[i], loc.col + 2 * deltaCols[i]);
+    isValid[i] = isValidJump(prevMove, jumped, toLocs[i], true);
+  }
+
+  if (!first) {
+    bool anyValid = false;
+    for (uint8_t i = 0; i < 4; i++)
+      anyValid |= isValid[i];
+    if (!anyValid)
+      return count + 1;
   }
 
   for (uint8_t i = 0; i < 4; i++) {
-    if (isValidMove(moves[i])) {
-      result[count] = moves[i];
-      count = genLocCaptureKing(locs[i], result, count, false);
+    if (isValid[i]) {
+      result[count] = prevMove;
+      result[count].addJump(toLocs[i]);
+      count = genLocCaptureKing(toLocs[i], result, count, false);
     }
   }
 
@@ -288,11 +326,11 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 
   INIT_KERNEL_VARS
 
-    __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
-    int tx = threadIdx.x;
-   // int loc = blockIdx.x * blockDim.x + threadIdx.x;
-    uint8_t max[NUM_LOCS];
-    uint8_t results[NUM_LOCS];
+  __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
+  int tx = threadIdx.x;
+  // int loc = blockIdx.x * blockDim.x + threadIdx.x;
+  uint8_t max[NUM_LOCS];
+  uint8_t results[NUM_LOCS];
 
   // Generate the captures for this location
   Move locMoves[MAX_LOC_MOVES];

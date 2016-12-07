@@ -143,3 +143,15 @@ ostream &operator<<(ostream &os, State s) {
   }
   return os;
 }
+
+void printLoc(const Loc &loc) {
+  cout << loc << endl;
+}
+
+void printMove(const Move &move) {
+  cout << move << endl;
+}
+
+void printState(const State &state) {
+  cout << state << endl;
+}
