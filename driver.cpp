@@ -102,11 +102,11 @@ void playGameTest(unsigned int numTests) {
     ourStates.push_back(state);
   }
 
-  clock_t t1, t2;
-  t1 = clock();
+  time_t t1, t2;
+  t1 = time(NULL);
   vector<PlayerId> playoutResults = devicePlayouts(ourStates);
-  t2 = clock();
-  double etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
+  t2 = time(NULL);
+  double etime = difftime(t2, t1);
 
   int wins[3] = {0, 0, 0};
   for (unsigned int n = 0; n < playoutResults.size(); n++) {
@@ -131,10 +131,10 @@ void playGameTest(unsigned int numTests) {
 
   playoutResults.clear();
 
-  t1 = clock();
+  t1 = time(NULL);
   playoutResults = hostPlayouts(ourStates);
-  t2 = clock();
-  etime = (double)(t2 - t1) / (double)CLOCKS_PER_SEC;
+  t2 = time(NULL);
+  etime = difftime(t2, t1);
 
   wins[0] = 0; wins[1] = 0; wins[2] = 0;
   for (unsigned int n = 0; n < playoutResults.size(); n++) {
