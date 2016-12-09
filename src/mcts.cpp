@@ -3,13 +3,12 @@
 #include "playout.hpp"
 
 #include <vector>
-#include <future>
 #include <cassert>
 #include <cmath>
 #include <ctime>
 using namespace std;
 
-vector<State> GameTree::select(unsigned trials, bool parallel) {
+vector<State> GameTree::select(unsigned trials) {
   // If this is a terminal state, then all assigned playouts must happen from this state
   if (state.isFinished()) {
     assignedTrials = trials;
@@ -90,24 +89,11 @@ vector<State> GameTree::select(unsigned trials, bool parallel) {
   assert(assignedTrials == trials);
   
   // Recursively assign trials to children
-  vector<vector<State>> results;
-  if (parallel) {
-    auto selectFn = [this, &childAssignedTrials](unsigned i) {
-      return children[i]->select(childAssignedTrials[i], false);
-    };
-
-    vector<future<vector<State>>> futureResults;
-    for (unsigned i = 0; i < children.size(); i++) {
-      futureResults.push_back(async(launch::async, selectFn, i));
-    }
-    for (future<vector<State>> &res : futureResults) {
-      results.push_back(res.get());
-    }
-  }
-  else {
-    for (unsigned i = 0; i < children.size(); i++) {
-      results.push_back(children[i]->select(childAssignedTrials[i], false));
-    }
+  vector<vector<State>> results(children.size());
+  
+  #pragma omp parallel for
+  for (unsigned i = 0; i < children.size(); i++) {
+    results[i] = children[i]->select(childAssignedTrials[i]);
   }
 
   vector<State> result;
