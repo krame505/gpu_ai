@@ -22,14 +22,22 @@ SRCDIR      := src/
 ROOTDIR     := .
 ROOTBINDIR  := bin/
 
-CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS)) $(COMMON_DEPS)
+CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS))
 C_DEPS      := $(addprefix $(SRCDIR)/, $(CCHEADERS))
 
 include common.mk
 
+# Enable OMP
+CXXFLAGS    += -fopenmp
+LIB         += -lgomp
+
 # Misc. special control flags
 CXXFLAGS    += -DVERBOSE
 
+ifeq ($(dbg),1)
+  CXXFLAGS  += -DDEFAULT_NUM_PLAYOUTS=10
+endif
+
 ifeq ($(nounicode),1)
-  CXXFLAGS += -DNOUNICODE
+  CXXFLAGS  += -DNOUNICODE
 endif

@@ -8,6 +8,10 @@
 #include "player.hpp"
 #include "genMovesTest.hpp"
 
+#ifndef DEFAULT_NUM_PLAYOUTS
+#define DEFAULT_NUM_PLAYOUTS 1000
+#endif
+
 using namespace std;
 
 enum runMode {
@@ -68,9 +72,10 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 }
 
 void playGameTest(unsigned int numTests) {
-  vector<State> ourStates;
+  vector<State> ourStates(numTests);
   RandomPlayer thePlayer;
 
+  #pragma omp parallel for
   for (unsigned int n = 0; n < numTests; n++) {
     unsigned int randomMoves = rand() % 100; // TODO : Is 100 max random moves reasonable?  How long is an average checkers game?
 
@@ -87,7 +92,6 @@ void playGameTest(unsigned int numTests) {
     };
 
     // Carry out the opening random moves
-
     for (unsigned int m = 0; m < randomMoves; m ++) {
       if (state.isFinished())
 	break;
@@ -99,7 +103,7 @@ void playGameTest(unsigned int numTests) {
     }
 
     //assert(genMovesTest(state));
-    ourStates.push_back(state);
+    ourStates[n] = state;
   }
 
   time_t t1, t2;
@@ -160,7 +164,7 @@ void playGameTest(unsigned int numTests) {
 
 // printHelp: Output the help message if requested or if there are bad command-line arguments
 void printHelp() {
-  cout << "Usage: run_ai [--mode|-m single|test] [--playouts|-p N] [--white|-w human|random|mcts] [--black|-b human|random|mcts] [--help]" << endl;
+  cout << "Usage: run_ai [--white|-w|-1 human|random|mcts] [--black|-b|-2 human|random|mcts] [--mode|-m single|test] [--num-playouts|-n N] [--help|-h]" << endl;
 }
 
 Player *getPlayer(string name) {
@@ -200,13 +204,13 @@ int main(int argc, char **argv) {
   Player *player2 = NULL;
 
   runMode theRunMode = Single;
-  unsigned int numTests = 1000;
+  unsigned int numTests = DEFAULT_NUM_PLAYOUTS;
 
   // Possible options for getopt_long
   static struct option our_options[] = 
     {
       {"mode", required_argument, NULL, 'm'},
-      {"playouts", required_argument, NULL, 'p'},
+      {"num-playouts", required_argument, NULL, 'n'},
       {"white", required_argument, NULL, 'w'},
       {"black", required_argument, NULL, 'b'},
       {"help", no_argument, NULL, 'h'},
@@ -216,7 +220,7 @@ int main(int argc, char **argv) {
   // Parse the command line options and set up player1 and player2
   int c, option_index;
   bool optionsAllValid = true;
-  while ((c = getopt_long(argc, argv, "m:p:w:b:h", our_options, &option_index)) != -1) {
+  while ((c = getopt_long(argc, argv, "m:n:w:b:1:2:h", our_options, &option_index)) != -1) {
     switch (c) {
     case 'm':
       if (strcmp(optarg, "single") == 0) {
@@ -231,13 +235,15 @@ int main(int argc, char **argv) {
 	return 1;
       }
       break;
-    case 'p':
+    case 'n':
       numTests = atoi(optarg);
       break;
     case 'w':
+    case '1':
       player1 = getPlayer(string(optarg));
       break;
     case 'b':
+    case '2':
       player2 = getPlayer(string(optarg));
       break;
     case 'h':
