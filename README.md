@@ -2,8 +2,6 @@
 GPU-based Monte Carlo Tree Search algorithm
 
 ## Setup info
-This repository is expected to be cloned within the src directory in the NVIDIA GPU SDK.  
-
 Due to the use of C++11 features, gcc 5+ and CUDA 8.0+ must be used.  This requires setting the  `LD_LIBRARY_PATH` environment variable so that the correct shared libraries can be dynamicly linked.
 On ECE GPU lab machines, gcc 5.2 can be found in `/opt/rh/devtoolset-4/root/usr/bin/`, which should be added to your PATH so that the correct version is used by make.  
 This can be done automaticly by adding the lines
