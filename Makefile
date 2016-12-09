@@ -7,37 +7,29 @@
 # Using a newer version of CUDA than the default
 CUDA_INSTALL_PATH := /usr/local/cuda-8.0
 
-EXECUTABLE	:= run_ai
-# Cuda source files (compiled with cudacc)
-CUFILES		:= state.cu playout.cu genMovesTest.cu
+EXECUTABLE  := run_ai
+
+# CUDA source files (compiled with cudacc)
+CUFILES	    := state.cu playout.cu genMovesTest.cu
 # C/C++ source files (compiled with gcc / c++)
-CCFILES		:= state.cpp playout.cpp mcts.cpp player.cpp driver.cpp
-# Header files / anything that should trigger a full rebuild
-C_DEPS          := colors.h mcts.hpp playout.hpp state.hpp player.hpp
-CU_DEPS         := playout.hpp state.hpp genMovesTest.hpp
+CCFILES	    := state.cpp playout.cpp mcts.cpp player.cpp driver.cpp
+# Header files included by any of CUFILES
+CUHEADERS   := playout.hpp state.hpp genMovesTest.hpp
+# Header files included by any of CCFILES
+CCHEADERS   := colors.h mcts.hpp playout.hpp state.hpp player.hpp
 
-#SMVERSIONFLAGS  := -arch=sm_20
+SRCDIR      := src/
+ROOTDIR     := .
+ROOTBINDIR  := bin/
 
-include ../../common/common.mk
+CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS)) $(COMMON_DEPS)
+C_DEPS      := $(addprefix $(SRCDIR)/, $(CCHEADERS))
 
-# Some overrides...
-# Enable C++11 for compiling .cpp files
-CXXFLAGS        += -std=gnu++11
-
-NVCCFLAGS       += -dc
-LINK            := $(NVCC)
+include common.mk
 
 # Misc. special control flags
-CXXFLAGS        += -DVERBOSE
+CXXFLAGS    += -DVERBOSE
 
 ifeq ($(nounicode),1)
-  CXXFLAGS      += -DNOUNICODE
-endif
-
-ifneq ($(dbg),1)
-# Disable asserts
-  COMMONFLAGS      += -DNDEBUG
-# Highest level of optimization
-  COMMONFLAGS      += -O3
-else
+  CXXFLAGS += -DNOUNICODE
 endif
