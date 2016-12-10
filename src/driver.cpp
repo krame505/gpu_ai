@@ -4,6 +4,7 @@
 #include <ctime>
 #include <cassert>
 #include <vector>
+#include <chrono>
 #include "state.hpp"
 #include "player.hpp"
 #include "genMovesTest.hpp"
@@ -106,11 +107,10 @@ void playGameTest(unsigned int numTests) {
     ourStates[n] = state;
   }
 
-  time_t t1, t2;
-  t1 = time(NULL);
+  auto t1 = std::chrono::high_resolution_clock::now();
   vector<PlayerId> playoutResults = devicePlayouts(ourStates);
-  t2 = time(NULL);
-  double etime = difftime(t2, t1);
+  auto t2 = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> diff = t2 - t1;
 
   int wins[3] = {0, 0, 0};
   for (unsigned int n = 0; n < playoutResults.size(); n++) {
@@ -131,14 +131,14 @@ void playGameTest(unsigned int numTests) {
   cout << "Games drawn: " << wins[0] << endl;
   cout << "Player 1 wins: " << wins[1] << endl;
   cout << "Player 2 wins: " << wins[2] << endl;
-  cout << "Elapsed time: " << etime << " seconds" << endl;
+  cout << "Elapsed time: " << diff.count() << " seconds" << endl;
 
   playoutResults.clear();
 
-  t1 = time(NULL);
+  t1 = std::chrono::high_resolution_clock::now();
   playoutResults = hostPlayouts(ourStates);
-  t2 = time(NULL);
-  etime = difftime(t2, t1);
+  t2 = std::chrono::high_resolution_clock::now();
+  diff = t2 - t1;
 
   wins[0] = 0; wins[1] = 0; wins[2] = 0;
   for (unsigned int n = 0; n < playoutResults.size(); n++) {
@@ -159,7 +159,7 @@ void playGameTest(unsigned int numTests) {
   cout << "Games drawn: " << wins[0] << endl;
   cout << "Player 1 wins: " << wins[1] << endl;
   cout << "Player 2 wins: " << wins[2] << endl;
-  cout << "Elapsed time: " << etime << " seconds" << endl;
+  cout << "Elapsed time: " << diff.count() << " seconds" << endl;
 }
 
 // printHelp: Output the help message if requested or if there are bad command-line arguments
