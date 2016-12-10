@@ -69,6 +69,15 @@ std::vector<PlayerId> devicePlayouts(std::vector<State> states) {
 
   // Invoke the kernel
   playoutKernel<<<NUM_LOCS, states.size()>>>(devStates, devResults);
+  cudaDeviceSynchronize();
+
+  // Check for errors
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    // print the CUDA error message and exit
+    std::cout << "CUDA error: " << cudaGetErrorString(error) << std::endl;
+    exit(1);
+  }
 
   // Copy the results back to the host
   PlayerId results[states.size()];

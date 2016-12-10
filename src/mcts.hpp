@@ -24,7 +24,7 @@ public:
   }
 
   // Distrubute trials to perform based on UCB1, creating nodes as needed
-  std::vector<State> select(unsigned trials, bool parallel=true);
+  std::vector<State> select(unsigned trials);
   
   // Update the entire tree with the playout results
   void update(const std::vector<PlayerId>&);
