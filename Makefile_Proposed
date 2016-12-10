@@ -24,11 +24,11 @@ ROOTBINDIR  := bin
 OBJDIR      := obj
 
 ifeq ($(dbg),1)
-  ROOTBINDIR  += /debug
-  OBJDIR      += /debug
+  ROOTBINDIR  := bin/debug
+  OBJDIR      := obj/debug
 else
-  ROOTBINDIR  += /release
-  OBJDIR      += /release
+  ROOTBINDIR  := bin/release
+  OBJDIR      := obj/release
 endif
 
 
