@@ -1,0 +1,78 @@
+################################################################################
+#
+# Build script for project
+#
+################################################################################
+
+# Using a newer version of CUDA than the default
+CUDA_INSTALL_PATH := /usr/local/cuda-8.0
+
+EXECUTABLE  := run_ai
+
+# CUDA source files (compiled with cudacc)
+CUFILES	    := state.cu playout.cu genMovesTest.cu
+# C/C++ source files (compiled with gcc / c++)
+CCFILES	    := state.cpp playout.cpp mcts.cpp player.cpp driver.cpp
+# Header files included by any of CUFILES
+CUHEADERS   := playout.hpp state.hpp genMovesTest.hpp
+# Header files included by any of CCFILES
+CCHEADERS   := colors.h mcts.hpp playout.hpp state.hpp player.hpp
+
+SRCDIR      := src
+ROOTDIR     := .
+ROOTBINDIR  := bin
+OBJDIR      := obj
+
+CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS))
+C_DEPS      := $(addprefix $(SRCDIR)/, $(CCHEADERS))
+
+CUOBJS      := $(patsubst %.cu, $(OBJDIR)/%.cu.o, $(CUFILES))
+CCOBJS      := $(patsubst %.cpp, $(OBJDIR)/%.cpp.o, $(CCFILES))
+
+NVCC        := $(CUDA_INSTALL_PATH)/bin/nvcc
+NVCCFLAGS   := --generate-code arch=compute_20,code=sm_20 -Wno-deprecated-gpu-targets -m64 -DNDEBUG -DUNIX --compiler-options -fno-strict-aliasing
+
+CXX         := /opt/rh/devtoolset-4/root/usr/bin/g++
+CXXFLAGS    := -fopenmp -fno-strict-aliasing -m64 -std=gnu++11 -Wall -Wextra -DVERBOSE -DUNIX
+
+LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcudart
+
+ifeq ($(dbg),1)
+  CXXFLAGS  += -DDEFAULT_NUM_PLAYOUTS=10 -g
+  CUFLAGS   += -g -G
+else
+  CXXFLAGS  += -O3
+endif
+
+ifeq ($(nounicode),1)
+  CXXFLAGS  += -DNOUNICODE
+endif
+
+ifeq ($(verbose),1)
+  V         := 
+else
+  V         := @
+endif
+
+.PHONY : clean
+
+all : $(ROOTBINDIR)/$(EXECUTABLE)
+
+$(OBJDIR)/%.cu.o : $(SRCDIR)/%.cu $(CU_DEPS)
+	$(V)mkdir -p $(OBJDIR)
+	$(V)$(NVCC) $(NVCCFLAGS) -dc -o $@ $<
+
+$(OBJDIR)/%.cpp.o : $(SRCDIR)/%.cpp $(C_DEPS)
+	$(V)mkdir -p $(OBJDIR)
+	$(V)$(CXX) -c $(CXXFLAGS) -o $@ $<
+
+$(OBJDIR)/device.o : $(CUOBJS)
+	$(V)mkdir -p $(OBJDIR)
+	$(V)$(NVCC) $(NVCCFLAGS) -dlink $(CUOBJS) -o $(OBJDIR)/device.o
+
+$(ROOTBINDIR)/$(EXECUTABLE) : $(CUOBJS) $(CCOBJS) $(OBJDIR)/device.o
+	$(V)mkdir -p $(ROOTBINDIR)
+	$(V)$(CXX) -o $(ROOTBINDIR)/$(EXECUTABLE) $(OBJDIR)/*.o $(LIB)
+
+clean :
+	$(V)rm -f $(ROOTBINDIR)/$(EXECUTABLE) $(OBJDIR)/*.o
