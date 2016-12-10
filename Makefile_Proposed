@@ -23,6 +23,15 @@ ROOTDIR     := .
 ROOTBINDIR  := bin
 OBJDIR      := obj
 
+ifeq ($(dbg),1)
+  ROOTBINDIR  += /debug
+  OBJDIR      += /debug
+else
+  ROOTBINDIR  += /release
+  OBJDIR      += /release
+endif
+
+
 CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS))
 C_DEPS      := $(addprefix $(SRCDIR)/, $(CCHEADERS))
 
