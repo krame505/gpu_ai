@@ -59,7 +59,7 @@ SHAREDDIR  := $(ROOTDIR)/../shared/
 NVCC       := $(CUDA_INSTALL_PATH)/bin/nvcc 
 CXX        := g++
 CC         := gcc
-LINK       := nvcc
+LINK       := nvcc --compiler-options -fPIC
 
 # Includes
 INCLUDES  += -I. -I$(CUDA_INSTALL_PATH)/include -I$(COMMONDIR)/inc -I$(SHAREDDIR)/inc
