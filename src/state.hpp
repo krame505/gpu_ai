@@ -54,12 +54,16 @@ struct Loc {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator==(Loc loc) {return row == loc.row && col == loc.col;}
+  bool operator==(const Loc &loc) const {
+    return row == loc.row && col == loc.col;
+  }
 
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator!=(Loc loc) {return !((*this) == loc);}
+  bool operator!=(const Loc &loc) const {
+    return !((*this) == loc);
+  }
 
   // Return true if this location is within the bounds of the board
 #ifdef __CUDACC__
@@ -220,12 +224,14 @@ struct Move {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator==(Move move);
+  bool operator==(const Move &other) const;
 
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator!=(Move move) {return !((*this) == move);}
+  bool operator!=(const Move &other) const {
+    return !((*this) == other);
+  }
 
   // add a jump to a new location - updates removed and intermediate steps
 #ifdef __CUDACC__
@@ -237,7 +243,7 @@ struct Move {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool conflictsWith(const Move &other);
+  bool conflictsWith(const Move &other) const;
 };
 
 // Get the next player in the turn sequence
