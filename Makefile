@@ -21,12 +21,15 @@ CCHEADERS   := colors.h mcts.hpp playout.hpp state.hpp player.hpp
 SRCDIR      := src
 ROOTDIR     := .
 
+PARENTBINDIR := bin
+PARENTOBJDIR := obj
+
 ifeq ($(dbg),1)
-  ROOTBINDIR  := bin/debug
-  OBJDIR      := obj/debug
+  ROOTBINDIR  := $(PARENTBINDIR)/debug
+  OBJDIR      := $(PARENTOBJDIR)/debug
 else
-  ROOTBINDIR  := bin/release
-  OBJDIR      := obj/release
+  ROOTBINDIR  := $(PARENTBINDIR)/release
+  OBJDIR      := $(PARENTOBJDIR)/release
 endif
 
 CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS))
@@ -36,7 +39,7 @@ CUOBJS      := $(patsubst %.cu, $(OBJDIR)/%.cu.o, $(CUFILES))
 CCOBJS      := $(patsubst %.cpp, $(OBJDIR)/%.cpp.o, $(CCFILES))
 
 NVCC        := $(CUDA_INSTALL_PATH)/bin/nvcc
-NVCCFLAGS   := --generate-code arch=compute_20,code=sm_20 -Wno-deprecated-gpu-targets -m64 -DUNIX --compiler-options -fno-strict-aliasing
+NVCCFLAGS   := --generate-code arch=compute_20,code=sm_20 --generate-code arch=compute_30,code=sm_30 -Wno-deprecated-gpu-targets -m64 -DUNIX --compiler-options -fno-strict-aliasing
 
 CXX         := g++
 CXXFLAGS    := -fopenmp -fno-strict-aliasing -m64 -std=gnu++11 -Wall -Wextra -DVERBOSE -DUNIX
@@ -87,4 +90,4 @@ clean :
 	$(V)rm -f $(ROOTBINDIR)/$(EXECUTABLE) $(CUOBJS) $(CCOBJS) $(OBJDIR)/device.o
 
 clobber : clean
-	$(V) rm -rf $(ROOTBINDIR) $(OBJDIR)
+	$(V)rm -rf $(PARENTBINDIR) $(PARENTOBJDIR)
