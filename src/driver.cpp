@@ -197,11 +197,15 @@ Player *getPlayer(string name) {
 
 int main(int argc, char **argv) {
   srand(2016); // TODO: Should we randomize to time(NULL) instead?
+
+  int driverVersion;
+  cuDriverGetVersion(&driverVersion);
   
   cout << "run_ai : GPU-based checkers player with MCTS" << endl;
   cout << "EE 5351, Fall 2016 Group Project" << endl;
   cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl;
-  cout << "CUDA Version " << CUDA_VERSION << " and Runtime Version " << CUDART_VERSION << endl << endl;
+  cout << "CUDA Version " << CUDA_VERSION << " and Runtime Version " << CUDART_VERSION << endl;
+  cout << "Driver Version " << driverVersion << endl << endl;
   
   Player *player1 = NULL;
   Player *player2 = NULL;
