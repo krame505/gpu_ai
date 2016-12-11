@@ -5,6 +5,8 @@
 #include <cassert>
 #include <vector>
 #include <chrono>
+#include <cuda.h>
+#include <cuda_runtime_api.h>
 #include "state.hpp"
 #include "player.hpp"
 #include "genMovesTest.hpp"
@@ -198,8 +200,9 @@ int main(int argc, char **argv) {
   
   cout << "run_ai : GPU-based checkers player with MCTS" << endl;
   cout << "EE 5351, Fall 2016 Group Project" << endl;
-  cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl << endl;
-
+  cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl;
+  cout << "CUDA Version " << CUDA_VERSION << " and Runtime Version " << CUDART_VERSION << endl << endl;
+  
   Player *player1 = NULL;
   Player *player2 = NULL;
 
