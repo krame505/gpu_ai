@@ -15,11 +15,19 @@
 #define DEFAULT_NUM_PLAYOUTS 1000
 #endif
 
+#define NUM_TEST_SETUPS 2
+
 using namespace std;
 
 enum runMode {
   Test,
   Single
+};
+
+enum playoutType {
+  Device,
+  Host,
+  HostFast
 };
 
 // playGame: Implements the game logic.
@@ -74,7 +82,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
-void playGameTest(unsigned int numTests) {
+void playGameTest(unsigned int numTests, playoutType types[NUM_TEST_SETUPS]) {
   vector<State> ourStates(numTests);
   RandomPlayer thePlayer;
 
@@ -109,59 +117,58 @@ void playGameTest(unsigned int numTests) {
     ourStates[n] = state;
   }
 
-  auto t1 = std::chrono::high_resolution_clock::now();
-  vector<PlayerId> playoutResults = devicePlayouts(ourStates);
-  auto t2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> diff = t2 - t1;
-
-  int wins[3] = {0, 0, 0};
-  for (unsigned int n = 0; n < playoutResults.size(); n++) {
-    switch (playoutResults[n]) {
-    case PLAYER_NONE:
-      wins[0] ++;
+  for (unsigned int n = 0; n < NUM_TEST_SETUPS; n ++) {
+    auto t1 = std::chrono::high_resolution_clock::now();
+    vector<PlayerId> playoutResults;
+    switch (types[n]) {
+    case Device:
+      playoutResults = devicePlayouts(ourStates);
       break;
-    case PLAYER_1:
-      wins[1] ++;
+    case Host:
+      playoutResults = hostPlayouts(ourStates);
       break;
-    case PLAYER_2:
-      wins[2] ++;
+    case HostFast:
+      playoutResults = hostPlayoutsFast(ourStates);
       break;
     }
-  }
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = t2 - t1;
 
-  cout << "GPU Results" << endl;
-  cout << "Games drawn: " << wins[0] << endl;
-  cout << "Player 1 wins: " << wins[1] << endl;
-  cout << "Player 2 wins: " << wins[2] << endl;
-  cout << "Elapsed time: " << diff.count() << " seconds" << endl;
+    int wins[3] = {0, 0, 0};
+    for (unsigned int n = 0; n < playoutResults.size(); n++) {
+      switch (playoutResults[n]) {
+      case PLAYER_NONE:
+	wins[0] ++;
+	break;
+      case PLAYER_1:
+	wins[1] ++;
+	break;
+      case PLAYER_2:
+	wins[2] ++;
+	break;
+      }
+    }
 
-  playoutResults.clear();
-
-  t1 = std::chrono::high_resolution_clock::now();
-  playoutResults = hostPlayouts(ourStates);
-  t2 = std::chrono::high_resolution_clock::now();
-  diff = t2 - t1;
-
-  wins[0] = 0; wins[1] = 0; wins[2] = 0;
-  for (unsigned int n = 0; n < playoutResults.size(); n++) {
-    switch (playoutResults[n]) {
-    case PLAYER_NONE:
-      wins[0]++;
+    cout << "Test " << n << " (";
+    switch (types[n]) {
+    case Device:
+      cout << "Device";
       break;
-    case PLAYER_1:
-      wins[1]++;
+    case Host:
+      cout << "Host";
       break;
-    case PLAYER_2:
-      wins[2]++;
+    case HostFast:
+      cout << "Host Fast";
       break;
     }
-  }
+    cout << ") Results" << endl;
+    cout << "Games drawn: " << wins[0] << endl;
+    cout << "Player 1 wins: " << wins[1] << endl;
+    cout << "Player 2 wins: " << wins[2] << endl;
+    cout << "Elapsed time: " << diff.count() << " seconds" << endl;
 
-  cout << "CPU Results" << endl;
-  cout << "Games drawn: " << wins[0] << endl;
-  cout << "Player 1 wins: " << wins[1] << endl;
-  cout << "Player 2 wins: " << wins[2] << endl;
-  cout << "Elapsed time: " << diff.count() << " seconds" << endl;
+    playoutResults.clear();
+  }  
 }
 
 // printHelp: Output the help message if requested or if there are bad command-line arguments
@@ -211,6 +218,7 @@ int main(int argc, char **argv) {
   Player *player2 = NULL;
 
   runMode theRunMode = Single;
+  playoutType thePlayoutTypes[NUM_TEST_SETUPS] = {Device, Host};
   unsigned int numTests = DEFAULT_NUM_PLAYOUTS;
 
   // Possible options for getopt_long
@@ -247,11 +255,51 @@ int main(int argc, char **argv) {
       break;
     case 'w':
     case '1':
-      player1 = getPlayer(string(optarg));
+      switch (theRunMode) {
+      case Single:
+	player1 = getPlayer(string(optarg));
+	break;
+      case Test:
+	if (strcmp(optarg, "device") == 0) {
+	  thePlayoutTypes[0] = Device;
+	}
+	else if (strcmp(optarg, "host") == 0) {
+	  thePlayoutTypes[0] = Host;
+	}
+	else if (strcmp(optarg, "hostfast") == 0) {
+	  thePlayoutTypes[0] = HostFast;
+	}
+	else {
+	  cout << "Unrecognized test type '" << optarg << "'" << endl;
+	  printHelp();
+	  return 1;
+	}
+	break;
+      }
       break;
     case 'b':
     case '2':
-      player2 = getPlayer(string(optarg));
+      switch (theRunMode) {
+      case Single:
+	player2 = getPlayer(string(optarg));
+	break;
+      case Test:
+	if (strcmp(optarg, "device") == 0) {
+	  thePlayoutTypes[1] = Device;
+	}
+	else if (strcmp(optarg, "host") == 0) {
+	  thePlayoutTypes[1] = Host;
+	}
+	else if (strcmp(optarg, "hostfast") == 0) {
+	  thePlayoutTypes[1] = HostFast;
+	}
+	else {
+	  cout << "Unrecognized test type '" << optarg << "'" << endl;
+	  printHelp();
+	  return 1;
+	}
+	break;
+      }
       break;
     case 'h':
       printHelp();
@@ -287,7 +335,7 @@ int main(int argc, char **argv) {
   }
   else {
     cout << "Running " << numTests << " random playouts" << endl;
-    playGameTest(numTests);
+    playGameTest(numTests, thePlayoutTypes);
   }
 
   // Free players as we are done now
