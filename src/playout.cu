@@ -57,7 +57,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     results[id] = state.result();
 }
 
-std::vector<PlayerId> devicePlayouts(std::vector<State> states) {
+std::vector<PlayerId> DevicePlayoutDriver::runPlayouts(std::vector<State> states) const {
   // Device variables
   State *devStates;
   PlayerId *devResults;

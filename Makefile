@@ -32,8 +32,8 @@ else
   OBJDIR      := $(PARENTOBJDIR)/release
 endif
 
-CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS))
-C_DEPS      := $(addprefix $(SRCDIR)/, $(CCHEADERS))
+CU_DEPS     := $(addprefix $(SRCDIR)/, $(CUHEADERS)) Makefile
+C_DEPS      := $(addprefix $(SRCDIR)/, $(CCHEADERS)) Makefile
 
 CUOBJS      := $(patsubst %.cu, $(OBJDIR)/%.cu.o, $(CUFILES))
 CCOBJS      := $(patsubst %.cpp, $(OBJDIR)/%.cpp.o, $(CCFILES))
@@ -47,11 +47,11 @@ CXXFLAGS    := -fopenmp -fno-strict-aliasing -m64 -std=gnu++11 -Wall -Wextra -DV
 LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcuda -lcudart
 
 ifeq ($(dbg),1)
-  CXXFLAGS  += -DDEFAULT_NUM_PLAYOUTS=10 -g3 -ggdb
+  CXXFLAGS  += -g3 -ggdb
   CUFLAGS   += -g -G
 else
   CXXFLAGS  += -O3 -DNDEBUG
-  CUFLAGS   += -DNDEBUG
+  CUFLAGS   += -O3 -DNDEBUG
 endif
 
 ifeq ($(nounicode),1)

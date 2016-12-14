@@ -7,7 +7,7 @@
 #include <cassert>
 using namespace std;
 
-vector<PlayerId> hostPlayouts(vector<State> states) {
+vector<PlayerId> HostPlayoutDriver::runPlayouts(vector<State> states) const {
   vector<PlayerId> results(states.size());
   RandomPlayer player;
 
@@ -24,7 +24,7 @@ vector<PlayerId> hostPlayouts(vector<State> states) {
   return results;
 }
 
-vector<PlayerId> hostPlayoutsFast(vector<State> states) {
+vector<PlayerId> HostFastPlayoutDriver::runPlayouts(vector<State> states) const {
   vector<PlayerId> results(states.size());
 
   #pragma omp parallel for

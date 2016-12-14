@@ -15,7 +15,7 @@ public:
   virtual ~Player() {};
 
   virtual Move getMove(const State&) const = 0;
-  virtual std::string getName() = 0;
+  virtual std::string getName() const = 0;
 };
 
 class HumanPlayer : public Player {
@@ -23,7 +23,7 @@ public:
   ~HumanPlayer() {};
 
   Move getMove(const State&) const;
-  std::string getName() { return "human"; }
+  std::string getName() const { return "human"; }
 };
 
 class RandomPlayer : public Player {
@@ -31,28 +31,30 @@ public:
   ~RandomPlayer() {};
 
   Move getMove(const State&) const;
-  std::string getName() { return "random"; }
+  std::string getName() const { return "random"; }
 };
 
 class MCTSPlayer : public Player {
 public:
   MCTSPlayer(unsigned numPlayouts,
 	     unsigned timeout,
-	     std::function<std::vector<PlayerId>(std::vector<State>)> playouts=devicePlayouts) :
+	     PlayoutDriver *playoutDriver=new DevicePlayoutDriver) :
     numPlayouts(numPlayouts),
     timeout(timeout),
-    playouts(playouts)
+    playoutDriver(playoutDriver)
   {}
-  MCTSPlayer(std::function<std::vector<PlayerId>(std::vector<State>)> playouts=devicePlayouts) :
-    MCTSPlayer(MCTS_DEFAULT_NUM_PLAYOUTS, MCTS_DEFAULT_TIMEOUT, playouts)
+  MCTSPlayer(PlayoutDriver *playoutDriver=new DevicePlayoutDriver) :
+    MCTSPlayer(MCTS_DEFAULT_NUM_PLAYOUTS, MCTS_DEFAULT_TIMEOUT, playoutDriver)
   {}
-  ~MCTSPlayer() {};
+  ~MCTSPlayer() {
+    delete playoutDriver;
+  };
 
   Move getMove(const State&) const;
-  std::string getName() { return "mcts"; }
+  std::string getName() const { return "mcts"; }
 
 private:
   unsigned numPlayouts;
   unsigned timeout;
-  std::function<std::vector<PlayerId>(std::vector<State>)> playouts;
+  PlayoutDriver *playoutDriver;
 };

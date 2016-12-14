@@ -5,14 +5,21 @@
 #include <cassert>
 #include <vector>
 #include <chrono>
+#include <functional>
+
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+
 #include "state.hpp"
 #include "player.hpp"
 #include "genMovesTest.hpp"
 
-#ifndef DEFAULT_NUM_PLAYOUTS
+#ifdef NDEBUG
 #define DEFAULT_NUM_PLAYOUTS 1000
+
+#else
+#define DEFAULT_NUM_PLAYOUTS 10
+
 #endif
 
 #define NUM_TEST_SETUPS 2
@@ -22,12 +29,6 @@ using namespace std;
 enum runMode {
   Test,
   Single
-};
-
-enum playoutType {
-  Device,
-  Host,
-  HostFast
 };
 
 // playGame: Implements the game logic.
@@ -82,10 +83,41 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
-void playGameTest(unsigned int numTests, playoutType types[NUM_TEST_SETUPS]) {
+vector<PlayerId> playoutTest(const vector<State> &states, PlayoutDriver *playoutDriver) {
+  auto t1 = chrono::high_resolution_clock::now();
+  vector<PlayerId> playoutResults = playoutDriver->runPlayouts(states);
+  auto t2 = chrono::high_resolution_clock::now();
+  chrono::duration<double> diff = t2 - t1;
+
+  int wins[3] = {0, 0, 0};
+  for (unsigned int n = 0; n < playoutResults.size(); n++) {
+    switch (playoutResults[n]) {
+    case PLAYER_NONE:
+      wins[0]++;
+      break;
+    case PLAYER_1:
+      wins[1]++;
+      break;
+    case PLAYER_2:
+      wins[2]++;
+      break;
+    }
+  }
+
+  cout << "=== Results ===" << endl;
+  cout << "Games drawn: " << wins[0] << endl;
+  cout << "Player 1 wins: " << wins[1] << endl;
+  cout << "Player 2 wins: " << wins[2] << endl;
+  cout << "Elapsed time: " << diff.count() << " seconds" << endl;
+
+  return playoutResults;
+}
+
+void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETUPS]) {
   vector<State> ourStates(numTests);
   RandomPlayer thePlayer;
 
+  cout << "Building random states..." << endl;
   #pragma omp parallel for
   for (unsigned int n = 0; n < numTests; n++) {
     unsigned int randomMoves = rand() % 100; // TODO : Is 100 max random moves reasonable?  How long is an average checkers game?
@@ -117,58 +149,11 @@ void playGameTest(unsigned int numTests, playoutType types[NUM_TEST_SETUPS]) {
     ourStates[n] = state;
   }
 
-  for (unsigned int n = 0; n < NUM_TEST_SETUPS; n ++) {
-    auto t1 = std::chrono::high_resolution_clock::now();
-    vector<PlayerId> playoutResults;
-    switch (types[n]) {
-    case Device:
-      playoutResults = devicePlayouts(ourStates);
-      break;
-    case Host:
-      playoutResults = hostPlayouts(ourStates);
-      break;
-    case HostFast:
-      playoutResults = hostPlayoutsFast(ourStates);
-      break;
-    }
-    auto t2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = t2 - t1;
-
-    int wins[3] = {0, 0, 0};
-    for (unsigned int n = 0; n < playoutResults.size(); n++) {
-      switch (playoutResults[n]) {
-      case PLAYER_NONE:
-	wins[0] ++;
-	break;
-      case PLAYER_1:
-	wins[1] ++;
-	break;
-      case PLAYER_2:
-	wins[2] ++;
-	break;
-      }
-    }
-
-    cout << "Test " << n << " (";
-    switch (types[n]) {
-    case Device:
-      cout << "Device";
-      break;
-    case Host:
-      cout << "Host";
-      break;
-    case HostFast:
-      cout << "Host Fast";
-      break;
-    }
-    cout << ") Results" << endl;
-    cout << "Games drawn: " << wins[0] << endl;
-    cout << "Player 1 wins: " << wins[1] << endl;
-    cout << "Player 2 wins: " << wins[2] << endl;
-    cout << "Elapsed time: " << diff.count() << " seconds" << endl;
-
-    playoutResults.clear();
-  }  
+  for (unsigned int i = 0; i < NUM_TEST_SETUPS; i++) {
+    cout << "Running test " << i << ": " << playoutDrivers[i]->getName() << "..." << endl;
+    playoutTest(ourStates, playoutDrivers[i]);
+    cout << endl;
+  }
 }
 
 // printHelp: Output the help message if requested or if there are bad command-line arguments
@@ -187,16 +172,33 @@ Player *getPlayer(string name) {
     return new MCTSPlayer;
   }
   else if (name == "mcts_host") {
-    return new MCTSPlayer(5000, 7, hostPlayouts);
+    return new MCTSPlayer(5000, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_host1") {
-    return new MCTSPlayer(50, 7, hostPlayouts);
+    return new MCTSPlayer(50, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_device") {
-    return new MCTSPlayer(devicePlayouts);
+    return new MCTSPlayer(new DevicePlayoutDriver);
   }
   else {
     cout << "Unrecognized player type '" << name << "'" << endl;
+    printHelp();
+    exit(1);
+  }
+}
+
+PlayoutDriver *getPlayoutDriver(string name) {
+  if (name == "device") {
+    return new DevicePlayoutDriver;
+  }
+  else if (name == "host") {
+    return new HostPlayoutDriver;
+  }
+  else if (name == "host_fast") {
+    return new HostFastPlayoutDriver;
+  }
+  else {
+    cout << "Unrecognized playout type '" << name << "'" << endl;
     printHelp();
     exit(1);
   }
@@ -217,8 +219,10 @@ int main(int argc, char **argv) {
   Player *player1 = NULL;
   Player *player2 = NULL;
 
+  PlayoutDriver *playoutDriver1 = NULL;
+  PlayoutDriver *playoutDriver2 = NULL;
+
   runMode theRunMode = Single;
-  playoutType thePlayoutTypes[NUM_TEST_SETUPS] = {Device, Host};
   unsigned int numTests = DEFAULT_NUM_PLAYOUTS;
 
   // Possible options for getopt_long
@@ -260,20 +264,7 @@ int main(int argc, char **argv) {
 	player1 = getPlayer(string(optarg));
 	break;
       case Test:
-	if (strcmp(optarg, "device") == 0) {
-	  thePlayoutTypes[0] = Device;
-	}
-	else if (strcmp(optarg, "host") == 0) {
-	  thePlayoutTypes[0] = Host;
-	}
-	else if (strcmp(optarg, "hostfast") == 0) {
-	  thePlayoutTypes[0] = HostFast;
-	}
-	else {
-	  cout << "Unrecognized test type '" << optarg << "'" << endl;
-	  printHelp();
-	  return 1;
-	}
+	playoutDriver1 = getPlayoutDriver(string(optarg));
 	break;
       }
       break;
@@ -284,20 +275,7 @@ int main(int argc, char **argv) {
 	player2 = getPlayer(string(optarg));
 	break;
       case Test:
-	if (strcmp(optarg, "device") == 0) {
-	  thePlayoutTypes[1] = Device;
-	}
-	else if (strcmp(optarg, "host") == 0) {
-	  thePlayoutTypes[1] = Host;
-	}
-	else if (strcmp(optarg, "hostfast") == 0) {
-	  thePlayoutTypes[1] = HostFast;
-	}
-	else {
-	  cout << "Unrecognized test type '" << optarg << "'" << endl;
-	  printHelp();
-	  return 1;
-	}
+	playoutDriver2 = getPlayoutDriver(string(optarg));
 	break;
       }
       break;
@@ -332,15 +310,32 @@ int main(int argc, char **argv) {
 
     Player *players[NUM_PLAYERS] = {player1, player2};
     playGame(players);
+
+    // Free players as we are done now
+    delete player1;
+    delete player2;
   }
   else {
-    cout << "Running " << numTests << " random playouts" << endl;
-    playGameTest(numTests, thePlayoutTypes);
-  }
+    // Assume host and device playouts if not otherwise specified
+    if (player1 == NULL) {
+      playoutDriver1 = new HostPlayoutDriver;
+    }
+    if (player2 == NULL) {
+      playoutDriver2 = new DevicePlayoutDriver;
+    }
 
-  // Free players as we are done now
-  delete player1;
-  delete player2;
+    cout << "Running " << numTests << " random playouts with ";
+    cout << playoutDriver1->getName() << " and ";
+    cout << playoutDriver2->getName() << endl;
+    cout << endl;
+
+    PlayoutDriver *playoutDrivers[NUM_TEST_SETUPS] = {playoutDriver1, playoutDriver2};
+    playoutTests(numTests, playoutDrivers);
+
+    // Free playout drivers as we are done now
+    delete playoutDriver1;
+    delete playoutDriver2;
+  }
 
   return 0;
 }

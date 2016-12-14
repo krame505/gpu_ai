@@ -166,8 +166,7 @@ Move GameTree::getOptMove(PlayerId player) const {
   return bestMove;
 }
 
-GameTree *buildTree(State state, const vector<unsigned> &trials,
-		    function<vector<PlayerId>(vector<State>)> playouts) {
+GameTree *buildTree(State state, const vector<unsigned> &trials, PlayoutDriver *playoutDriver) {
   GameTree *tree = new GameTree(state);
 
 #ifdef VERBOSE
@@ -177,7 +176,7 @@ GameTree *buildTree(State state, const vector<unsigned> &trials,
 
   for (unsigned numPlayouts : trials) {
     vector<State> playoutStates = tree->select(numPlayouts);
-    vector<PlayerId> results = playouts(playoutStates);
+    vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
     tree->update(results);
   }
 
@@ -189,8 +188,7 @@ GameTree *buildTree(State state, const vector<unsigned> &trials,
   return tree;
 }
 
-GameTree *buildTree(State state, unsigned numPlayouts, unsigned timeout,
-		    function<vector<PlayerId>(vector<State>)> playouts) {
+GameTree *buildTree(State state, unsigned numPlayouts, unsigned timeout, PlayoutDriver *playoutDriver) {
   GameTree *tree = new GameTree(state);
 
   time_t start, current;
@@ -198,7 +196,7 @@ GameTree *buildTree(State state, unsigned numPlayouts, unsigned timeout,
   unsigned iterations = 0;
   do {
     vector<State> playoutStates = tree->select(numPlayouts);
-    vector<PlayerId> results = playouts(playoutStates);
+    vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
     tree->update(results);
 
     time(&current);
