@@ -502,6 +502,19 @@ __host__ __device__ void Move::addJump(Loc newTo) {
 }
 
 __host__ __device__ bool Move::conflictsWith(const Move &other) const {
+  // Cases of conflicting moves:
+
+  // 1. two moves have the same destination
+  if (to == other.to) return false;
+
+  // 2. two moves capture the same piece.
+  for (uint8_t i = 0; i < jumps; j++) {
+    for (uint8_t j = 0; j < other.jumps; j++) {
+      if (removed[i] == other.removed[j])
+        return false;
+    }
+  }
+
   return true; // TODO
 }
 
