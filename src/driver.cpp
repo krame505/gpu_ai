@@ -6,9 +6,7 @@
 #include <vector>
 #include <chrono>
 #include <functional>
-
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+#include <boost/program_options.hpp>
 
 #include "state.hpp"
 #include "player.hpp"
@@ -25,11 +23,41 @@
 #define NUM_TEST_SETUPS 2
 
 using namespace std;
+namespace po = boost::program_options;
 
 enum runMode {
   Test,
   Single
 };
+
+istream &operator>>(istream& in, runMode& mode) {
+  string token;
+  in >> token;
+  if (token == "test") {
+    mode = Test;
+  }
+  else if (token == "single") {
+    mode = Single;
+  }
+  else {
+    throw po::validation_error(po::validation_error::invalid_option_value, "run mode");
+  }
+
+  return in;
+}
+
+ostream &operator<<(ostream &os, runMode mode) {
+  switch (mode) {
+  case Test:
+    return os << "test";
+  case Single:
+    return os << "single";
+  default:
+    assert(false);
+    return os; // Unreachable, but to make -Wall shut up
+  }
+}
+
 
 // playGame: Implements the game logic.
 // Inputs
@@ -213,103 +241,90 @@ PlayoutDriver *getPlayoutDriver(string name) {
 int main(int argc, char **argv) {
   srand(2016); // TODO: Should we randomize to time(NULL) instead?
 
-  int driverVersion;
-  cuDriverGetVersion(&driverVersion);
-  
   cout << "run_ai : GPU-based checkers player with MCTS" << endl;
   cout << "EE 5351, Fall 2016 Group Project" << endl;
   cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl;
-  cout << "CUDA Version " << CUDA_VERSION << " and Runtime Version " << CUDART_VERSION << endl;
-  cout << "Driver Version " << driverVersion << endl << endl;
-  
-  Player *player1 = NULL;
-  Player *player2 = NULL;
 
-  PlayoutDriver *playoutDriver1 = NULL;
-  PlayoutDriver *playoutDriver2 = NULL;
-
-  runMode theRunMode = Single;
-  unsigned int numTests = DEFAULT_NUM_PLAYOUTS;
-
-  // Possible options for getopt_long
-  static struct option our_options[] = 
-    {
-      {"mode", required_argument, NULL, 'm'},
-      {"num-playouts", required_argument, NULL, 'n'},
-      {"white", required_argument, NULL, 'w'},
-      {"black", required_argument, NULL, 'b'},
-      {"help", no_argument, NULL, 'h'},
-      {0, 0, 0, 0}
-    };
-
-  // Parse the command line options and set up player1 and player2
-  int c, option_index;
-  bool optionsAllValid = true;
-  while ((c = getopt_long(argc, argv, "m:n:w:b:1:2:h", our_options, &option_index)) != -1) {
-    switch (c) {
-    case 'm':
-      if (strcmp(optarg, "single") == 0) {
-	theRunMode = Single;
-      }
-      else if (strcmp(optarg, "test") == 0) {
-	theRunMode = Test;
-      }
-      else {
-	cout << "Unrecognized run mode '" << optarg << "'" << endl;
-	printHelp();
-	return 1;
-      }
-      break;
-    case 'n':
-      numTests = atoi(optarg);
-      break;
-    case 'w':
-    case '1':
-      switch (theRunMode) {
-      case Single:
-	player1 = getPlayer(string(optarg));
-	break;
-      case Test:
-	playoutDriver1 = getPlayoutDriver(string(optarg));
-	break;
-      }
-      break;
-    case 'b':
-    case '2':
-      switch (theRunMode) {
-      case Single:
-	player2 = getPlayer(string(optarg));
-	break;
-      case Test:
-	playoutDriver2 = getPlayoutDriver(string(optarg));
-	break;
-      }
-      break;
-    case 'h':
-      printHelp();
-      return 0;
-    case '?':
-      optionsAllValid = false;
-      break;
-    }
+  po::options_description desc("Allowed options");
+  desc.add_options()
+    ("mode,m", po::value<runMode>(), "run mode")
+    ("num-playouts,n", po::value<int>(), "number of playouts")
+    ("white,w", po::value<string>(), "white player")
+    ("black,b", po::value<string>(), "black player")
+    ("help,h", "print help")
+    ;
+  po::variables_map vm;
+  try {
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
   }
-
-  // If an invalid option was passed, print help and exit
-  if (!optionsAllValid) {
-    printHelp();
+  catch (po::error& err) {
+    cout << err.what() << endl;
+    cout << desc << endl;
     return 1;
   }
 
+  if (vm.count("help")) {
+    cout << desc << endl;
+    return 1;
+  }
+  
+  runMode theRunMode;
+  if (vm.count("mode")) {
+    theRunMode = vm["mode"].as<runMode>();
+  }
+  else {
+    theRunMode = Single;
+  }
+
+  unsigned int numTests;
+  if (vm.count("num-playouts")) {
+    numTests = vm["num-playouts"].as<int>();
+  }
+  else {
+    numTests = DEFAULT_NUM_PLAYOUTS;
+  }
+
+  Player *player1 = NULL;
+  PlayoutDriver *playoutDriver1 = NULL;
+  if (vm.count("white")) {
+    if (theRunMode == Single) {
+      player1 = getPlayer(vm["white"].as<string>());
+    }
+    else {
+      playoutDriver1 = getPlayoutDriver(vm["white"].as<string>());
+    }
+  }
+  else {
+    if (theRunMode == Single) {
+      player1 = new RandomPlayer();
+    }
+    else {
+      playoutDriver1 = new HostPlayoutDriver;
+    }
+  }    
+
+  Player *player2 = NULL;
+  PlayoutDriver *playoutDriver2 = NULL;
+  if (vm.count("black")) {
+    if (theRunMode == Single) {
+      player2 = getPlayer(vm["black"].as<string>());
+    }
+    else {
+      playoutDriver2 = getPlayoutDriver(vm["black"].as<string>());
+    }
+  }
+  else {
+    if (theRunMode == Single) {
+      player2 = new RandomPlayer();
+    }
+    else {
+      playoutDriver2 = new DevicePlayoutDriver;
+    }
+  }    
+
   // Run the game
   if (theRunMode == Single) {
-    // Assume random players if not otherwise specified
-    if (player1 == NULL) {
-      player1 = new RandomPlayer;
-    }
-    if (player2 == NULL) {
-      player2 = new RandomPlayer;
-    }
-
     cout << "Playing single game of ";
     cout << player1->getName() << " Player 1 ('white') and ";
     cout << player2->getName() << " Player 2 ('black')" << endl;
@@ -322,14 +337,6 @@ int main(int argc, char **argv) {
     delete player2;
   }
   else {
-    // Assume host and device playouts if not otherwise specified
-    if (player1 == NULL) {
-      playoutDriver1 = new HostPlayoutDriver;
-    }
-    if (player2 == NULL) {
-      playoutDriver2 = new DevicePlayoutDriver;
-    }
-
     cout << "Running " << numTests << " random playouts with ";
     cout << playoutDriver1->getName() << " and ";
     cout << playoutDriver2->getName() << endl;

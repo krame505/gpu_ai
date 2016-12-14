@@ -44,7 +44,7 @@ NVCCFLAGS   := --generate-code arch=compute_20,code=sm_20 --generate-code arch=c
 CXX         := g++
 CXXFLAGS    := -fopenmp -fno-strict-aliasing -m64 -std=gnu++11 -Wall -Wextra -DVERBOSE -DUNIX -I"$(CUDA_INSTALL_PATH)/include"
 
-LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcuda -lcudart
+LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcuda -lcudart -lboost_program_options
 
 ifeq ($(dbg),1)
   CXXFLAGS  += -g3 -ggdb
