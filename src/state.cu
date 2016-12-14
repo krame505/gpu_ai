@@ -508,7 +508,7 @@ __host__ __device__ bool Move::conflictsWith(const Move &other) const {
   if (to == other.to) return false;
 
   // 2. two moves capture the same piece.
-  for (uint8_t i = 0; i < jumps; j++) {
+  for (uint8_t i = 0; i < jumps; i++) {
     for (uint8_t j = 0; j < other.jumps; j++) {
       if (removed[i] == other.removed[j])
         return false;
