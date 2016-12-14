@@ -148,10 +148,12 @@ void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_
     ourStates[n] = state;
   }
 
+#ifndef NDEBUG
   cout << "Testing genMoves host and device results are the same..." << endl;
   for (State state : ourStates) {
     assert(genMovesTest(state));
   }
+#endif
 
   for (unsigned int i = 0; i < NUM_TEST_SETUPS; i++) {
     cout << "Running test " << i << ": " << playoutDrivers[i]->getName() << "..." << endl;
