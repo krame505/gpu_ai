@@ -23,7 +23,6 @@
 #define NUM_TEST_SETUPS 2
 
 using namespace std;
-namespace po = boost::program_options;
 
 enum runMode {
   Test,
@@ -40,7 +39,7 @@ istream &operator>>(istream& in, runMode& mode) {
     mode = Single;
   }
   else {
-    throw po::validation_error(po::validation_error::invalid_option_value, "run mode");
+    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value, "run mode");
   }
 
   return in;
@@ -245,20 +244,23 @@ int main(int argc, char **argv) {
   cout << "EE 5351, Fall 2016 Group Project" << endl;
   cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl;
 
-  po::options_description desc("Allowed options");
+  unsigned int numTests;
+  runMode theRunMode;
+
+  boost::program_options::options_description desc("Allowed options");
   desc.add_options()
-    ("mode,m", po::value<runMode>(), "run mode")
-    ("num-playouts,n", po::value<int>(), "number of playouts")
-    ("white,w", po::value<string>(), "white player")
-    ("black,b", po::value<string>(), "black player")
+    ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Single), "run mode")
+    ("num-playouts,n", boost::program_options::value<unsigned int>(&numTests)->default_value(DEFAULT_NUM_PLAYOUTS), "number of playouts")
+    ("white,w", boost::program_options::value<string>(), "white player")
+    ("black,b", boost::program_options::value<string>(), "black player")
     ("help,h", "print help")
     ;
-  po::variables_map vm;
+  boost::program_options::variables_map vm;
   try {
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
+    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
+    boost::program_options::notify(vm);
   }
-  catch (po::error& err) {
+  catch (boost::program_options::error& err) {
     cout << err.what() << endl;
     cout << desc << endl;
     return 1;
@@ -269,22 +271,6 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-  runMode theRunMode;
-  if (vm.count("mode")) {
-    theRunMode = vm["mode"].as<runMode>();
-  }
-  else {
-    theRunMode = Single;
-  }
-
-  unsigned int numTests;
-  if (vm.count("num-playouts")) {
-    numTests = vm["num-playouts"].as<int>();
-  }
-  else {
-    numTests = DEFAULT_NUM_PLAYOUTS;
-  }
-
   Player *player1 = NULL;
   PlayoutDriver *playoutDriver1 = NULL;
   if (vm.count("white")) {
