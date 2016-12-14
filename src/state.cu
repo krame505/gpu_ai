@@ -515,16 +515,17 @@ __host__ __device__ bool Move::conflictsWith(const Move &other) const {
     }
   }
 
-  // 3. one ends up in the path of the other
+  // 3. one piece ends up in the path of the other, or one piece captures the
+  //    other (for moves of 2 different players)
   for (uint8_t i = 0; i < jumps; i++) {
-    if (intermediate[i] == other.to)
+    if (intermediate[i] == other.to || removed[i] == other.from)
       return false;
   }
   for (uint8_t i = 0; i < other.jumps; i++) {
-    if (to == other.intermediate[i])
+    if (to == other.intermediate[i] || from == other.removed[i])
       return false;
   }
-  
+
   // 4. TODO: other cases
 
   return true;
