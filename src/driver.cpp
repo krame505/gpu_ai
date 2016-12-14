@@ -39,7 +39,7 @@ istream &operator>>(istream& in, runMode& mode) {
     mode = Single;
   }
   else {
-    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value, "run mode");
+    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
   }
 
   return in;
@@ -189,11 +189,6 @@ void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_
   }
 }
 
-// printHelp: Output the help message if requested or if there are bad command-line arguments
-void printHelp() {
-  cout << "Usage: run_ai [--white|-w|-1 human|random|mcts] [--black|-b|-2 human|random|mcts] [--mode|-m single|test] [--num-playouts|-n N] [--help|-h]" << endl;
-}
-
 Player *getPlayer(string name) {
   if (name == "human") {
     return new HumanPlayer;
@@ -214,9 +209,7 @@ Player *getPlayer(string name) {
     return new MCTSPlayer(new DevicePlayoutDriver);
   }
   else {
-    cout << "Unrecognized player type '" << name << "'" << endl;
-    printHelp();
-    exit(1);
+    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
   }
 }
 
@@ -231,9 +224,7 @@ PlayoutDriver *getPlayoutDriver(string name) {
     return new HostFastPlayoutDriver;
   }
   else {
-    cout << "Unrecognized playout type '" << name << "'" << endl;
-    printHelp();
-    exit(1);
+    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
   }
 }
 
@@ -246,6 +237,10 @@ int main(int argc, char **argv) {
 
   unsigned int numTests;
   runMode theRunMode;
+  Player *player1 = NULL;
+  Player *player2 = NULL;
+  PlayoutDriver *playoutDriver1 = NULL;
+  PlayoutDriver *playoutDriver2 = NULL;
 
   boost::program_options::options_description desc("Allowed options");
   desc.add_options()
@@ -259,55 +254,51 @@ int main(int argc, char **argv) {
   try {
     boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
     boost::program_options::notify(vm);
+    if (vm.count("help")) {
+      cout << desc << endl;
+      return 1;
+    }
+  
+    if (vm.count("white")) {
+      if (theRunMode == Single) {
+	player1 = getPlayer(vm["white"].as<string>());
+      }
+      else {
+	playoutDriver1 = getPlayoutDriver(vm["white"].as<string>());
+      }
+    }
+    else {
+      if (theRunMode == Single) {
+	player1 = new RandomPlayer;
+      }
+      else {
+	playoutDriver1 = new HostPlayoutDriver;
+      }
+    }    
+
+    if (vm.count("black")) {
+      if (theRunMode == Single) {
+	player2 = getPlayer(vm["black"].as<string>());
+      }
+      else {
+	playoutDriver2 = getPlayoutDriver(vm["black"].as<string>());
+      }
+    }
+    else {
+      if (theRunMode == Single) {
+	player2 = new RandomPlayer;
+      }
+      else {
+	playoutDriver2 = new DevicePlayoutDriver;
+      }
+    }
   }
-  catch (boost::program_options::error& err) {
+  catch (exception& err) {
     cout << err.what() << endl;
     cout << desc << endl;
     return 1;
   }
 
-  if (vm.count("help")) {
-    cout << desc << endl;
-    return 1;
-  }
-  
-  Player *player1 = NULL;
-  PlayoutDriver *playoutDriver1 = NULL;
-  if (vm.count("white")) {
-    if (theRunMode == Single) {
-      player1 = getPlayer(vm["white"].as<string>());
-    }
-    else {
-      playoutDriver1 = getPlayoutDriver(vm["white"].as<string>());
-    }
-  }
-  else {
-    if (theRunMode == Single) {
-      player1 = new RandomPlayer();
-    }
-    else {
-      playoutDriver1 = new HostPlayoutDriver;
-    }
-  }    
-
-  Player *player2 = NULL;
-  PlayoutDriver *playoutDriver2 = NULL;
-  if (vm.count("black")) {
-    if (theRunMode == Single) {
-      player2 = getPlayer(vm["black"].as<string>());
-    }
-    else {
-      playoutDriver2 = getPlayoutDriver(vm["black"].as<string>());
-    }
-  }
-  else {
-    if (theRunMode == Single) {
-      player2 = new RandomPlayer();
-    }
-    else {
-      playoutDriver2 = new DevicePlayoutDriver;
-    }
-  }    
 
   // Run the game
   if (theRunMode == Single) {
