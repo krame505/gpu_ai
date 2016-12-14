@@ -48,10 +48,10 @@ LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcuda -lcudart
 
 ifeq ($(dbg),1)
   CXXFLAGS  += -g3 -ggdb
-  CUFLAGS   += -g -G
+  NVCCFLAGS += -g -G
 else
   CXXFLAGS  += -O3 -DNDEBUG
-  CUFLAGS   += -O3 -DNDEBUG
+  NVCCFLAGS += -O3 -DNDEBUG
 endif
 
 ifeq ($(nounicode),1)
