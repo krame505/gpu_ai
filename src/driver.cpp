@@ -190,11 +190,6 @@ void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_
   }
 }
 
-// printHelp: Output the help message if requested or if there are bad command-line arguments
-void printHelp() {
-  cout << "Usage: run_ai [--white|-w|-1 human|random|mcts] [--black|-b|-2 human|random|mcts] [--mode|-m single|test] [--num-playouts|-n N] [--help|-h]" << endl;
-}
-
 Player *getPlayer(string name) {
   if (name == "human") {
     return new HumanPlayer;
