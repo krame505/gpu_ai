@@ -145,8 +145,12 @@ void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_
       state.move(move);
     }
 
-    //assert(genMovesTest(state));
     ourStates[n] = state;
+  }
+
+  cout << "Testing genMoves host and device results are the same..." << endl;
+  for (State state : ourStates) {
+    assert(genMovesTest(state));
   }
 
   for (unsigned int i = 0; i < NUM_TEST_SETUPS; i++) {
