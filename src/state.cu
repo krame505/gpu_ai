@@ -515,7 +515,19 @@ __host__ __device__ bool Move::conflictsWith(const Move &other) const {
     }
   }
 
-  return true; // TODO
+  // 3. one ends up in the path of the other
+  for (uint8_t i = 0; i < jumps; i++) {
+    if (intermediate[i] == other.to)
+      return false;
+  }
+  for (uint8_t i = 0; i < other.jumps; i++) {
+    if (to == other.intermediate[i])
+      return false;
+  }
+  
+  // 4. TODO: other cases
+
+  return true;
 }
 
 __host__ __device__ PlayerId nextTurn(PlayerId turn) {
