@@ -334,6 +334,7 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
    // int loc = blockIdx.x * blockDim.x + threadIdx.x;
     uint8_t tempCaptures[MAX_MOVES];
     uint8_t maxLength[MAX_MOVES];
+    uint8_t maxCaptureIndices[MAX_MOVES];
 
   // Generate the captures for this location
   Move locMoves[MAX_LOC_MOVES];
@@ -400,8 +401,13 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
        __syncthreads();
     } 
     if (tx == 0) {
-      maxLength[tx] = tempCaptures[0];
-    }
+      maxLength[tx] = tempCaptures[0];    
+  }
+
+  for(int i = 0; i < MAX_MOVES; i++) {
+    if(maxLength[tx] = result[turn][i + indices[turn][id]].jumps)
+      maxCaptureIndices[i] = indices[turn][i];
+  }
 
   assert(false); // TODO
 
