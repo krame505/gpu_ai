@@ -2,6 +2,8 @@
 #include "genMovesTest.hpp"
 #include "state.hpp"
 
+#define CUDA_STACK_SIZE 1024 * 32
+
 #include <iostream>
 using namespace std;
 
@@ -34,12 +36,19 @@ bool genMovesTest(State state) {
   // Copy states for playouts to device
   cudaMemcpy(devState, &state, sizeof(State), cudaMemcpyHostToDevice);
 
+  cudaError_t error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
+  if (error != cudaSuccess) {
+    // print the CUDA error message and exit
+    std::cout << "CUDA error setting stack size: " << cudaGetErrorString(error) << std::endl;
+    exit(1);
+  }
+
   // Invoke the kernel
-  genMovesKernel<<<NUM_LOCS, 1>>>(devState, devMoves, devNumMoves);
+  genMovesKernel<<<1, NUM_LOCS>>>(devState, devMoves, devNumMoves);
   cudaDeviceSynchronize();
 
   // Check for errors
-  cudaError_t error = cudaGetLastError();
+  error = cudaGetLastError();
   if (error != cudaSuccess) {
     // print the CUDA error message and exit
     std::cout << "CUDA error: " << cudaGetErrorString(error) << std::endl;

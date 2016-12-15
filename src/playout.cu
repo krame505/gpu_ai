@@ -77,7 +77,7 @@ std::vector<PlayerId> DevicePlayoutDriver::runPlayouts(std::vector<State> states
   }
 
   // Invoke the kernel
-  playoutKernel<<<NUM_LOCS, states.size()>>>(devStates, devResults);
+  playoutKernel<<<states.size(), NUM_LOCS>>>(devStates, devResults);
   cudaDeviceSynchronize();
 
   // Check for errors
