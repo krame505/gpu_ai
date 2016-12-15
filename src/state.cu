@@ -79,7 +79,7 @@ __host__ __device__ bool State::isValidJump(Move move, Loc jumped, Loc newTo, bo
   assert(2 * jumped.col - move.to.col == newTo.col);
 
   if (!(*this)[jumped].occupied || 
-      (*this)[jumped].owner == turn ||
+      (*this)[jumped].owner == (*this)[move.from].owner ||
       (*this)[newTo].occupied)
     return false;
 
@@ -105,19 +105,20 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 
   if ((*this)[loc].type == CHECKER_KING) {
     for (uint8_t i = 0; i < 4; i++) {
-      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]));
-      if (isValidMove(tmpMove))
-        result[count++] = tmpMove;
+      Loc to(loc.row + dr[i], loc.col + dc[i]);
+      if (to.isValid() && !(*this)[to].occupied)
+        result[count++] = Move(loc, to);
     }
   } else {
     BoardItem item = (*this)[loc];
     uint8_t start = item.owner == PLAYER_1 ? 0 : 2;
     uint8_t end   = item.owner == PLAYER_1 ? 2 : 4;
     for (uint8_t i = start; i < end; i++) {
-      Move tmpMove(loc, Loc(loc.row + dr[i], loc.col + dc[i]), 0, 
-                   loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0));
-      if (isValidMove(tmpMove))
-        result[count++] = tmpMove;
+      Loc to(loc.row + dr[i], loc.col + dc[i]);
+      if (to.isValid() && !(*this)[to].occupied)
+        result[count++] =
+	  Move(loc, to, 0, 
+	       loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0));
     }
   }
 
@@ -126,7 +127,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 
 
 __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
-  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
+  if (!(*this)[loc].occupied)
     return 0;
 
   result[0] = Move(loc, loc);
@@ -244,6 +245,7 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
 					     MoveType type) const {
 #ifdef __CUDA_ARCH__
   INIT_KERNEL_VARS;
+  
   __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
 
   // Generate the moves for this location
@@ -253,9 +255,10 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
     numLocMoves = genLocCaptureMoves(loc, locMoves);
   else
     numLocMoves = genLocDirectMoves(loc, locMoves);
-
+  
+  PlayerId locOwner = (*this)[loc].owner;
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-    if ((*this)[loc].owner == (PlayerId)i) {
+    if (locOwner == (PlayerId)i) {
       indices[i][id] = numLocMoves;
     }
     else {
@@ -276,7 +279,6 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
   }
 
   // Write zero to the last element after saving the value there as the block sum
-
   __syncthreads();
   if (id < NUM_PLAYERS && (genMoves == NULL || genMoves[id])) {
     numMoves[id] = indices[id][NUM_LOCS - 1];
@@ -302,10 +304,11 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
   
   // Copy generated moves to shared arrays
   for (uint8_t i = 0; i < numLocMoves; i++) {
-    if (genMoves == NULL || genMoves[turn]) {
-      result[turn][i + indices[turn][id]] = locMoves[i];
+    if (genMoves == NULL || genMoves[locOwner]) {
+      result[locOwner][i + indices[locOwner][id]] = locMoves[i];
     }
   }
+  
 #else
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     if (genMoves == NULL || genMoves[i])
@@ -400,7 +403,7 @@ __host__ __device__ bool Move::conflictsWith(const Move &other) const {
   // 3. one piece ends up in the path of the other, or one piece captures the
   //    other (for moves of 2 different players)
   for (uint8_t i = 0; i < other.jumps; i++) {
-    if (to == other.intermediate[i] || from == other.removed[i])
+    if (to == other.intermediate[i] || other.from == removed[i])
       return true;
   }
 
