@@ -43,21 +43,33 @@ vector<PlayerId> HostFastPlayoutDriver::runPlayouts(vector<State> states) const 
       // Choose random moves until one conflicting with a previous move is chosen
       vector<Move> movesToApply;
       PlayerId turn = state.turn;
-      Move move = moves[turn][rand() % moves[turn].size()];
-      bool valid = true;
-      while (valid) {
+      for (unsigned i = 0; i < 42 && moves[turn].size() > 0; i++) {
+	Move move = moves[turn][rand() % moves[turn].size()];
+	for (const Move &prevMove : movesToApply) {
+	  if (prevMove.conflictsWith(move))
+	    goto end; // Sorry, but this is the best way to break out of a nested loop
+	}
 	movesToApply.push_back(move);
 	turn = nextTurn(turn);
-	move = moves[turn][rand() % moves[turn].size()];
-	for (const Move &prevMove : movesToApply) {
-	  valid &= !prevMove.conflictsWith(move);
-	}
       }
+    end:
 
       // Apply all the chosen moves
       for (const Move &move : movesToApply) {
 	state.move(move);
       }
+
+      // Other version of performing multiple moves that checks each move is valid with
+      // isValidMove instead of checking them one-by-one
+      /*PlayerId turn = state.turn;
+      Move move = moves[turn][rand() % moves[turn].size()];
+      do {
+	state.move(move);
+	turn = nextTurn(turn);
+	if (moves[turn].size() == 0)
+	  break;
+	move = moves[turn][rand() % moves[turn].size()];
+      } while (state.isValidMove(move));*/
     }
     results[i] = state.result();
   }
