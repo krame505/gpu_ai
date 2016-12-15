@@ -43,7 +43,8 @@ istream &operator>>(istream& in, runMode& mode) {
     mode = Single;
   }
   else {
-    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
+    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
+    throw runtime_error("Unknown run mode");
   }
 
   return in;
@@ -227,7 +228,8 @@ Player *getPlayer(string name) {
     return new MCTSPlayer(new DevicePlayoutDriver);
   }
   else {
-    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
+    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
+    throw runtime_error("Unknown player type");
   }
 }
 
@@ -242,7 +244,8 @@ PlayoutDriver *getPlayoutDriver(string name) {
     return new HostFastPlayoutDriver;
   }
   else {
-    throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
+    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
+    throw runtime_error("Unknown playout type");
   }
 }
 
