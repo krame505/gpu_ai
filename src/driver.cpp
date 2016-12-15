@@ -13,7 +13,7 @@
 #include "genMovesTest.hpp"
 
 #ifdef NDEBUG
-#define DEFAULT_NUM_PLAYOUTS 1000
+#define DEFAULT_NUM_PLAYOUTS 100000
 
 #else
 #define DEFAULT_NUM_PLAYOUTS 10
@@ -25,6 +25,7 @@
 using namespace std;
 
 enum runMode {
+  GenMovesTest,
   Test,
   Single
 };
@@ -32,7 +33,10 @@ enum runMode {
 istream &operator>>(istream& in, runMode& mode) {
   string token;
   in >> token;
-  if (token == "test") {
+  if (token == "gen_moves_test") {
+    mode = GenMovesTest;
+  }
+  else if (token == "test") {
     mode = Test;
   }
   else if (token == "single") {
@@ -47,6 +51,8 @@ istream &operator>>(istream& in, runMode& mode) {
 
 ostream &operator<<(ostream &os, runMode mode) {
   switch (mode) {
+  case GenMovesTest:
+    return os << "gen_moves_test";
   case Test:
     return os << "test";
   case Single:
@@ -110,37 +116,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
-vector<PlayerId> playoutTest(const vector<State> &states, PlayoutDriver *playoutDriver) {
-  auto t1 = chrono::high_resolution_clock::now();
-  vector<PlayerId> playoutResults = playoutDriver->runPlayouts(states);
-  auto t2 = chrono::high_resolution_clock::now();
-  chrono::duration<double> diff = t2 - t1;
-
-  int wins[3] = {0, 0, 0};
-  for (unsigned int n = 0; n < playoutResults.size(); n++) {
-    switch (playoutResults[n]) {
-    case PLAYER_NONE:
-      wins[0]++;
-      break;
-    case PLAYER_1:
-      wins[1]++;
-      break;
-    case PLAYER_2:
-      wins[2]++;
-      break;
-    }
-  }
-
-  cout << "=== Results ===" << endl;
-  cout << "Games drawn: " << wins[0] << endl;
-  cout << "Player 1 wins: " << wins[1] << endl;
-  cout << "Player 2 wins: " << wins[2] << endl;
-  cout << "Elapsed time: " << diff.count() << " seconds" << endl;
-
-  return playoutResults;
-}
-
-void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETUPS]) {
+vector<State> genRandomStates(unsigned int numTests) {
   vector<State> ourStates(numTests);
   RandomPlayer thePlayer;
 
@@ -175,18 +151,60 @@ void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_
     ourStates[n] = state;
   }
 
-#ifndef NDEBUG
-  cout << "Testing genMoves host and device results are the same..." << endl;
-  for (State state : ourStates) {
-    assert(genMovesTest(state));
-  }
-#endif
+  return ourStates;
+}
 
+vector<PlayerId> playoutTest(const vector<State> &states, PlayoutDriver *playoutDriver) {
+  auto t1 = chrono::high_resolution_clock::now();
+  vector<PlayerId> playoutResults = playoutDriver->runPlayouts(states);
+  auto t2 = chrono::high_resolution_clock::now();
+  chrono::duration<double> diff = t2 - t1;
+
+  int wins[3] = {0, 0, 0};
+  for (unsigned int n = 0; n < playoutResults.size(); n++) {
+    switch (playoutResults[n]) {
+    case PLAYER_NONE:
+      wins[0]++;
+      break;
+    case PLAYER_1:
+      wins[1]++;
+      break;
+    case PLAYER_2:
+      wins[2]++;
+      break;
+    }
+  }
+
+  cout << "=== Results ===" << endl;
+  cout << "Games drawn: " << wins[0] << endl;
+  cout << "Player 1 wins: " << wins[1] << endl;
+  cout << "Player 2 wins: " << wins[2] << endl;
+  cout << "Elapsed time: " << diff.count() << " seconds" << endl;
+
+  return playoutResults;
+}
+
+void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETUPS]) {
+  vector<State> states = genRandomStates(numTests);
+  
   for (unsigned int i = 0; i < NUM_TEST_SETUPS; i++) {
     cout << "Running test " << i << ": " << playoutDrivers[i]->getName() << "..." << endl;
-    playoutTest(ourStates, playoutDrivers[i]);
+    playoutTest(states, playoutDrivers[i]);
     cout << endl;
   }
+}
+
+void genMovesTests(unsigned int numTests) {
+  vector<State> states = genRandomStates(numTests);
+  
+  cout << "Testing genMoves host and device results are the same..." << endl;
+  for (State state : states) {
+    if (!genMovesTest(state)) {
+      cout << "Failed" << endl;
+      exit(1);
+    }
+  }
+  cout << "Passed" << endl;
 }
 
 Player *getPlayer(string name) {
@@ -313,7 +331,7 @@ int main(int argc, char **argv) {
     delete player1;
     delete player2;
   }
-  else {
+  else if (theRunMode == Test) {
     cout << "Running " << numTests << " random playouts with ";
     cout << playoutDriver1->getName() << " and ";
     cout << playoutDriver2->getName() << endl;
@@ -325,6 +343,12 @@ int main(int argc, char **argv) {
     // Free playout drivers as we are done now
     delete playoutDriver1;
     delete playoutDriver2;
+  }
+  else if (theRunMode == GenMovesTest) {
+    cout << "Testing " << numTests << " random states have the same moves on the host and device" << endl;
+    cout << endl;
+
+    genMovesTests(numTests);
   }
 
   return 0;
