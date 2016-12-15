@@ -19,7 +19,7 @@
 #define INIT_KERNEL_VARS				\
   uint8_t id = threadIdx.x;				\
   uint8_t row = id / (BOARD_SIZE / 2);			\
-  uint8_t col = id % (BOARD_SIZE / 2) + (row % 2 == 0);	\
+  uint8_t col = ((id % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);	\
   Loc loc(row, col);
 
 
