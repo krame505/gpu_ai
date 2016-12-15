@@ -246,8 +246,8 @@ int main(int argc, char **argv) {
   desc.add_options()
     ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Single), "run mode")
     ("num-playouts,n", boost::program_options::value<unsigned int>(&numTests)->default_value(DEFAULT_NUM_PLAYOUTS), "number of playouts")
-    ("white,w", boost::program_options::value<string>(), "white player")
-    ("black,b", boost::program_options::value<string>(), "black player")
+    ("player1,1", boost::program_options::value<string>(), "player 1")
+    ("player2,2", boost::program_options::value<string>(), "player 2")
     ("help,h", "print help")
     ;
   boost::program_options::variables_map vm;
@@ -259,12 +259,12 @@ int main(int argc, char **argv) {
       return 1;
     }
   
-    if (vm.count("white")) {
+    if (vm.count("player1")) {
       if (theRunMode == Single) {
-	player1 = getPlayer(vm["white"].as<string>());
+	player1 = getPlayer(vm["player1"].as<string>());
       }
       else {
-	playoutDriver1 = getPlayoutDriver(vm["white"].as<string>());
+	playoutDriver1 = getPlayoutDriver(vm["player1"].as<string>());
       }
     }
     else {
@@ -276,12 +276,12 @@ int main(int argc, char **argv) {
       }
     }    
 
-    if (vm.count("black")) {
+    if (vm.count("player2")) {
       if (theRunMode == Single) {
-	player2 = getPlayer(vm["black"].as<string>());
+	player2 = getPlayer(vm["player2"].as<string>());
       }
       else {
-	playoutDriver2 = getPlayoutDriver(vm["black"].as<string>());
+	playoutDriver2 = getPlayoutDriver(vm["player2"].as<string>());
       }
     }
     else {
@@ -303,8 +303,8 @@ int main(int argc, char **argv) {
   // Run the game
   if (theRunMode == Single) {
     cout << "Playing single game of ";
-    cout << player1->getName() << " Player 1 ('white') and ";
-    cout << player2->getName() << " Player 2 ('black')" << endl;
+    cout << player1->getName() << " Player 1 and ";
+    cout << player2->getName() << " Player 2" << endl;
 
     Player *players[NUM_PLAYERS] = {player1, player2};
     playGame(players);
