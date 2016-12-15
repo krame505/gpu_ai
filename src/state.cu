@@ -325,21 +325,18 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
   // Perform another scan to calculate indices and copy the new arrays back to captureMoves
   // The maximum number of jumps a single piece can perform is 9
 
+  INIT_KERNEL_VARS;
 
-  INIT_KERNEL_VARS
-
-
-    __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
-    int tx = threadIdx.x;
-   // int loc = blockIdx.x * blockDim.x + threadIdx.x;
-    uint8_t tempCaptures[MAX_MOVES];
-    uint8_t maxLength[MAX_MOVES];
-    uint8_t maxCaptureIndices[MAX_MOVES];
+  __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
+  uint8_t tempCaptures[MAX_MOVES];
+  uint8_t maxLength[MAX_MOVES];
+  uint8_t maxCaptureIndices[MAX_MOVES];
 
   // Generate the captures for this location
   Move locMoves[MAX_LOC_MOVES];
-
   uint8_t numLocCapture = genLocCaptureMoves(loc, locMoves);
+
+  // Sort number of captures at this location by player
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     if((*this)[loc].owner == (PlayerId)i) { 
       indices[i][id] = numLocCapture;
@@ -393,19 +390,19 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 
        __syncthreads();
 
-       if (tx < stride) {
-        if (tempCaptures[tx] < tempCaptures[tx  + stride]) {
-         tempCaptures[tx] = tempCaptures[tx + stride];
+       if (id < stride) {
+        if (tempCaptures[id] < tempCaptures[id  + stride]) {
+         tempCaptures[id] = tempCaptures[id + stride];
         }
       }
        __syncthreads();
     } 
-    if (tx == 0) {
-      maxLength[tx] = tempCaptures[0];    
+    if (id == 0) {
+      maxLength[id] = tempCaptures[0];    
   }
 
   for(int i = 0; i < MAX_MOVES; i++) {
-    if(maxLength[tx] = result[turn][i + indices[turn][id]].jumps)
+    if(maxLength[id] = result[turn][i + indices[turn][id]].jumps)
       maxCaptureIndices[i] = indices[turn][i];
   }
 
@@ -414,16 +411,11 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
 #else
   Move locMoves[BOARD_SIZE][BOARD_SIZE][MAX_MOVES];
   uint8_t locNumMoves[BOARD_SIZE][BOARD_SIZE];
-  uint8_t maxJumps = 0;
 
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
       locNumMoves[i][j] = genLocCaptureMoves(loc, locMoves[i][j]);
-      for (int k = 0; k < locNumMoves[i][j]; k++) {
-	if (locMoves[i][j][k].jumps > maxJumps)
-	  maxJumps = locMoves[i][j][k].jumps;
-      }
     }
   }
 
@@ -440,11 +432,9 @@ __host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
       if (genMoves == NULL || genMoves[owner]) {
 	for (uint8_t k = 0; k < locNumMoves[i][j]; k++) {
 	  Move move = locMoves[i][j][k];
-	  if (move.jumps == maxJumps) {
-	    result[owner][l] = locMoves[i][j][k];
-	    numMoves[owner]++;
-	    l++;
-	  }
+	  result[owner][l] = locMoves[i][j][k];
+	  numMoves[owner]++;
+	  l++;
 	}
       }
     }
