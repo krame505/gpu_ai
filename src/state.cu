@@ -238,9 +238,10 @@ __host__ __device__ uint8_t State::genLocMoves(Loc l, Move result[MAX_LOC_MOVES]
   return numMoves;
 }
 
-__host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
-					       Move result[NUM_PLAYERS][MAX_MOVES],
-					       bool genMoves[NUM_PLAYERS]) const {
+__host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
+					     Move result[NUM_PLAYERS][MAX_MOVES],
+					     bool genMoves[NUM_PLAYERS],
+					     MoveType type) const {
 #ifdef __CUDA_ARCH__
   INIT_KERNEL_VARS
 
@@ -249,7 +250,12 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
   // Generate the moves for this location
   Move locMoves[MAX_LOC_MOVES];
 
-  uint8_t numLocMoves = genLocDirectMoves(loc, locMoves);
+  uint8_t numLocMoves;
+  if (type == CAPTURE)
+    genLocCaptureMoves(loc, locMoves);
+  else
+    genLocDirectMoves(loc, locMoves);
+
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     if ((*this)[loc].owner == (PlayerId)i) {
       indices[i][id] = numLocMoves;
@@ -296,150 +302,24 @@ __host__ __device__ void State::genDirectMoves(uint8_t numMoves[NUM_PLAYERS],
       result[turn][i + indices[turn][id]] = locMoves[i];
     }
   }
-
 #else
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     if (genMoves == NULL || genMoves[i])
       numMoves[i] = 0;
   }
 
-  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-    for (uint8_t j = 0; j < BOARD_SIZE; j++) {
-      Loc loc(i, j);
-      PlayerId owner = (*this)[loc].owner;
-      if (genMoves == NULL || genMoves[owner])
-	numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
-    }
-  }
-
-#endif
-}
-
-__host__ __device__ void State::genCaptureMoves(uint8_t numMoves[NUM_PLAYERS],
-						Move result[NUM_PLAYERS][MAX_MOVES],
-						bool genMoves[NUM_PLAYERS]) const {
-#ifdef __CUDA_ARCH__
-  // Do all the same stuff as genDirectMoves
-  // Perform a reduction to calculate the max capture move length possible for each player
-  // Each thread copies its capture moves of maximum length to a new local array
-  // Perform another scan to calculate indices and copy the new arrays back to captureMoves
-  // The maximum number of jumps a single piece can perform is 9
-
-  INIT_KERNEL_VARS;
-
-  __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
-  uint8_t tempCaptures[MAX_MOVES];
-  uint8_t maxLength[MAX_MOVES];
-  uint8_t maxCaptureIndices[MAX_MOVES];
-
-  // Generate the captures for this location
-  Move locMoves[MAX_LOC_MOVES];
-  uint8_t numLocCapture = genLocCaptureMoves(loc, locMoves);
-
-  // Sort number of captures at this location by player
-  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-    if((*this)[loc].owner == (PlayerId)i) { 
-      indices[i][id] = numLocCapture;
-    }
-    else {
-      indices[i][id] = 0;
-    }
-  }
-
-  // Perform exclusive scans to get indices to copy captures into the shared arrays
-  for (uint8_t stride = 1; stride <= NUM_LOCS; stride <<= 1) {
-    __syncthreads();
-    uint8_t i = (id + 1) * stride - 1;
-    if (i < NUM_LOCS) {
-      for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-      	indices[j][i] += indices[j][i - stride];
-      }
-    }
-  }
-
-  __syncthreads();
-
-  if (id < NUM_PLAYERS && (genMoves == NULL || genMoves[id])) {
-    numMoves[id] = indices[id][NUM_LOCS - 1];
-    indices[id][NUM_LOCS - 1] = 0;
-  }
-
-  for (uint8_t stride = NUM_LOCS/2; stride > 0; stride >>= 1) {
-    __syncthreads();
-    int i = (id + 1) * stride - 1;
-    uint8_t temp;
-    for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-      if (genMoves == NULL || genMoves[j]) {
-	temp = indices[j][i];
-	indices[j][i] += indices[j][i - stride];
-	indices[j][i - stride] = temp;
-      }
-    }
-  }
-
-  // Copy generated captures to shared arrays
-  for (uint8_t i = 0; i < numLocCapture; i++) {
-    if (genMoves == NULL || genMoves[turn]) {
-      result[turn][i + indices[turn][id]] = locMoves[i];
-      tempCaptures[i] = locMoves[i].jumps;
-    }
-  }
-
- // for (uint8_t i = 0; i < numLocCapture; i++) {
-    for (unsigned int stride = blockDim.x/2; stride >= 1; stride >>= 1) {
-
-       __syncthreads();
-
-       if (id < stride) {
-        if (tempCaptures[id] < tempCaptures[id  + stride]) {
-         tempCaptures[id] = tempCaptures[id + stride];
-        }
-      }
-       __syncthreads();
-    } 
-    if (id == 0) {
-      maxLength[id] = tempCaptures[0];    
-  }
-
-  for(int i = 0; i < MAX_MOVES; i++) {
-    if(maxLength[id] = result[turn][i + indices[turn][id]].jumps)
-      maxCaptureIndices[i] = indices[turn][i];
-  }
-
-  assert(false); // TODO
-
-#else
-  Move locMoves[BOARD_SIZE][BOARD_SIZE][MAX_MOVES];
-  uint8_t locNumMoves[BOARD_SIZE][BOARD_SIZE];
-
-  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-    for (uint8_t j = 0; j < BOARD_SIZE; j++) {
-      Loc loc(i, j);
-      locNumMoves[i][j] = genLocCaptureMoves(loc, locMoves[i][j]);
-    }
-  }
-
-  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-    if (genMoves == NULL || genMoves[i])
-      numMoves[i] = 0;
-  }
-
-  uint8_t l = 0;
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
       PlayerId owner = (*this)[loc].owner;
       if (genMoves == NULL || genMoves[owner]) {
-	for (uint8_t k = 0; k < locNumMoves[i][j]; k++) {
-	  Move move = locMoves[i][j][k];
-	  result[owner][l] = locMoves[i][j][k];
-	  numMoves[owner]++;
-	  l++;
-	}
+	if (type == CAPTURE)
+	  numMoves[owner] += genLocCaptureMoves(loc, &result[owner][numMoves[owner]]);
+	else
+	  numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
       }
     }
   }
-
 #endif
 }
 
@@ -460,7 +340,7 @@ __host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
   if (!genMoves)
     genMoves = genMovesDefault;
 
-  genCaptureMoves(numMoves, result, genMoves);
+  genTypeMoves(numMoves, result, genMoves, CAPTURE);
 
 #ifdef __CUDA_ARCH__
   if (threadIdx.x < NUM_PLAYERS) {
@@ -472,7 +352,7 @@ __host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
   }
 #endif
 
-  genDirectMoves(numMoves, result, genMoves);
+  genTypeMoves(numMoves, result, genMoves, DIRECT);
 }
 
 __host__ __device__ bool Move::operator==(const Move &other) const {

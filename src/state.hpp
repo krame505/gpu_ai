@@ -35,6 +35,11 @@ enum PieceType {
   CHECKER_KING,
 };
 
+enum MoveType {
+  DIRECT,
+  CAPTURE
+};
+
 // Represents a location on a board
 struct Loc {
   uint8_t row;
@@ -163,21 +168,14 @@ public:
 #endif
   uint8_t genLocMoves(Loc, Move[MAX_LOC_MOVES]) const;
 
-  // Generate all the possible direct (i.e. not capture) moves for the given players
+  // Generate all the possible capture or direct moves
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  void genDirectMoves(uint8_t[NUM_PLAYERS],
-		      Move[NUM_PLAYERS][MAX_MOVES],
-		      bool genMoves[NUM_PLAYERS]=NULL) const;
-
-  // Generate all the possible capture moves
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  void genCaptureMoves(uint8_t[NUM_PLAYERS],
+  void genTypeMoves(uint8_t[NUM_PLAYERS],
 		       Move[NUM_PLAYERS][MAX_MOVES],
-		       bool genMoves[NUM_PLAYERS]=NULL) const;
+		       bool genMoves[NUM_PLAYERS]=NULL,
+		       MoveType type=DIRECT) const;
 
   // Generate all the possible moves
 #ifdef __CUDACC__
