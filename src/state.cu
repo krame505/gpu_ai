@@ -387,30 +387,26 @@ __host__ __device__ bool Move::conflictsWith(const Move &other) const {
   // Cases of conflicting moves:
 
   // 1. two moves have the same destination
-  if (to == other.to) return false;
+  if (to == other.to) return true;
 
   // 2. two moves capture the same piece.
   for (uint8_t i = 0; i < jumps; i++) {
     for (uint8_t j = 0; j < other.jumps; j++) {
       if (removed[i] == other.removed[j])
-        return false;
+        return true;
     }
   }
 
   // 3. one piece ends up in the path of the other, or one piece captures the
   //    other (for moves of 2 different players)
-  for (uint8_t i = 0; i < jumps; i++) {
-    if (intermediate[i] == other.to || removed[i] == other.from)
-      return false;
-  }
   for (uint8_t i = 0; i < other.jumps; i++) {
     if (to == other.intermediate[i] || from == other.removed[i])
-      return false;
+      return true;
   }
 
   // 4. TODO: other cases
 
-  return true;
+  return false;
 }
 
 __host__ __device__ PlayerId nextTurn(PlayerId turn) {
