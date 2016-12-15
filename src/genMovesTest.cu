@@ -36,6 +36,15 @@ bool genMovesTest(State state) {
 
   // Invoke the kernel
   genMovesKernel<<<NUM_LOCS, 1>>>(devState, devMoves, devNumMoves);
+  cudaDeviceSynchronize();
+
+  // Check for errors
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    // print the CUDA error message and exit
+    std::cout << "CUDA error: " << cudaGetErrorString(error) << std::endl;
+    exit(1);
+  }
 
   // Copy the results back to the host
   Move movesResult[NUM_PLAYERS * MAX_MOVES];

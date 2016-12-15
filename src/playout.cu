@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#define CUDA_STACK_SIZE 1024 * 32
+
 #define SEED 12345
 
 __global__ void playoutKernel(State *states, PlayerId *results) {
@@ -57,7 +59,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     results[id] = state.result();
 }
 
-std::vector<PlayerId> devicePlayouts(std::vector<State> states) {
+std::vector<PlayerId> DevicePlayoutDriver::runPlayouts(std::vector<State> states) const {
   // Device variables
   State *devStates;
   PlayerId *devResults;
@@ -67,15 +69,22 @@ std::vector<PlayerId> devicePlayouts(std::vector<State> states) {
   // Copy states for playouts to device
   cudaMemcpy(devStates, states.data(), states.size() * sizeof(State), cudaMemcpyHostToDevice);
 
+  cudaError_t error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
+  if (error != cudaSuccess) {
+    // print the CUDA error message and exit
+    std::cout << "CUDA error setting stack size: " << cudaGetErrorString(error) << std::endl;
+    exit(1);
+  }
+
   // Invoke the kernel
   playoutKernel<<<NUM_LOCS, states.size()>>>(devStates, devResults);
   cudaDeviceSynchronize();
 
   // Check for errors
-  cudaError_t error = cudaGetLastError();
+  error = cudaGetLastError();
   if (error != cudaSuccess) {
     // print the CUDA error message and exit
-    std::cout << "CUDA error: " << cudaGetErrorString(error) << std::endl;
+    std::cout << "CUDA error calling kernel: " << cudaGetErrorString(error) << std::endl;
     exit(1);
   }
 

@@ -22,6 +22,7 @@ __host__ __device__ void State::move(const Move &move) {
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
 
+#ifndef NDEBUG
     // Error checking
     assert(removed.isValid());
     assert((*this)[removed].occupied);
@@ -29,6 +30,7 @@ __host__ __device__ void State::move(const Move &move) {
     Loc intermediate = move.intermediate[i];
     assert(intermediate.isValid());
     assert(!(*this)[intermediate].occupied);
+#endif
 
     board[removed.row][removed.col].occupied = false;
   }
@@ -477,17 +479,17 @@ __host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
   genDirectMoves(numMoves, result, genMoves);
 }
 
-__host__ __device__ bool Move::operator==(Move move) {
-  if (from != move.from ||
-      to != move.to ||
-      jumps != move.jumps ||
-      promoted != move.promoted) {
+__host__ __device__ bool Move::operator==(const Move &other) const {
+  if (from != other.from ||
+      to != other.to ||
+      jumps != other.jumps ||
+      promoted != other.promoted) {
     return false;
   }
   for (int i = 0; i < jumps; i++) {
-    if (removed[i] != move.removed[i])
+    if (removed[i] != other.removed[i])
       return false;
-    if (intermediate[i] != move.intermediate[i])
+    if (intermediate[i] != other.intermediate[i])
       return false;
   }
   return true;
@@ -501,8 +503,34 @@ __host__ __device__ void Move::addJump(Loc newTo) {
   to = newTo;
 }
 
-__host__ __device__ bool Move::conflictsWith(const Move &other) {
-  //return false; // TODO
+__host__ __device__ bool Move::conflictsWith(const Move &other) const {
+  // Cases of conflicting moves:
+
+  // 1. two moves have the same destination
+  if (to == other.to) return false;
+
+  // 2. two moves capture the same piece.
+  for (uint8_t i = 0; i < jumps; i++) {
+    for (uint8_t j = 0; j < other.jumps; j++) {
+      if (removed[i] == other.removed[j])
+        return false;
+    }
+  }
+
+  // 3. one piece ends up in the path of the other, or one piece captures the
+  //    other (for moves of 2 different players)
+  for (uint8_t i = 0; i < jumps; i++) {
+    if (intermediate[i] == other.to || removed[i] == other.from)
+      return false;
+  }
+  for (uint8_t i = 0; i < other.jumps; i++) {
+    if (to == other.intermediate[i] || from == other.removed[i])
+      return false;
+  }
+
+  // 4. TODO: other cases
+
+  return true;
 }
 
 __host__ __device__ PlayerId nextTurn(PlayerId turn) {

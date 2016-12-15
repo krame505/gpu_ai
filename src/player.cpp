@@ -90,7 +90,7 @@ Move MCTSPlayer::getMove(const State &state) const {
   if (moves.size() == 1)
     return moves[0];
 
-  GameTree *tree = buildTree(state, numPlayouts, timeout, playouts);
+  GameTree *tree = buildTree(state, numPlayouts, timeout, playoutDriver);
   Move move = tree->getOptMove(state.turn);
 
 #ifdef VERBOSE

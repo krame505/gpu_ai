@@ -4,7 +4,6 @@
 #include "playout.hpp"
 
 #include <vector>
-#include <functional>
 
 class GameTree {
 public:
@@ -51,9 +50,7 @@ private:
 };
 
 // Build a tree by performing a series of trials with the number of playouts in a vector
-GameTree *buildTree(State, const std::vector<unsigned> &trials,
-		    std::function<std::vector<PlayerId>(std::vector<State>)> playouts);
+GameTree *buildTree(State, const std::vector<unsigned> &trials, PlayoutDriver *playoutDriver);
 
 // Build a tree by performing a series of trials until a timeout
-GameTree *buildTree(State, unsigned numPlayouts, unsigned timeout,
-		    std::function<std::vector<PlayerId>(std::vector<State>)> playouts);
+GameTree *buildTree(State, unsigned numPlayouts, unsigned timeout, PlayoutDriver *playoutDriver);
