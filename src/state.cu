@@ -243,18 +243,16 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
 					     bool genMoves[NUM_PLAYERS],
 					     MoveType type) const {
 #ifdef __CUDA_ARCH__
-  INIT_KERNEL_VARS
-
+  INIT_KERNEL_VARS;
   __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
 
   // Generate the moves for this location
   Move locMoves[MAX_LOC_MOVES];
-
   uint8_t numLocMoves;
   if (type == CAPTURE)
-    genLocCaptureMoves(loc, locMoves);
+    numLocMoves = genLocCaptureMoves(loc, locMoves);
   else
-    genLocDirectMoves(loc, locMoves);
+    numLocMoves = genLocDirectMoves(loc, locMoves);
 
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     if ((*this)[loc].owner == (PlayerId)i) {
@@ -265,37 +263,43 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
     }
   }
 
-  // Perform exclusive scans to get indices to copy moves into the shared arrays
-  for (uint8_t stride = 1; stride <= NUM_LOCS; stride <<= 1) {
+  // Reduce
+  uint8_t stride = 1;
+  while (stride < NUM_LOCS) {
     __syncthreads();
-    uint8_t i = (id + 1) * stride - 1; // TODO: Check that this is correct...
-    if (i < NUM_LOCS) {
-      for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-	indices[j][i] += indices[j][i - stride];
+    if (((id + 1) & ((stride << 1) - 1)) == 0) {
+      for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	indices[i][id] += indices[i][id - stride];
       }
     }
+    stride <<= 1;
   }
 
-  __syncthreads();
+  // Write zero to the last element after saving the value there as the block sum
 
+  __syncthreads();
   if (id < NUM_PLAYERS && (genMoves == NULL || genMoves[id])) {
     numMoves[id] = indices[id][NUM_LOCS - 1];
     indices[id][NUM_LOCS - 1] = 0;
   }
 
-  for (uint8_t stride = NUM_LOCS / 2; stride > 0; stride >>= 1) {
+  // Scan
+  stride = NUM_LOCS / 2;
+  while (stride > 0) {
     __syncthreads();
-    int i = (id + 1) * stride - 1;
     uint8_t temp;
-    for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
-      if (genMoves == NULL || genMoves[j]) {
-	temp = indices[j][i];
-	indices[j][i] += indices[j][i - stride];
-	indices[j][i - stride] = temp;
+    if (((id + 1) & ((stride << 1) - 1)) == 0) {
+      for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	if (genMoves == NULL || genMoves[i]) {
+	  temp = indices[i][id - stride];
+	  indices[i][id - stride] = indices[i][id];
+	  indices[i][id] += temp;
+	}
       }
     }
+    stride >>= 1;
   }
-
+  
   // Copy generated moves to shared arrays
   for (uint8_t i = 0; i < numLocMoves; i++) {
     if (genMoves == NULL || genMoves[turn]) {
