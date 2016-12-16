@@ -46,5 +46,5 @@ public:
   ~DeviceSimplePlayoutDriver() {};
 
   std::vector<PlayerId> runPlayouts(std::vector<State>) const;
-  std::string getName() const { return "simple_device"; }
+  std::string getName() const { return "device_simple"; }
 };
