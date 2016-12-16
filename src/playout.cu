@@ -12,7 +12,9 @@
 #define SEED 12345
 
 __global__ void playoutKernel(State *states, PlayerId *results) {
-  INIT_KERNEL_VARS
+  uint8_t tx = threadIdx.x;
+  uint32_t bx = blockIdx.x;
+  uint32_t tid = tx + (bx * NUM_LOCS);
 
   __shared__ State state;
   state = states[bx];

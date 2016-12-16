@@ -244,7 +244,10 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
 					     bool genMoves[NUM_PLAYERS],
 					     MoveType type) const {
 #ifdef __CUDA_ARCH__
-  INIT_KERNEL_VARS;
+  uint8_t tx = threadIdx.x;
+  uint8_t row = tx / (BOARD_SIZE / 2);
+  uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);
+  Loc loc(row, col);
   
   __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
 

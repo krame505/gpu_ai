@@ -16,15 +16,6 @@
 #define MAX_LOC_MOVES  10  // Max number of possible moves for a piece from a single point
 #define MAX_MOVES      100 // Max number of direct or capture moves possible
 
-#define INIT_KERNEL_VARS				\
-  uint8_t tx = threadIdx.x;				\
-  uint32_t bx = blockIdx.x;				\
-  uint32_t tid = tx + (bx * NUM_LOCS);			\
-  uint8_t row = tx / (BOARD_SIZE / 2);			\
-  uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);	\
-  Loc loc(row, col);
-
-
 enum PlayerId {
   PLAYER_1,
   PLAYER_2,
