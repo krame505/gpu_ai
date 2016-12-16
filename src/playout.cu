@@ -17,9 +17,9 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   __shared__ State state;
   state = states[blockIdx.x];
 
-  // Init random generators
-  __shared__ curandState_t generators[NUM_LOCS];
-  curand_init(SEED, id, 1, &generators[id]);
+  // Init random generator
+  curandState_t generator;
+  curand_init(SEED, threadIdx.x + (blockIdx.x * NUM_LOCS), 0, &generator);
  
   // __shared__ uint8_t numDirectMoves[NUM_PLAYERS];
   // __shared__ uint8_t numCaptureMoves[NUM_PLAYERS];
@@ -42,7 +42,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     if (id == 0) {
       Move move;
       if (numMoves[state.turn] > 0) {
-        move = moves[state.turn][curand(&generators[id]) % numMoves[state.turn]];
+        move = moves[state.turn][curand(&generator) % numMoves[state.turn]];
       }
       else {
         gameOver = true; // No moves, game is over
