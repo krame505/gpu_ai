@@ -17,9 +17,11 @@
 #define MAX_MOVES      100 // Max number of direct or capture moves possible
 
 #define INIT_KERNEL_VARS				\
-  uint8_t id = threadIdx.x;				\
-  uint8_t row = id / (BOARD_SIZE / 2);			\
-  uint8_t col = ((id % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);	\
+  uint8_t tx = threadIdx.x;				\
+  uint8_t bx = blockIdx.x;				\
+  uint8_t tid = tx + (bx * NUM_LOCS);			\
+  uint8_t row = tx / (BOARD_SIZE / 2);			\
+  uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);	\
   Loc loc(row, col);
 
 

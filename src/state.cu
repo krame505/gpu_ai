@@ -259,10 +259,10 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
   PlayerId locOwner = (*this)[loc].owner;
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     if (locOwner == (PlayerId)i) {
-      indices[i][id] = numLocMoves;
+      indices[i][tx] = numLocMoves;
     }
     else {
-      indices[i][id] = 0;
+      indices[i][tx] = 0;
     }
   }
 
@@ -270,9 +270,9 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
   uint8_t stride = 1;
   while (stride < NUM_LOCS) {
     __syncthreads();
-    if (((id + 1) & ((stride << 1) - 1)) == 0) {
+    if (((tx + 1) & ((stride << 1) - 1)) == 0) {
       for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	indices[i][id] += indices[i][id - stride];
+	indices[i][tx] += indices[i][tx - stride];
       }
     }
     stride <<= 1;
@@ -280,9 +280,9 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
 
   // Write zero to the last element after saving the value there as the block sum
   __syncthreads();
-  if (id < NUM_PLAYERS && (genMoves == NULL || genMoves[id])) {
-    numMoves[id] = indices[id][NUM_LOCS - 1];
-    indices[id][NUM_LOCS - 1] = 0;
+  if (tx < NUM_PLAYERS && (genMoves == NULL || genMoves[tx])) {
+    numMoves[tx] = indices[tx][NUM_LOCS - 1];
+    indices[tx][NUM_LOCS - 1] = 0;
   }
 
   // Scan
@@ -290,12 +290,12 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
   while (stride > 0) {
     __syncthreads();
     uint8_t temp;
-    if (((id + 1) & ((stride << 1) - 1)) == 0) {
+    if (((tx + 1) & ((stride << 1) - 1)) == 0) {
       for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
 	if (genMoves == NULL || genMoves[i]) {
-	  temp = indices[i][id - stride];
-	  indices[i][id - stride] = indices[i][id];
-	  indices[i][id] += temp;
+	  temp = indices[i][tx - stride];
+	  indices[i][tx - stride] = indices[i][tx];
+	  indices[i][tx] += temp;
 	}
       }
     }
@@ -305,7 +305,7 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
   // Copy generated moves to shared arrays
   for (uint8_t i = 0; i < numLocMoves; i++) {
     if (genMoves == NULL || genMoves[locOwner]) {
-      result[locOwner][i + indices[locOwner][id]] = locMoves[i];
+      result[locOwner][i + indices[locOwner][tx]] = locMoves[i];
     }
   }
   

@@ -15,11 +15,11 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   INIT_KERNEL_VARS
 
   __shared__ State state;
-  state = states[blockIdx.x];
+  state = states[bx];
 
   // Init random generator
   curandState_t generator;
-  curand_init(SEED, threadIdx.x + (blockIdx.x * NUM_LOCS), 0, &generator);
+  curand_init(SEED, tid, 0, &generator);
  
   // __shared__ uint8_t numDirectMoves[NUM_PLAYERS];
   // __shared__ uint8_t numCaptureMoves[NUM_PLAYERS];
@@ -31,7 +31,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
 
   __shared__ bool gameOver;
 
-  if (threadIdx.x == 0)
+  if (tx == 0)
     gameOver = false;
 
   do {
@@ -39,7 +39,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
 
     // Select a move
     // TODO: Optimize this portion
-    if (id == 0) {
+    if (tx == 0) {
       Move move;
       if (numMoves[state.turn] > 0) {
         move = moves[state.turn][curand(&generator) % numMoves[state.turn]];
@@ -55,8 +55,8 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   } while (!gameOver);
 
   // TODO: Implement State::result to make use of parallelism
-  if (threadIdx.x == 0)
-    results[blockIdx.x] = state.result();
+  if (tx == 0)
+    results[bx] = state.result();
 }
 
 std::vector<PlayerId> DevicePlayoutDriver::runPlayouts(std::vector<State> states) const {
