@@ -56,7 +56,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
 
   // TODO: Implement State::result to make use of parallelism
   if (threadIdx.x == 0)
-    results[id] = state.result();
+    results[blockIdx.x] = state.result();
 }
 
 std::vector<PlayerId> DevicePlayoutDriver::runPlayouts(std::vector<State> states) const {
