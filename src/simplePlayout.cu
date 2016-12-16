@@ -28,42 +28,48 @@ __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
  
     bool gameOver = false;
 
-    Loc playerOccupied[12];
-    uint8_t numOccupied;
-    bool noMoves[12];
-
-    Move result[MAX_LOC_MOVES];
+    uint8_t numPieces, numCanMoveCapture, numCanMoveDirect;
+    Move result[12][MAX_LOC_MOVES];
+    uint8_t numMoves[12];
+    uint8_t captureIndex[12];
+    uint8_t directIndex[12];
     
     do {
-      numOccupied = 0;
+      // Scan the board for pieces that can move
+      numPieces = 0;
+      numCanMoveCapture = 0;
+      numCanMoveDirect = 0;
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
 	for (uint8_t j = 0; j < BOARD_SIZE; j++) {
 	  Loc here(i, j);
 	  if (state[here].occupied && state[here].owner == state.turn) {
-	    playerOccupied[numOccupied] = here;
-	    noMoves[numOccupied] = false;
-	    numOccupied++;
+	    numMoves[numPieces] = state.genLocMoves(here, result[numPieces]);
+	    if (numMoves[numPieces] > 0) {
+	      if (result[numPieces][0].jumps > 0) {
+		captureIndex[numCanMoveCapture] = numPieces;
+		numCanMoveCapture++;
+	      }
+	      else {
+		directIndex[numCanMoveDirect] = numPieces;
+		numCanMoveDirect++;
+	      }
+	    }
+	    numPieces++;
 	  }
 	}
       }
-      while (numOccupied > 0) {
-	uint8_t tryLoc = (curand(&generator) % numOccupied) + 1;
-	uint8_t index = 0;
-	while (tryLoc > 0) {
-	  while (noMoves[index] == true) {
-	    index++;
-	  }
-	  tryLoc--;
-	}
-	uint8_t numMoves = state.genLocMoves(playerOccupied[index], result);
-	if (numMoves == 0) {
-	  numOccupied --;
-	}
-	else {
-	  state.move(result[curand(&generator) % numMoves]);
-	}
+
+      if (numCanMoveCapture > 0) {
+	uint8_t piece = captureIndex[curand(&generator) % numCanMoveCapture];
+	uint8_t move = curand(&generator) % numMoves[piece];
+	state.move(result[piece][move]);
       }
-      if (numOccupied == 0) {
+      else if (numCanMoveDirect > 0) {
+	uint8_t piece = directIndex[curand(&generator) % numCanMoveDirect];
+	uint8_t move = curand(&generator) % numMoves[piece];
+	state.move(result[piece][move]);
+      }
+      else {
 	gameOver = true;
       }
     } while (!gameOver);
