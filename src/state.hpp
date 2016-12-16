@@ -18,8 +18,8 @@
 
 #define INIT_KERNEL_VARS				\
   uint8_t tx = threadIdx.x;				\
-  uint8_t bx = blockIdx.x;				\
-  uint8_t tid = tx + (bx * NUM_LOCS);			\
+  uint32_t bx = blockIdx.x;				\
+  uint32_t tid = tx + (bx * NUM_LOCS);			\
   uint8_t row = tx / (BOARD_SIZE / 2);			\
   uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);	\
   Loc loc(row, col);
