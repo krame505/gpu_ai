@@ -14,11 +14,11 @@ vector<PlayerId> HostPlayoutDriver::runPlayouts(vector<State> states) const {
   #pragma omp parallel for
   for (unsigned i = 0; i < states.size(); i++) {
     State state = states[i];
-    while (!state.isFinished()) {
+    while (!state.isGameOver()) {
       Move move = player.getMove(state);
       state.move(move);
     }
-    results[i] = state.result();
+    results[i] = state.getNextTurn();
   }
   
   return results;
@@ -30,7 +30,7 @@ vector<PlayerId> HostFastPlayoutDriver::runPlayouts(vector<State> states) const 
   #pragma omp parallel for
   for (unsigned i = 0; i < states.size(); i++) {
     State state = states[i];
-    while (!state.isFinished()) {
+    while (!state.isGameOver()) {
       // Generate all the moves possible for both players
       uint8_t numMoves[NUM_PLAYERS];
       Move result[NUM_PLAYERS][MAX_MOVES];
@@ -42,15 +42,14 @@ vector<PlayerId> HostFastPlayoutDriver::runPlayouts(vector<State> states) const 
 
       // Choose random moves until one conflicting with a previous move is chosen
       vector<Move> movesToApply;
-      PlayerId turn = state.turn;
-      for (unsigned i = 0; i < 42 && moves[turn].size() > 0; i++) {
-	Move move = moves[turn][rand() % moves[turn].size()];
+      for (unsigned i = 0; i < 42 && moves[state.turn].size() > 0; i++) {
+	Move move = moves[state.turn][rand() % moves[state.turn].size()];
 	for (const Move &prevMove : movesToApply) {
 	  if (prevMove.conflictsWith(move))
 	    goto end; // Sorry, but this is the best way to break out of a nested loop
 	}
 	movesToApply.push_back(move);
-	turn = nextTurn(turn);
+	state.turn = state.getNextTurn();
       }
     end:
 
@@ -65,13 +64,13 @@ vector<PlayerId> HostFastPlayoutDriver::runPlayouts(vector<State> states) const 
       Move move = moves[turn][rand() % moves[turn].size()];
       do {
 	state.move(move);
-	turn = nextTurn(turn);
+	turn = state.getNextTurn();
 	if (moves[turn].size() == 0)
 	  break;
 	move = moves[turn][rand() % moves[turn].size()];
       } while (state.isValidMove(move));*/
     }
-    results[i] = state.result();
+    results[i] = state.getNextTurn();
   }
   
   return results;

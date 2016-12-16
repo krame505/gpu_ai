@@ -85,7 +85,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   };
 
   // Game is over when there are no more possible moves
-  while (!state.isFinished()) {
+  while (!state.isGameOver()) {
     if (verbose) {
       cout << state << endl;
     }
@@ -104,8 +104,8 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
     cout << state << endl;
   }
 
-  // Game over: check the state to see who won the game
-  PlayerId result = state.result();
+  // Game over: Other player is the winner
+  PlayerId result = state.getNextTurn();
   if (verbose) {
     if (result == PLAYER_NONE) {
       cout << "Draw!" << endl;
@@ -140,7 +140,7 @@ vector<State> genRandomStates(unsigned int numTests) {
 
     // Carry out the opening random moves
     for (unsigned int m = 0; m < randomMoves; m ++) {
-      if (state.isFinished())
+      if (state.isGameOver())
 	break;
 
       // Calculate the next move

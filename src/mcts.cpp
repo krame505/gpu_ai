@@ -10,7 +10,7 @@ using namespace std;
 
 vector<State> GameTree::select(unsigned trials) {
   // If this is a terminal state, then all assigned playouts must happen from this state
-  if (state.isFinished()) {
+  if (state.isGameOver()) {
     assignedTrials = trials;
     return vector<State>(trials, state);
   }
@@ -139,8 +139,8 @@ double GameTree::ucb1() const {
 }
 
 double GameTree::getScore(PlayerId player) const {
-  if (state.isFinished()) {
-    PlayerId result = state.result();
+  if (state.isGameOver()) {
+    PlayerId result = state.getNextTurn();
     if (result == player)
       return 1;
     else

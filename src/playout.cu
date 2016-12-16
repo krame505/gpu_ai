@@ -37,7 +37,11 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     gameOver = false;
 
   do {
-    state.genMoves(numMoves, moves);
+    __shared__ bool genMoves[NUM_PLAYERS];
+    if (tx < NUM_PLAYERS)
+      genMoves[tx] = state.turn == tx;
+
+    state.genMoves(numMoves, moves, genMoves);
 
     // Select a move
     // TODO: Optimize this portion
@@ -56,9 +60,8 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     }
   } while (!gameOver);
 
-  // TODO: Implement State::result to make use of parallelism
   if (tx == 0)
-    results[bx] = state.result();
+    results[bx] = state.getNextTurn();
 }
 
 std::vector<PlayerId> DevicePlayoutDriver::runPlayouts(std::vector<State> states) const {

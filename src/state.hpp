@@ -112,6 +112,12 @@ struct State {
     return board[loc.row][loc.col];
   }
 
+// Get the next player in the turn sequence
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  PlayerId getNextTurn() const;
+
 #ifdef __CUDACC__
   __host__ __device__
 #endif
@@ -182,13 +188,7 @@ public:
   std::vector<Move> getMoves() const;
 
   // Return true if the game is finished
-  bool isFinished() const;
-
-  // Return the winner, or PLAYER_NONE if a draw
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  PlayerId result() const;
+  bool isGameOver() const;
 };
 
 // Represents a move, independant from any particular board state
@@ -236,12 +236,6 @@ struct Move {
 #endif
   bool conflictsWith(const Move &other) const;
 };
-
-// Get the next player in the turn sequence
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-PlayerId nextTurn(PlayerId);
 
 // Overload << operator for printing
 std::ostream &operator<<(std::ostream&, PlayerId);

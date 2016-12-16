@@ -17,7 +17,7 @@ vector<Move> State::getMoves() const {
   return vector<Move>(result[turn], &result[turn][numMoves[turn]]);
 }
 
-bool State::isFinished() const {
+bool State::isGameOver() const {
   return getMoves().size() == 0;
 }
 
