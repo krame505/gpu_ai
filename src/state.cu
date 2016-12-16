@@ -252,7 +252,7 @@ __host__ __device__ uint8_t State::genLocMoves(Loc l, Move result[MAX_LOC_MOVES]
 __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
 					     Move result[NUM_PLAYERS][MAX_MOVES],
 					     bool genMoves[NUM_PLAYERS],
-					     MoveType type) const {
+					     bool isJump) const {
 #ifdef __CUDA_ARCH__
   uint8_t tx = threadIdx.x;
   uint8_t row = tx / (BOARD_SIZE / 2);
@@ -264,7 +264,7 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
   // Generate the moves for this location
   Move locMoves[MAX_LOC_MOVES];
   uint8_t numLocMoves;
-  if (type == CAPTURE)
+  if (isJump)
     numLocMoves = genLocCaptureMoves(loc, locMoves);
   else
     numLocMoves = genLocDirectMoves(loc, locMoves);
@@ -333,7 +333,7 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
       Loc loc(i, j);
       PlayerId owner = (*this)[loc].owner;
       if (genMoves == NULL || genMoves[owner]) {
-	if (type == CAPTURE)
+	if (isJump)
 	  numMoves[owner] += genLocCaptureMoves(loc, &result[owner][numMoves[owner]]);
 	else
 	  numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
@@ -360,7 +360,7 @@ __host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
   if (!genMoves)
     genMoves = genMovesDefault;
 
-  genTypeMoves(numMoves, result, genMoves, CAPTURE);
+  genTypeMoves(numMoves, result, genMoves, true);
 
 #ifdef __CUDA_ARCH__
   if (threadIdx.x < NUM_PLAYERS) {
@@ -372,7 +372,7 @@ __host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
   }
 #endif
 
-  genTypeMoves(numMoves, result, genMoves, DIRECT);
+  genTypeMoves(numMoves, result, genMoves, false);
 }
 
 __host__ __device__ bool Move::operator==(const Move &other) const {
