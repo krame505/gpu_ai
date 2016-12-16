@@ -243,6 +243,9 @@ PlayoutDriver *getPlayoutDriver(string name) {
   else if (name == "host_fast") {
     return new HostFastPlayoutDriver;
   }
+  else if (name == "device_simple") {
+    return new DeviceSimplePlayoutDriver;
+  }
   else {
     //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
     throw runtime_error("Unknown playout type");

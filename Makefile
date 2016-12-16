@@ -10,7 +10,7 @@ CUDA_INSTALL_PATH ?= /usr/local/cuda-8.0
 EXECUTABLE  := run_ai
 
 # CUDA source files (compiled with cudacc)
-CUFILES	    := state.cu playout.cu genMovesTest.cu
+CUFILES	    := state.cu playout.cu genMovesTest.cu simplePlayout.cu
 # C/C++ source files (compiled with gcc / c++)
 CCFILES	    := state.cpp playout.cpp mcts.cpp player.cpp driver.cpp
 # Header files included by any of CUFILES

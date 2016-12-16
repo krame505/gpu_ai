@@ -39,3 +39,12 @@ public:
   std::vector<PlayerId> runPlayouts(std::vector<State>) const;
   std::string getName() const { return "device"; }
 };
+
+// Perform playouts on the GPU from the provided states, returning the winners
+class DeviceSimplePlayoutDriver : public PlayoutDriver {
+public:
+  ~DeviceSimplePlayoutDriver() {};
+
+  std::vector<PlayerId> runPlayouts(std::vector<State>) const;
+  std::string getName() const { return "simple_device"; }
+};
