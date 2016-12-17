@@ -279,10 +279,11 @@ __host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJ
     stride <<= 1;
   }
 
-  // Write zero to the last element after saving the value there as the block sum
+  // Write zero to the last element after saving the value there as numMoves
+  __syncthreads();
+  numMoves = indices[NUM_LOCS - 1];
   __syncthreads();
   if (tx == 0) {
-    numMoves = indices[NUM_LOCS - 1];
     indices[NUM_LOCS - 1] = 0;
   }
 
@@ -298,10 +299,12 @@ __host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJ
     stride >>= 1;
   }
   
-  // Copy generated moves to shared arrays
+  // Copy generated moves to results array
   for (uint8_t i = 0; i < numLocMoves; i++) {
     result[i + indices[tx]] = locMoves[i];
   }
+
+  __syncthreads();
   
 #else
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
@@ -320,27 +323,9 @@ __host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJ
 }
 
 __host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES]) const {
-  uint8_t numMoves = 0;
-
-#ifdef __CUDA_ARCH__  
-
-  __shared__ uint8_t globalNumMoves;
-  numMoves = genTypeMoves(result, true);
-  if (threadIdx.x == 0) {
-    globalNumMoves = numMoves;
-  }
-  __syncthreads();
-  if (globalNumMoves == 0)
-    numMoves = genTypeMoves(result, false);
-
-#else
-
-  numMoves = genTypeMoves(result, true);
+  uint8_t numMoves = genTypeMoves(result, true);
   if (numMoves == 0)
     numMoves = genTypeMoves(result, false);
-
-#endif
-
   return numMoves;
 }
 
