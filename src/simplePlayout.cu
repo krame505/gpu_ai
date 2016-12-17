@@ -28,46 +28,28 @@ __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
  
     bool gameOver = false;
 
-    uint8_t numPieces, numCanMoveCapture, numCanMoveDirect;
-    Move result[12][MAX_LOC_MOVES];
-    uint8_t numMoves[12];
-    uint8_t captureIndex[12];
-    uint8_t directIndex[12];
-    
+    Move captureMoves[MAX_LOC_MOVES * 12];
+    Move directMoves[MAX_LOC_MOVES * 12];
+    uint8_t numMoveCapture, numMoveDirect;
+
     do {
       // Scan the board for pieces that can move
-      numPieces = 0;
-      numCanMoveCapture = 0;
-      numCanMoveDirect = 0;
+      numMoveCapture = 0;
+      numMoveDirect = 0;
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
 	for (uint8_t j = 0; j < BOARD_SIZE; j++) {
 	  Loc here(i, j);
-	  if (state[here].occupied && state[here].owner == state.turn) {
-	    numMoves[numPieces] = state.genLocMoves(here, result[numPieces]);
-	    if (numMoves[numPieces] > 0) {
-	      if (result[numPieces][0].jumps > 0) {
-		captureIndex[numCanMoveCapture] = numPieces;
-		numCanMoveCapture++;
-	      }
-	      else {
-		directIndex[numCanMoveDirect] = numPieces;
-		numCanMoveDirect++;
-	      }
-	    }
-	    numPieces++;
-	  }
+	  numMoveCapture += state.genLocCaptureMoves(here, &captureMoves[numMoveCapture]);
+	  if (numMoveCapture == 0)
+	    numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
 	}
       }
 
-      if (numCanMoveCapture > 0) {
-	uint8_t piece = captureIndex[curand(&generator) % numCanMoveCapture];
-	uint8_t move = curand(&generator) % numMoves[piece];
-	state.move(result[piece][move]);
+      if (numMoveCapture > 0) {
+	state.move(captureMoves[curand(&generator) % numMoveCapture]);
       }
-      else if (numCanMoveDirect > 0) {
-	uint8_t piece = directIndex[curand(&generator) % numCanMoveDirect];
-	uint8_t move = curand(&generator) % numMoves[piece];
-	state.move(result[piece][move]);
+      else if (numMoveDirect > 0) {
+	state.move(directMoves[curand(&generator) % numMoveDirect]);
       }
       else {
 	gameOver = true;
