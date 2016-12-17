@@ -320,9 +320,27 @@ __host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJ
 }
 
 __host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES]) const {
-  uint8_t numMoves = genTypeMoves(result, true);
+  uint8_t numMoves = 0;
+
+#ifdef __CUDA_ARCH__  
+
+  __shared__ uint8_t globalNumMoves;
+  numMoves = genTypeMoves(result, true);
+  if (threadIdx.x == 0) {
+    globalNumMoves = numMoves;
+  }
+  __syncthreads();
+  if (globalNumMoves == 0)
+    numMoves = genTypeMoves(result, false);
+
+#else
+
+  numMoves = genTypeMoves(result, true);
   if (numMoves == 0)
     numMoves = genTypeMoves(result, false);
+
+#endif
+
   return numMoves;
 }
 
