@@ -37,7 +37,7 @@ __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
       numMoveCapture = 0;
       numMoveDirect = 0;
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-	for (uint8_t j = 0; j < BOARD_SIZE; j++) {
+	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j++) {
 	  Loc here(i, j);
 	  numMoveCapture += state.genLocCaptureMoves(here, &captureMoves[numMoveCapture]);
 	  if (numMoveCapture == 0)

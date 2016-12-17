@@ -29,8 +29,8 @@ bool genMovesTest(State state) {
   Move *devMoves;
   uint8_t *devNumMoves;
   cudaMalloc(&devState, sizeof(State));
-  cudaMalloc(&devMoves, NUM_PLAYERS * MAX_MOVES * sizeof(Move));
-  cudaMalloc(&devNumMoves, NUM_PLAYERS * sizeof(uint8_t));
+  cudaMalloc(&devMoves, MAX_MOVES * sizeof(Move));
+  cudaMalloc(&devNumMoves, sizeof(uint8_t));
 
   // Copy states for playouts to device
   cudaMemcpy(devState, &state, sizeof(State), cudaMemcpyHostToDevice);
