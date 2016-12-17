@@ -134,50 +134,45 @@ struct State {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genLocDirectMoves(Loc, Move[MAX_LOC_MOVES]) const;
+  uint8_t genLocDirectMoves(Loc, Move result[MAX_LOC_MOVES]) const;
 
   // Generate the possible capture moves from a location
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genLocCaptureMoves(Loc, Move[MAX_LOC_MOVES]) const;
+  uint8_t genLocCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const;
 
 private:
   // Helper to genLocCaptureMoves, recursivly generate the capture moves for a regular checker
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genLocCaptureReg(Loc, Move[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
+  uint8_t genLocCaptureReg(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
 
   // Helper to genLocCaptureMoves, recursivly generate the capture moves for a king
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genLocCaptureKing(Loc, Move[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
+  uint8_t genLocCaptureKing(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
 
 public:
   // Generate the possible moves from a location
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genLocMoves(Loc, Move[MAX_LOC_MOVES]) const;
+  uint8_t genLocMoves(Loc, Move result[MAX_LOC_MOVES]) const;
 
   // Generate all the possible capture or direct moves
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  void genTypeMoves(uint8_t[NUM_PLAYERS],
-		       Move[NUM_PLAYERS][MAX_MOVES],
-		       bool genMoves[NUM_PLAYERS]=NULL,
-		       bool isJump=false) const;
+  uint8_t genTypeMoves(Move result[MAX_MOVES], bool isJump=false) const;
 
   // Generate all the possible moves
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  void genMoves(uint8_t[NUM_PLAYERS],
-		Move[NUM_PLAYERS][MAX_MOVES],
-		bool genMoves[NUM_PLAYERS]=NULL) const;
+  uint8_t genMoves(Move result[MAX_MOVES]) const;
 
   // Generate a vector of all the moves for the current turn
   std::vector<Move> getMoves() const;

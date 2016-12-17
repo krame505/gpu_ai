@@ -28,8 +28,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   // __shared__ Move directMoves[NUM_PLAYERS][MAX_MOVES];
   // __shared__ Move captureMoves[NUM_PLAYERS][MAX_MOVES];
  
-  __shared__ uint8_t numMoves[NUM_PLAYERS];
-  __shared__ Move moves[NUM_PLAYERS][MAX_MOVES];
+  __shared__ Move moves[MAX_MOVES];
 
   __shared__ bool gameOver;
 
@@ -37,18 +36,13 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     gameOver = false;
 
   do {
-    __shared__ bool genMoves[NUM_PLAYERS];
-    if (tx < NUM_PLAYERS)
-      genMoves[tx] = state.turn == tx;
+    uint8_t numMoves = state.genMoves(moves);
 
-    state.genMoves(numMoves, moves, genMoves);
-
-    // Select a move
-    // TODO: Optimize this portion
     if (tx == 0) {
+      // Select a move
       Move move;
-      if (numMoves[state.turn] > 0) {
-        move = moves[state.turn][curand(&generator) % numMoves[state.turn]];
+      if (numMoves > 0) {
+        move = moves[curand(&generator) % numMoves];
       }
       else {
         gameOver = true; // No moves, game is over

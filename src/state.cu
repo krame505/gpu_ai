@@ -89,7 +89,7 @@ __host__ __device__ bool State::isValidJump(Move move, Loc jumped, Loc newTo, bo
   assert(2 * jumped.col - move.to.col == newTo.col);
 
   if (!(*this)[jumped].occupied || 
-      (*this)[jumped].owner == (*this)[move.from].owner ||
+      (*this)[jumped].owner == turn ||
       (*this)[newTo].occupied)
     return false;
 
@@ -110,7 +110,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
   const int dr[] = {1, 1, -1, -1};
   // NOTE: player 1 is moving down, player 2 is moving up - fix if this assumption is wrong
 
-  if (!(*this)[loc].occupied)
+  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
     return 0;
 
   if ((*this)[loc].type == CHECKER_KING) {
@@ -137,7 +137,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 
 
 __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
-  if (!(*this)[loc].occupied)
+  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
     return 0;
 
   result[0] = Move(loc, loc);
@@ -180,10 +180,10 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
   // no valid jumps but one was made at one point - save the move made at 
   // results[count] and indicate that it was successful by incrementing count
   if (!leftValid && !rightValid && !first) {
-    if ((*this)[result[0].from].owner == PLAYER_1 && result[count].to.row == (BOARD_SIZE - 1)) {
+    if (turn == PLAYER_1 && result[count].to.row == (BOARD_SIZE - 1)) {
       result[count].promoted = true;
     }
-    if ((*this)[result[0].from].owner == PLAYER_2 && result[count].to.row == 0) {
+    if (turn == PLAYER_2 && result[count].to.row == 0) {
       result[count].promoted = true;
     }
     return count + 1;
@@ -249,17 +249,16 @@ __host__ __device__ uint8_t State::genLocMoves(Loc l, Move result[MAX_LOC_MOVES]
   return numMoves;
 }
 
-__host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
-					     Move result[NUM_PLAYERS][MAX_MOVES],
-					     bool genMoves[NUM_PLAYERS],
-					     bool isJump) const {
+__host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJump) const {
+  uint8_t numMoves = 0;
+
 #ifdef __CUDA_ARCH__
   uint8_t tx = threadIdx.x;
   uint8_t row = tx / (BOARD_SIZE / 2);
   uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);
   Loc loc(row, col);
   
-  __shared__ uint8_t indices[NUM_PLAYERS][NUM_LOCS];
+  __shared__ uint8_t indices[NUM_LOCS];
 
   // Generate the moves for this location
   Move locMoves[MAX_LOC_MOVES];
@@ -268,111 +267,63 @@ __host__ __device__ void State::genTypeMoves(uint8_t numMoves[NUM_PLAYERS],
     numLocMoves = genLocCaptureMoves(loc, locMoves);
   else
     numLocMoves = genLocDirectMoves(loc, locMoves);
-  
-  PlayerId locOwner = (*this)[loc].owner;
-  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-    if (locOwner == (PlayerId)i) {
-      indices[i][tx] = numLocMoves;
-    }
-    else {
-      indices[i][tx] = 0;
-    }
-  }
+  indices[tx] = numLocMoves;
 
   // Reduce
   uint8_t stride = 1;
   while (stride < NUM_LOCS) {
     __syncthreads();
     if (((tx + 1) & ((stride << 1) - 1)) == 0) {
-      for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	indices[i][tx] += indices[i][tx - stride];
-      }
+      indices[tx] += indices[tx - stride];
     }
     stride <<= 1;
   }
 
   // Write zero to the last element after saving the value there as the block sum
   __syncthreads();
-  if (tx < NUM_PLAYERS && (genMoves == NULL || genMoves[tx])) {
-    numMoves[tx] = indices[tx][NUM_LOCS - 1];
-    indices[tx][NUM_LOCS - 1] = 0;
+  if (tx == 0) {
+    numMoves = indices[NUM_LOCS - 1];
+    indices[NUM_LOCS - 1] = 0;
   }
 
   // Scan
   stride = NUM_LOCS / 2;
   while (stride > 0) {
     __syncthreads();
-    uint8_t temp;
     if (((tx + 1) & ((stride << 1) - 1)) == 0) {
-      for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	if (genMoves == NULL || genMoves[i]) {
-	  temp = indices[i][tx - stride];
-	  indices[i][tx - stride] = indices[i][tx];
-	  indices[i][tx] += temp;
-	}
-      }
+      uint8_t temp = indices[tx - stride];
+      indices[tx - stride] = indices[tx];
+      indices[tx] += temp;
     }
     stride >>= 1;
   }
   
   // Copy generated moves to shared arrays
   for (uint8_t i = 0; i < numLocMoves; i++) {
-    if (genMoves == NULL || genMoves[locOwner]) {
-      result[locOwner][i + indices[locOwner][tx]] = locMoves[i];
-    }
+    result[i + indices[tx]] = locMoves[i];
   }
   
 #else
-  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-    if (genMoves == NULL || genMoves[i])
-      numMoves[i] = 0;
-  }
-
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 0; j < BOARD_SIZE; j++) {
       Loc loc(i, j);
-      PlayerId owner = (*this)[loc].owner;
-      if (genMoves == NULL || genMoves[owner]) {
-	if (isJump)
-	  numMoves[owner] += genLocCaptureMoves(loc, &result[owner][numMoves[owner]]);
-	else
-	  numMoves[owner] += genLocDirectMoves(loc, &result[owner][numMoves[owner]]);
-      }
+      if (isJump)
+	numMoves += genLocCaptureMoves(loc, &result[numMoves]);
+      else
+	numMoves += genLocDirectMoves(loc, &result[numMoves]);
     }
   }
+
 #endif
+
+  return numMoves;
 }
 
-__host__ __device__ void State::genMoves(uint8_t numMoves[NUM_PLAYERS],
-					 Move result[NUM_PLAYERS][MAX_MOVES],
-					 bool genMoves[NUM_PLAYERS]) const {
-#ifdef __CUDA_ARCH__
-  __shared__ bool genMovesDefault[NUM_PLAYERS];
-  if (threadIdx.x < NUM_PLAYERS) {
-    genMovesDefault[threadIdx.x] = true;
-  }
-  
-#else
-  bool genMovesDefault[NUM_PLAYERS] = {true, true};
-  
-#endif
-
-  if (!genMoves)
-    genMoves = genMovesDefault;
-
-  genTypeMoves(numMoves, result, genMoves, true);
-
-#ifdef __CUDA_ARCH__
-  if (threadIdx.x < NUM_PLAYERS) {
-    genMoves[threadIdx.x] &= !numMoves[threadIdx.x];
-  }
-#else
-  for (int i = 0; i < NUM_PLAYERS; i++) {
-    genMoves[i] &= !numMoves[i];
-  }
-#endif
-
-  genTypeMoves(numMoves, result, genMoves, false);
+__host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES]) const {
+  uint8_t numMoves = genTypeMoves(result, true);
+  if (numMoves == 0)
+    numMoves = genTypeMoves(result, false);
+  return numMoves;
 }
 
 __host__ __device__ bool Move::operator==(const Move &other) const {

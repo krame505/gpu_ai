@@ -240,9 +240,6 @@ PlayoutDriver *getPlayoutDriver(string name) {
   else if (name == "host") {
     return new HostPlayoutDriver;
   }
-  else if (name == "host_fast") {
-    return new HostFastPlayoutDriver;
-  }
   else if (name == "device_simple") {
     return new DeviceSimplePlayoutDriver;
   }

@@ -9,18 +9,17 @@ using namespace std;
 
 __global__ void genMovesKernel(State *globalState, Move *globalMoves, uint8_t *globalNumMoves) {
   __shared__ State state;
-  __shared__ uint8_t numMoves[NUM_PLAYERS];
-  __shared__ Move moves[NUM_PLAYERS][MAX_MOVES];
+  __shared__ Move moves[MAX_MOVES];
 
   state = *globalState;
-  state.genMoves(numMoves, moves);
+  uint8_t numMoves = state.genMoves(moves);
 
-  unsigned n, m;
-  for (n = 0; n < NUM_PLAYERS; n ++) {
-    globalNumMoves[n] = numMoves[n];
-    for (m = 0; m < MAX_MOVES; m ++) {
-      globalMoves[m + (n * MAX_MOVES)] = moves[n][m];
-    }
+  if (threadIdx.x == 0)
+    *globalNumMoves = numMoves;
+
+  for (unsigned i = 0; i < numMoves; i++) {
+    unsigned index = i + threadIdx.x;
+    globalMoves[index] = moves[index];
   }
 }
 
@@ -56,29 +55,24 @@ bool genMovesTest(State state) {
   }
 
   // Copy the results back to the host
-  Move movesResult[NUM_PLAYERS * MAX_MOVES];
-  cudaMemcpy(movesResult, devMoves, NUM_PLAYERS * MAX_MOVES * sizeof(Move), cudaMemcpyDeviceToHost);
+  Move gpuMoves[MAX_MOVES];
+  cudaMemcpy(gpuMoves, devMoves, MAX_MOVES * sizeof(Move), cudaMemcpyDeviceToHost);
   
-  uint8_t numMovesResult[NUM_PLAYERS];
-  cudaMemcpy(numMovesResult, devNumMoves, NUM_PLAYERS * sizeof(uint8_t), cudaMemcpyDeviceToHost);
+  uint8_t gpuNumMoves;
+  cudaMemcpy(&gpuNumMoves, devNumMoves, sizeof(uint8_t), cudaMemcpyDeviceToHost);
 
-  uint8_t numMoves[NUM_PLAYERS];
-  Move result[NUM_PLAYERS][MAX_MOVES];
-  state.genMoves(numMoves, result);
+  Move cpuMoves[MAX_MOVES];
+  uint8_t cpuNumMoves = state.genMoves(cpuMoves);
 
   bool match = true;
 
-  unsigned n, m;
-  for (n = 0; n < NUM_PLAYERS; n ++) {
-    if (numMovesResult[n] != numMoves[n]) {
+  if (cpuNumMoves != gpuNumMoves)
+    match = false;
+
+  for (uint8_t i = 0; i < cpuNumMoves; i++) {
+    if (cpuMoves[i] != gpuMoves[i]) {
       match = false;
       break;
-    }
-    for (m = 0; m < numMoves[n]; m ++) {
-      if (movesResult[m + (n * MAX_MOVES)] != result[n][m]) {
-        match = false;
-        break;
-      }
     }
   }
 
@@ -86,20 +80,14 @@ bool genMovesTest(State state) {
     cout << "Mismatch in CPU and GPU genMoves()" << endl;
     cout << state << endl;
 
-    cout << "CPU Moves" << endl;
-    for (n = 0; n < NUM_PLAYERS; n ++) {
-      cout << "Player " << (n + 1) << " moves: " << (int)numMoves[n] << endl;
-      for (m = 0; m < numMoves[n]; m ++) {
-        cout << result[n][m] << endl;
-      }
+    cout << "CPU Moves: " << (int)cpuNumMoves << endl;
+    for (uint8_t i = 0; i < cpuNumMoves; i++) {
+      cout << cpuMoves[i] << endl;
     }
 
-    cout << "GPU Moves" << endl;
-    for (n = 0; n < NUM_PLAYERS; n ++) {
-      cout << "Player " << (n + 1) << " moves: " << (int)numMovesResult[n] << endl;
-      for (m = 0; m < numMovesResult[n]; m ++) {
-        cout << movesResult[m + (n * MAX_MOVES)] << endl;
-      }
+    cout << "GPU Moves: " << (int)gpuNumMoves << endl;
+    for (uint8_t i = 0; i < gpuNumMoves; i++) {
+      cout << gpuMoves[i] << endl;
     }
   }
 

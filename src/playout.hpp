@@ -21,16 +21,6 @@ public:
   std::string getName() const { return "host"; }
 };
 
-// Perform playouts on the CPU from the provided states applying multiple moves per iteration,
-// returning the winners
-class HostFastPlayoutDriver : public PlayoutDriver {
-public:
-  ~HostFastPlayoutDriver() {};
-
-  std::vector<PlayerId> runPlayouts(std::vector<State>) const;
-  std::string getName() const { return "host_fast"; }
-};
-
 // Perform playouts on the GPU from the provided states, returning the winners
 class DevicePlayoutDriver : public PlayoutDriver {
 public:

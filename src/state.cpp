@@ -8,13 +8,9 @@
 using namespace std;
 
 vector<Move> State::getMoves() const {
-  uint8_t numMoves[NUM_PLAYERS];
-  Move result[NUM_PLAYERS][MAX_MOVES];
-  bool genMovesForPlayer[NUM_PLAYERS] = {false, false};
-  genMovesForPlayer[turn] = true;
-  genMoves(numMoves, result, genMovesForPlayer);
-
-  return vector<Move>(result[turn], &result[turn][numMoves[turn]]);
+  Move result[MAX_MOVES];
+  uint8_t numMoves = genMoves(result);
+  return vector<Move>(result, result + numMoves);
 }
 
 bool State::isGameOver() const {
