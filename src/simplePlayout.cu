@@ -96,6 +96,10 @@ std::vector<PlayerId> DeviceSimplePlayoutDriver::runPlayouts(std::vector<State> 
   PlayerId results[states.size()];
   cudaMemcpy(results, devResults, states.size() * sizeof(PlayerId), cudaMemcpyDeviceToHost);
 
+  // Free the global memory
+  cudaFree(devStates);
+  cudaFree(devResults);
+
   // Return a vector constructed from the contents of the array
   return std::vector<PlayerId>(results, results + states.size());
 }

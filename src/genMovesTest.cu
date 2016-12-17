@@ -61,6 +61,11 @@ bool genMovesTest(State state) {
   uint8_t gpuNumMoves;
   cudaMemcpy(&gpuNumMoves, devNumMoves, sizeof(uint8_t), cudaMemcpyDeviceToHost);
 
+  // Free the global memory
+  cudaFree(devState);
+  cudaFree(devMoves);
+  cudaFree(devNumMoves);
+
   Move cpuMoves[MAX_MOVES];
   uint8_t cpuNumMoves = state.genMoves(cpuMoves);
 
