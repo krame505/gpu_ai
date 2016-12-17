@@ -148,6 +148,17 @@ __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_L
 }
 
 
+__host__ __device__ uint8_t State::genLocCaptureMovesSimple(Loc loc, Move result[MAX_LOC_MOVES]) const {
+  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
+    return 0;
+
+  if ((*this)[loc].type == CHECKER)
+    return genLocCaptureRegSimple(loc, result);
+  else
+    return genLocCaptureKingSimple(loc, result);
+}
+
+
 __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
 
   // add an item if have jumped one piece already and it is the longest jump
@@ -208,6 +219,53 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
 }
 
 
+__device__ uint8_t State::genLocCaptureRegSimple(Loc loc, Move result[MAX_LOC_MOVES]) const {
+  uint8_t count = 0;
+  
+  int8_t deltaRowLeft, deltaColLeft, deltaRowRight, deltaColRight;
+  if ((*this)[loc].owner == PLAYER_1) {
+    deltaRowLeft = 1;
+    deltaColLeft = -1;
+    deltaRowRight = 1;
+    deltaColRight = 1;
+  } else {
+    deltaRowLeft = -1;
+    deltaColLeft = -1;
+    deltaRowRight = -1;
+    deltaColRight = 1;
+  }
+
+  Loc toLeft(loc.row + 2 * deltaRowLeft, loc.col + 2 * deltaColLeft);
+  Loc toRight(loc.row + 2 * deltaRowRight, loc.col + 2 * deltaColRight);
+
+  Move moveLeft(loc, loc, 0, false);
+  moveLeft.addJump(toLeft);
+  if (isValidMove(moveLeft)) {
+    if (turn == PLAYER_1 && moveLeft.to.row == (BOARD_SIZE - 1)) {
+      moveLeft.promoted = true;
+    }
+    if (turn == PLAYER_2 && moveLeft.to.row == 0) {
+      moveLeft.promoted = true;
+    }
+    result[count++] = moveLeft;
+  }
+
+  Move moveRight(loc, loc, 0, false);
+  moveRight.addJump(toRight);
+  if (isValidMove(moveRight)) {
+    if (turn == PLAYER_1 && moveRight.to.row == (BOARD_SIZE - 1)) {
+      moveRight.promoted = true;
+    }
+    if (turn == PLAYER_2 && moveRight.to.row == 0) {
+      moveRight.promoted = true;
+    }
+    result[count++] = moveRight;
+  }
+
+  return count;
+}
+
+
 __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
   Move prevMove = result[count];
 
@@ -236,6 +294,24 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
       result[count] = prevMove;
       result[count].addJump(toLocs[i]);
       count = genLocCaptureKing(toLocs[i], result, count, false);
+    }
+  }
+
+  return count;
+}
+
+__device__ uint8_t State::genLocCaptureKingSimple(Loc loc, Move result[MAX_LOC_MOVES]) const {
+  uint8_t count = 0;
+  
+  int8_t deltaRows[4] = {1, 1, -1, -1};
+  int8_t deltaCols[4] = {1, -1, 1, -1};
+
+  for (uint8_t i = 0; i < 4; i++) {
+    Loc toLoc = Loc(loc.row + 2 * deltaRows[i], loc.col + 2 * deltaCols[i]);
+    Move move(loc, loc, 0, false);
+    move.addJump(toLoc);
+    if (isValidMove(move)) {
+      result[count++] = move;
     }
   }
 

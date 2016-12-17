@@ -142,6 +142,12 @@ struct State {
 #endif
   uint8_t genLocCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const;
 
+  // Generate the possible capture moves from a location
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocCaptureMovesSimple(Loc, Move result[MAX_LOC_MOVES]) const;
+
 private:
   // Helper to genLocCaptureMoves, recursivly generate the capture moves for a regular checker
 #ifdef __CUDACC__
@@ -149,11 +155,23 @@ private:
 #endif
   uint8_t genLocCaptureReg(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
 
+  // Helper to genLocCaptureMoves, recursivly generate the capture moves for a regular checker
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocCaptureRegSimple(Loc, Move result[MAX_LOC_MOVES]) const;
+
   // Helper to genLocCaptureMoves, recursivly generate the capture moves for a king
 #ifdef __CUDACC__
   __host__ __device__
 #endif
   uint8_t genLocCaptureKing(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
+
+  // Helper to genLocCaptureMoves, recursivly generate the capture moves for a king
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocCaptureKingSimple(Loc, Move result[MAX_LOC_MOVES]) const;
 
 public:
   // Generate the possible moves from a location
