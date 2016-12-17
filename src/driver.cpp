@@ -219,13 +219,10 @@ Player *getPlayer(string name) {
     return new MCTSPlayer;
   }
   else if (name == "mcts_host") {
-    return new MCTSPlayer(5000, 7, new HostPlayoutDriver);
+    return new MCTSPlayer(500, 7, new HostPlayoutDriver);
   }
-  else if (name == "mcts_host1") {
-    return new MCTSPlayer(50, 7, new HostPlayoutDriver);
-  }
-  else if (name == "mcts_device") {
-    return new MCTSPlayer(new DevicePlayoutDriver);
+  else if (name == "mcts_device_simple") {
+    return new MCTSPlayer(5000, 7, new DeviceSimplePlayoutDriver);
   }
   else {
     //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
