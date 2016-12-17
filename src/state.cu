@@ -223,7 +223,7 @@ __device__ uint8_t State::genLocCaptureRegSimple(Loc loc, Move result[MAX_LOC_MO
   uint8_t count = 0;
   
   int8_t deltaRowLeft, deltaColLeft, deltaRowRight, deltaColRight;
-  if ((*this)[result[0].from].owner == PLAYER_1) {
+  if ((*this)[loc].owner == PLAYER_1) {
     deltaRowLeft = 1;
     deltaColLeft = -1;
     deltaRowRight = 1;

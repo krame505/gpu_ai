@@ -13,6 +13,8 @@
 
 #define BLOCK_SIZE 32
 
+#define USE_SIMPLE_CAPTURE
+
 __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
   uint8_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
@@ -39,13 +41,28 @@ __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
 	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
 	  Loc here(i, j);
+#ifdef USE_SIMPLE_CAPTURE
+	  numMoveCapture += state.genLocCaptureMovesSimple(here, &captureMoves[numMoveCapture]);
+#else
 	  numMoveCapture += state.genLocCaptureMoves(here, &captureMoves[numMoveCapture]);
+#endif
 	  numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
 	}
       }
 
       if (numMoveCapture > 0) {
+#ifdef USE_SIMPLE_CAPTURE
+	do {
+	  uint8_t moveIndex = curand(&generator) % numMoveCapture;
+	  Loc to = captureMoves[moveIndex].to;
+	  state.move(captureMoves[moveIndex]);
+	  state.turn = state.getNextTurn();
+	  numMoveCapture = state.genLocCaptureMovesSimple(to, captureMoves);
+	} while (numMoveCapture > 0);
+	state.turn = state.getNextTurn();
+#else
 	state.move(captureMoves[curand(&generator) % numMoveCapture]);
+#endif
       }
       else if (numMoveDirect > 0) {
 	state.move(directMoves[curand(&generator) % numMoveDirect]);
@@ -69,17 +86,21 @@ std::vector<PlayerId> DeviceSimplePlayoutDriver::runPlayouts(std::vector<State> 
   // Copy states for playouts to device
   cudaMemcpy(devStates, states.data(), states.size() * sizeof(State), cudaMemcpyHostToDevice);
 
-  cudaError_t error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
+  int numBlocks = states.size() / BLOCK_SIZE;
+  if (states.size() % BLOCK_SIZE)
+    numBlocks++;
+
+  cudaError_t error;
+
+#ifndef USE_SIMPLE_CAPTURE
+  error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
   if (error != cudaSuccess) {
     // print the CUDA error message and exit
     std::cout << "CUDA error setting stack size: " << cudaGetErrorString(error) << std::endl;
     exit(1);
   }
+#endif
 
-  int numBlocks = states.size() / BLOCK_SIZE;
-  if (states.size() % BLOCK_SIZE)
-    numBlocks++;
-  
   // Invoke the kernel
   simplePlayoutKernel<<<numBlocks, BLOCK_SIZE>>>(devStates, devResults, states.size());
   cudaDeviceSynchronize();
