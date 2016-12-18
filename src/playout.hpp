@@ -36,6 +36,16 @@ public:
   std::string getName() const { return "device_single"; }
 };
 
+// Perform playouts on the GPU with 1 state per block from the provided states,
+// returning the winners
+class DeviceHeuristicPlayoutDriver : public PlayoutDriver {
+public:
+  ~DeviceHeuristicPlayoutDriver() {};
+
+  std::vector<PlayerId> runPlayouts(std::vector<State>);
+  std::string getName() const { return "device_heuristic"; }
+};
+
 // Perform playouts on the GPU with 1 state per thread from the provided states,
 // returning the winners
 class DeviceMultiplePlayoutDriver : public PlayoutDriver {
