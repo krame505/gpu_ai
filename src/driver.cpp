@@ -221,8 +221,11 @@ Player *getPlayer(string name) {
   else if (name == "mcts_host") {
     return new MCTSPlayer(500, 7, new HostPlayoutDriver);
   }
-  else if (name == "mcts_device_simple") {
-    return new MCTSPlayer(5000, 7, new DeviceSimplePlayoutDriver);
+  else if (name == "mcts_device_single") {
+    return new MCTSPlayer(5000, 7, new DeviceSinglePlayoutDriver);
+  }
+  else if (name == "mcts_device_multiple") {
+    return new MCTSPlayer(5000, 7, new DeviceMultiplePlayoutDriver);
   }
   else {
     //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
@@ -231,14 +234,14 @@ Player *getPlayer(string name) {
 }
 
 PlayoutDriver *getPlayoutDriver(string name) {
-  if (name == "device") {
-    return new DevicePlayoutDriver;
-  }
-  else if (name == "host") {
+  if (name == "host") {
     return new HostPlayoutDriver;
   }
-  else if (name == "device_simple") {
-    return new DeviceSimplePlayoutDriver;
+  else if (name == "device_single") {
+    return new DeviceSinglePlayoutDriver;
+  }
+  else if (name == "device_multiple") {
+    return new DeviceMultiplePlayoutDriver;
   }
   else {
     //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
@@ -307,7 +310,7 @@ int main(int argc, char **argv) {
 	player2 = new RandomPlayer;
       }
       else {
-	playoutDriver2 = new DevicePlayoutDriver;
+	playoutDriver2 = new DeviceSinglePlayoutDriver;
       }
     }
   }

@@ -7,8 +7,8 @@
 #include <vector>
 #include <functional>
 
-#define MCTS_DEFAULT_TIMEOUT 10 // Seconds
-#define MCTS_DEFAULT_NUM_PLAYOUTS 200
+#define MCTS_DEFAULT_TIMEOUT 7 // Seconds
+#define MCTS_DEFAULT_NUM_PLAYOUTS 5000
 
 class Player {
 public:
@@ -38,12 +38,12 @@ class MCTSPlayer : public Player {
 public:
   MCTSPlayer(unsigned numPlayouts,
 	     unsigned timeout,
-	     PlayoutDriver *playoutDriver=new DevicePlayoutDriver) :
+	     PlayoutDriver *playoutDriver=new DeviceSinglePlayoutDriver) :
     numPlayouts(numPlayouts),
     timeout(timeout),
     playoutDriver(playoutDriver)
   {}
-  MCTSPlayer(PlayoutDriver *playoutDriver=new DevicePlayoutDriver) :
+  MCTSPlayer(PlayoutDriver *playoutDriver=new DeviceSinglePlayoutDriver) :
     MCTSPlayer(MCTS_DEFAULT_NUM_PLAYOUTS, MCTS_DEFAULT_TIMEOUT, playoutDriver)
   {}
   ~MCTSPlayer() {

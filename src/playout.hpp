@@ -21,20 +21,22 @@ public:
   std::string getName() const { return "host"; }
 };
 
-// Perform playouts on the GPU from the provided states, returning the winners
-class DevicePlayoutDriver : public PlayoutDriver {
+// Perform playouts on the GPU with 1 state per block from the provided states,
+// returning the winners
+class DeviceSinglePlayoutDriver : public PlayoutDriver {
 public:
-  ~DevicePlayoutDriver() {};
+  ~DeviceSinglePlayoutDriver() {};
 
   std::vector<PlayerId> runPlayouts(std::vector<State>) const;
-  std::string getName() const { return "device"; }
+  std::string getName() const { return "device_single"; }
 };
 
-// Perform playouts on the GPU from the provided states, returning the winners
-class DeviceSimplePlayoutDriver : public PlayoutDriver {
+// Perform playouts on the GPU with 1 state per tjread from the provided states,
+// returning the winners
+class DeviceMultiplePlayoutDriver : public PlayoutDriver {
 public:
-  ~DeviceSimplePlayoutDriver() {};
+  ~DeviceMultiplePlayoutDriver() {};
 
   std::vector<PlayerId> runPlayouts(std::vector<State>) const;
-  std::string getName() const { return "device_simple"; }
+  std::string getName() const { return "device_multiple"; }
 };

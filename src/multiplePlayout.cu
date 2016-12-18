@@ -23,11 +23,6 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   curandState_t generator;
   curand_init(SEED, tid, 0, &generator);
  
-  // __shared__ uint8_t numDirectMoves[NUM_PLAYERS];
-  // __shared__ uint8_t numCaptureMoves[NUM_PLAYERS];
-  // __shared__ Move directMoves[NUM_PLAYERS][MAX_MOVES];
-  // __shared__ Move captureMoves[NUM_PLAYERS][MAX_MOVES];
- 
   __shared__ Move moves[MAX_MOVES];
 
   __shared__ bool gameOver;
@@ -58,7 +53,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     results[bx] = state.getNextTurn();
 }
 
-std::vector<PlayerId> DevicePlayoutDriver::runPlayouts(std::vector<State> states) const {
+std::vector<PlayerId> DeviceMultiplePlayoutDriver::runPlayouts(std::vector<State> states) const {
   // Device variables
   State *devStates;
   PlayerId *devResults;

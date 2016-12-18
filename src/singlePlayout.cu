@@ -13,9 +13,7 @@
 
 #define BLOCK_SIZE 32
 
-#define USE_SIMPLE_CAPTURE
-
-__global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
+__global__ void singlePlayoutKernel(State *states, PlayerId *results, int n) {
   uint8_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
   uint32_t tid = tx + (bx * NUM_LOCS);
@@ -30,8 +28,8 @@ __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
  
     bool gameOver = false;
 
-    Move captureMoves[MAX_LOC_MOVES * 12];
-    Move directMoves[MAX_LOC_MOVES * 12];
+    Move captureMoves[MAX_MOVES];
+    Move directMoves[MAX_MOVES];
     uint8_t numMoveCapture, numMoveDirect;
 
     do {
@@ -41,28 +39,20 @@ __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
 	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
 	  Loc here(i, j);
-#ifdef USE_SIMPLE_CAPTURE
-	  numMoveCapture += state.genLocCaptureMovesSimple(here, &captureMoves[numMoveCapture]);
-#else
-	  numMoveCapture += state.genLocCaptureMoves(here, &captureMoves[numMoveCapture]);
-#endif
+	  numMoveCapture += state.genLocSingleCaptureMoves(here, &captureMoves[numMoveCapture]);
 	  numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
 	}
       }
 
       if (numMoveCapture > 0) {
-#ifdef USE_SIMPLE_CAPTURE
 	do {
 	  uint8_t moveIndex = curand(&generator) % numMoveCapture;
 	  Loc to = captureMoves[moveIndex].to;
 	  state.move(captureMoves[moveIndex]);
 	  state.turn = state.getNextTurn();
-	  numMoveCapture = state.genLocCaptureMovesSimple(to, captureMoves);
+	  numMoveCapture = state.genLocSingleCaptureMoves(to, captureMoves);
 	} while (numMoveCapture > 0);
 	state.turn = state.getNextTurn();
-#else
-	state.move(captureMoves[curand(&generator) % numMoveCapture]);
-#endif
       }
       else if (numMoveDirect > 0) {
 	state.move(directMoves[curand(&generator) % numMoveDirect]);
@@ -76,7 +66,7 @@ __global__ void simplePlayoutKernel(State *states, PlayerId *results, int n) {
   }
 }
 
-std::vector<PlayerId> DeviceSimplePlayoutDriver::runPlayouts(std::vector<State> states) const {
+std::vector<PlayerId> DeviceSinglePlayoutDriver::runPlayouts(std::vector<State> states) const {
   // Device variables
   State *devStates;
   PlayerId *devResults;
@@ -92,17 +82,8 @@ std::vector<PlayerId> DeviceSimplePlayoutDriver::runPlayouts(std::vector<State> 
 
   cudaError_t error;
 
-#ifndef USE_SIMPLE_CAPTURE
-  error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
-  if (error != cudaSuccess) {
-    // print the CUDA error message and exit
-    std::cout << "CUDA error setting stack size: " << cudaGetErrorString(error) << std::endl;
-    exit(1);
-  }
-#endif
-
   // Invoke the kernel
-  simplePlayoutKernel<<<numBlocks, BLOCK_SIZE>>>(devStates, devResults, states.size());
+  singlePlayoutKernel<<<numBlocks, BLOCK_SIZE>>>(devStates, devResults, states.size());
   cudaDeviceSynchronize();
 
   // Check for errors

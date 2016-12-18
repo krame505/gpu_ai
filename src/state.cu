@@ -136,6 +136,16 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
 }
 
 
+__host__ __device__ uint8_t State::genLocSingleCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
+  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
+    return 0;
+
+  if ((*this)[loc].type == CHECKER)
+    return genLocSingleCaptureReg(loc, result);
+  else
+    return genLocSingleCaptureKing(loc, result);
+}
+
 __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
   if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
     return 0;
@@ -145,17 +155,6 @@ __host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_L
     return genLocCaptureReg(loc, result);
   else
     return genLocCaptureKing(loc, result);
-}
-
-
-__host__ __device__ uint8_t State::genLocCaptureMovesSimple(Loc loc, Move result[MAX_LOC_MOVES]) const {
-  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
-    return 0;
-
-  if ((*this)[loc].type == CHECKER)
-    return genLocCaptureRegSimple(loc, result);
-  else
-    return genLocCaptureKingSimple(loc, result);
 }
 
 
@@ -219,7 +218,7 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
 }
 
 
-__device__ uint8_t State::genLocCaptureRegSimple(Loc loc, Move result[MAX_LOC_MOVES]) const {
+__device__ uint8_t State::genLocSingleCaptureReg(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
   
   int8_t deltaRowLeft, deltaColLeft, deltaRowRight, deltaColRight;
@@ -300,7 +299,7 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
   return count;
 }
 
-__device__ uint8_t State::genLocCaptureKingSimple(Loc loc, Move result[MAX_LOC_MOVES]) const {
+__device__ uint8_t State::genLocSingleCaptureKing(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
   
   int8_t deltaRows[4] = {1, 1, -1, -1};
