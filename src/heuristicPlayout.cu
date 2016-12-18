@@ -50,8 +50,10 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results, int n) 
       p = curand_uniform(&generator);
 
       if (numMoveCapture > 0) {
+	// Weight jumps higher if they capture more pieces, or if they are a regular checker that gets promoted
 	for (uint8_t i = 0; i < numMoveCapture; i++) {
-	  weight[i] = 1.0f;
+	  weight[i] = (float)captureMoves[i].jumps;
+	  weight[i] += captureMoves[i].promoted ? 5.0f : 0.0f;
 	  totalWeight += weight[i];
 	}
 	p *= totalWeight;
@@ -65,7 +67,18 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results, int n) 
       }
       else if (numMoveDirect > 0) {
 	for (uint8_t i = 0; i < numMoveDirect; i++) {
-	  weight[i] = 1.0f;
+	  // Weight checkers more highly if they are promoted or are more likely to be promoted
+	  // Weight kings evenly
+	  if (state[directMoves[i].from].type == CHECKER) {
+	    if (state[directMoves[i].from].owner == PLAYER_1)
+	      weight[i] = (float)directMoves[i].from.row;
+	    else
+	      weight[i] = 7.0f - (float)directMoves[i].from.row;
+	    weight[i] += captureMoves[i].promoted ? 5.0f : 0.0f;
+	  }
+	  else {
+	    weight[i] = 3.5f;
+	  }
 	  totalWeight += weight[i];
 	}
 	p *= totalWeight;
