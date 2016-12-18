@@ -33,7 +33,7 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results, int n) 
     uint8_t numMoveCapture, numMoveDirect;
     float weight[MAX_MOVES];
     float totalWeight, p;
-
+    
     do {
       // Scan the board for pieces that can move
       numMoveCapture = 0;
@@ -45,33 +45,37 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results, int n) 
 	  numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
 	}
       }
-      
+
       totalWeight = 0.0f;
+      p = curand_uniform(&generator);
+
       if (numMoveCapture > 0) {
 	for (uint8_t i = 0; i < numMoveCapture; i++) {
-	  // TODO: Weight assignment
+	  weight[i] = 1.0f;
+	  totalWeight += weight[i];
 	}
-	p = curand(&generator) * totalWeight;
-	for (uint8_t i = 0; i < numMoveCapture; i ++) {
+	p *= totalWeight;
+	for (uint8_t i = 0; i < numMoveCapture; i++) {
 	  p -= weight[i];
 	  if (p <= 0.0f) {
 	    state.move(captureMoves[i]);
 	    break;
 	  }
-	}
+	}	
       }
       else if (numMoveDirect > 0) {
 	for (uint8_t i = 0; i < numMoveDirect; i++) {
-	  // TODO: Weight assignment
+	  weight[i] = 1.0f;
+	  totalWeight += weight[i];
 	}
-	p = curand(&generator) * totalWeight;
-	for (uint8_t i = 0; i < numMoveDirect; i ++) {
+	p *= totalWeight;
+	for (uint8_t i = 0; i < numMoveDirect; i++) {
 	  p -= weight[i];
 	  if (p <= 0.0f) {
 	    state.move(directMoves[i]);
 	    break;
 	  }
-	}
+	}	
       }
       else {
 	gameOver = true;
