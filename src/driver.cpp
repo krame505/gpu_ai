@@ -224,6 +224,9 @@ Player *getPlayer(string name) {
   else if (name == "mcts_device_single") {
     return new MCTSPlayer(50000, 7, new DeviceSinglePlayoutDriver);
   }
+  else if (name == "mcts_device_heuristic") {
+    return new MCTSPlayer(50000, 7, new DeviceHeuristicPlayoutDriver);
+  }
   else if (name == "mcts_device_multiple") {
     return new MCTSPlayer(5000, 7, new DeviceMultiplePlayoutDriver);
   }
@@ -242,6 +245,9 @@ PlayoutDriver *getPlayoutDriver(string name) {
   }
   else if (name == "device_single") {
     return new DeviceSinglePlayoutDriver;
+  }
+  else if (name == "device_heuristic") {
+    return new DeviceHeuristicPlayoutDriver;
   }
   else if (name == "device_multiple") {
     return new DeviceMultiplePlayoutDriver;
