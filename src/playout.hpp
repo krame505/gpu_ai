@@ -7,7 +7,7 @@
 // In theory should be host runtime / device runtime for target # of playouts
 // But in practice needs tuning for MCTS
 #define INITIAL_DEVICE_HOST_PLAYOUT_RATIO 3
-#define DEVICE_HOST_PLAYOUT_RATIO_SCALE 1.1
+#define DEVICE_HOST_PLAYOUT_RATIO_SCALE 1.05
 
 class PlayoutDriver {
 public:
