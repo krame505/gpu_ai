@@ -8,7 +8,10 @@
 #include <functional>
 
 #define MCTS_DEFAULT_TIMEOUT 7 // Seconds
-#define MCTS_DEFAULT_NUM_PLAYOUTS 5000
+#define MCTS_DEFAULT_NUM_PLAYOUTS 50000
+#define MCTS_DEFAULT_DEVICE_HOST_PLAYOUT_RATIO 6
+#define MCTS_DEFAULT_PLAYOUT_DRIVER HybridPlayoutDriver(MCTS_DEFAULT_DEVICE_HOST_PLAYOUT_RATIO)
+
 
 class Player {
 public:
@@ -38,12 +41,12 @@ class MCTSPlayer : public Player {
 public:
   MCTSPlayer(unsigned numPlayouts,
 	     unsigned timeout,
-	     PlayoutDriver *playoutDriver=new DeviceSinglePlayoutDriver) :
+	     PlayoutDriver *playoutDriver=new MCTS_DEFAULT_PLAYOUT_DRIVER) :
     numPlayouts(numPlayouts),
     timeout(timeout),
     playoutDriver(playoutDriver)
   {}
-  MCTSPlayer(PlayoutDriver *playoutDriver=new DeviceSinglePlayoutDriver) :
+  MCTSPlayer(PlayoutDriver *playoutDriver=new MCTS_DEFAULT_PLAYOUT_DRIVER) :
     MCTSPlayer(MCTS_DEFAULT_NUM_PLAYOUTS, MCTS_DEFAULT_TIMEOUT, playoutDriver)
   {}
   ~MCTSPlayer() {
@@ -54,7 +57,7 @@ public:
   std::string getName() const { return "mcts"; }
 
 private:
-  unsigned numPlayouts;
-  unsigned timeout;
+  const unsigned numPlayouts;
+  const unsigned timeout;
   PlayoutDriver *playoutDriver;
 };

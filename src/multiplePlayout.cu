@@ -53,7 +53,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     results[bx] = state.getNextTurn();
 }
 
-std::vector<PlayerId> DeviceMultiplePlayoutDriver::runPlayouts(std::vector<State> states) const {
+std::vector<PlayerId> DeviceMultiplePlayoutDriver::runPlayouts(std::vector<State> states) {
   // Device variables
   State *devStates;
   PlayerId *devResults;

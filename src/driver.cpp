@@ -222,10 +222,13 @@ Player *getPlayer(string name) {
     return new MCTSPlayer(500, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_device_single") {
-    return new MCTSPlayer(5000, 7, new DeviceSinglePlayoutDriver);
+    return new MCTSPlayer(50000, 7, new DeviceSinglePlayoutDriver);
   }
   else if (name == "mcts_device_multiple") {
     return new MCTSPlayer(5000, 7, new DeviceMultiplePlayoutDriver);
+  }
+  else if (name == "mcts_hybrid") {
+    return new MCTSPlayer(50000, 7, new HybridPlayoutDriver(6));
   }
   else {
     //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
@@ -242,6 +245,9 @@ PlayoutDriver *getPlayoutDriver(string name) {
   }
   else if (name == "device_multiple") {
     return new DeviceMultiplePlayoutDriver;
+  }
+  else if (name == "hybrid") {
+    return new HybridPlayoutDriver;
   }
   else {
     //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);

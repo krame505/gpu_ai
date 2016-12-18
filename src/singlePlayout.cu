@@ -66,7 +66,7 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, int n) {
   }
 }
 
-std::vector<PlayerId> DeviceSinglePlayoutDriver::runPlayouts(std::vector<State> states) const {
+std::vector<PlayerId> DeviceSinglePlayoutDriver::runPlayouts(std::vector<State> states) {
   // Device variables
   State *devStates;
   PlayerId *devResults;
