@@ -383,7 +383,7 @@ __host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJ
   
 #else
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-    for (uint8_t j = 0; j < BOARD_SIZE; j++) {
+    for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
       Loc loc(i, j);
       if (isJump)
 	numMoves += genLocCaptureMoves(loc, &result[numMoves]);
