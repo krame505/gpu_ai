@@ -5,7 +5,7 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
-#include <ctime>
+#include <chrono>
 using namespace std;
 
 vector<State> GameTree::select(unsigned trials) {
@@ -170,8 +170,7 @@ GameTree *buildTree(State state, const vector<unsigned> &trials, PlayoutDriver *
   GameTree *tree = new GameTree(state);
 
 #ifdef VERBOSE
-  time_t start, end;
-  time(&start);
+  auto start = chrono::high_resolution_clock::now();
 #endif
 
   for (unsigned numPlayouts : trials) {
@@ -181,8 +180,9 @@ GameTree *buildTree(State state, const vector<unsigned> &trials, PlayoutDriver *
   }
 
 #ifdef VERBOSE
-  time(&end);
-  cout << "Time: " << difftime(end, start) << " seconds" << endl;
+  auto end = chrono::high_resolution_clock::now();
+  chrono::duration<double> diff = end - start;
+  cout << "Time: " << diff.count() << " seconds" << endl;
 #endif
 
   return tree;
@@ -191,21 +191,22 @@ GameTree *buildTree(State state, const vector<unsigned> &trials, PlayoutDriver *
 GameTree *buildTree(State state, unsigned numPlayouts, unsigned timeout, PlayoutDriver *playoutDriver) {
   GameTree *tree = new GameTree(state);
 
-  time_t start, current;
-  time(&start);
+  auto start = chrono::high_resolution_clock::now();
+  chrono::duration<double> diff;
   unsigned iterations = 0;
   do {
     vector<State> playoutStates = tree->select(numPlayouts);
     vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
     tree->update(results);
 
-    time(&current);
+    auto current = chrono::high_resolution_clock::now();
+    diff = current - start;
     iterations++;
-  } while (difftime(current, start) < timeout);
+  } while (diff.count() < timeout);
 
 #ifdef VERBOSE
   cout << "Finished " << iterations << " iterations" << endl;
-  cout << "Time: " << difftime(current, start) << " seconds" << endl;
+  cout << "Time: " << diff.count() << " seconds" << endl;
 #endif
 
   return tree;
