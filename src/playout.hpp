@@ -3,6 +3,7 @@
 #include "state.hpp"
 
 #include <vector>
+#include <string>
 
 // In theory should be host runtime / device runtime for target # of playouts
 // But in practice needs tuning for MCTS
@@ -80,3 +81,5 @@ public:
 private:
   float deviceHostPlayoutRatio;
 };
+
+PlayoutDriver *getPlayoutDriver(std::string name);

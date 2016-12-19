@@ -72,3 +72,24 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
 
   return results;
 }
+
+PlayoutDriver *getPlayoutDriver(string name) {
+  if (name == "host") {
+    return new HostPlayoutDriver;
+  }
+  else if (name == "device_single") {
+    return new DeviceSinglePlayoutDriver;
+  }
+  else if (name == "device_heuristic") {
+    return new DeviceHeuristicPlayoutDriver;
+  }
+  else if (name == "device_multiple") {
+    return new DeviceMultiplePlayoutDriver;
+  }
+  else if (name == "hybrid") {
+    return new HybridPlayoutDriver;
+  }
+  else {
+    throw runtime_error("Unknown playout type");
+  }
+}

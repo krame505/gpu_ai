@@ -103,3 +103,33 @@ Move MCTSPlayer::getMove(const State &state) const {
   delete tree;
   return move;
 }
+
+Player *getPlayer(string name) {
+  if (name == "human") {
+    return new HumanPlayer;
+  }
+  else if (name == "random") {
+    return new RandomPlayer;
+  }
+  else if (name == "mcts") {
+    return new MCTSPlayer;
+  }
+  else if (name == "mcts_host") {
+    return new MCTSPlayer(500, 7, new HostPlayoutDriver);
+  }
+  else if (name == "mcts_device_single") {
+    return new MCTSPlayer(50000, 7, new DeviceSinglePlayoutDriver);
+  }
+  else if (name == "mcts_device_heuristic") {
+    return new MCTSPlayer(50000, 7, new DeviceHeuristicPlayoutDriver);
+  }
+  else if (name == "mcts_device_multiple") {
+    return new MCTSPlayer(5000, 7, new DeviceMultiplePlayoutDriver);
+  }
+  else if (name == "mcts_hybrid") {
+    return new MCTSPlayer(50000, 7, new HybridPlayoutDriver(6));
+  }
+  else {
+    throw runtime_error("Unknown player type");
+  }
+}

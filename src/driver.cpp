@@ -1,5 +1,4 @@
 #include <getopt.h>
-#include <cassert>
 #include <vector>
 #include <chrono>
 #include <functional>
@@ -43,7 +42,6 @@ istream &operator>>(istream& in, runMode& mode) {
     mode = Single;
   }
   else {
-    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
     throw runtime_error("Unknown run mode");
   }
 
@@ -59,8 +57,7 @@ ostream &operator<<(ostream &os, runMode mode) {
   case Single:
     return os << "single";
   default:
-    assert(false);
-    return os; // Unreachable, but to make -Wall shut up
+    throw runtime_error("Unknown run mode");
   }
 }
 
@@ -71,18 +68,7 @@ ostream &operator<<(ostream &os, runMode mode) {
 // verbose (optional): Enable verbose output.
 // Return: The PlayerId of the winning player (or PLAYER_NONE if there is a draw)
 PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
-  // Unspecified BoardItems are initialized to 0
-  State state = {
-    {{{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-     {{true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}},
-     {{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-     {{}, {}, {}, {}, {}, {}, {}, {}},
-     {{}, {}, {}, {}, {}, {}, {}, {}},
-     {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}},
-     {{}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}},
-     {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}}},
-    PLAYER_1
-  };
+  State state = MakeStartingState();
 
   // Game is over when there are no more possible moves
   while (!state.isGameOver()) {
@@ -128,18 +114,8 @@ vector<State> genRandomStates(unsigned int numTests) {
   for (unsigned int n = 0; n < numTests; n++) {
     unsigned int randomMoves = distribution(generator);
 
-    State state = {
-      {{{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-       {{true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}},
-       {{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-       {{}, {}, {}, {}, {}, {}, {}, {}},
-       {{}, {}, {}, {}, {}, {}, {}, {}},
-       {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}},
-       {{}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}},
-       {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}}},
-      PLAYER_1
-    };
-
+    State state = MakeStartingState();
+    
     // Carry out the opening random moves
     for (unsigned int m = 0; m < randomMoves; m ++) {
       if (state.isGameOver())
@@ -208,59 +184,6 @@ void genMovesTests(unsigned int numTests) {
     }
   }
   cout << "Passed" << endl;
-}
-
-Player *getPlayer(string name) {
-  if (name == "human") {
-    return new HumanPlayer;
-  }
-  else if (name == "random") {
-    return new RandomPlayer;
-  }
-  else if (name == "mcts") {
-    return new MCTSPlayer;
-  }
-  else if (name == "mcts_host") {
-    return new MCTSPlayer(500, 7, new HostPlayoutDriver);
-  }
-  else if (name == "mcts_device_single") {
-    return new MCTSPlayer(50000, 7, new DeviceSinglePlayoutDriver);
-  }
-  else if (name == "mcts_device_heuristic") {
-    return new MCTSPlayer(50000, 7, new DeviceHeuristicPlayoutDriver);
-  }
-  else if (name == "mcts_device_multiple") {
-    return new MCTSPlayer(5000, 7, new DeviceMultiplePlayoutDriver);
-  }
-  else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(50000, 7, new HybridPlayoutDriver(6));
-  }
-  else {
-    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
-    throw runtime_error("Unknown player type");
-  }
-}
-
-PlayoutDriver *getPlayoutDriver(string name) {
-  if (name == "host") {
-    return new HostPlayoutDriver;
-  }
-  else if (name == "device_single") {
-    return new DeviceSinglePlayoutDriver;
-  }
-  else if (name == "device_heuristic") {
-    return new DeviceHeuristicPlayoutDriver;
-  }
-  else if (name == "device_multiple") {
-    return new DeviceMultiplePlayoutDriver;
-  }
-  else if (name == "hybrid") {
-    return new HybridPlayoutDriver;
-  }
-  else {
-    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
-    throw runtime_error("Unknown playout type");
-  }
 }
 
 int main(int argc, char **argv) {

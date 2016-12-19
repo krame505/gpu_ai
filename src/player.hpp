@@ -5,6 +5,7 @@
 #include "playout.hpp"
 
 #include <vector>
+#include <string>
 #include <functional>
 
 #define MCTS_DEFAULT_TIMEOUT 7 // Seconds
@@ -61,3 +62,5 @@ private:
   const unsigned timeout;
   PlayoutDriver *playoutDriver;
 };
+
+Player *getPlayer(std::string name);

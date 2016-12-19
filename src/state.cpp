@@ -4,7 +4,6 @@
 #include "state.hpp"
 #include "colors.h"
 
-#include <cassert>
 using namespace std;
 
 vector<Move> State::getMoves() const {
@@ -26,8 +25,7 @@ ostream &operator<<(ostream &os, PlayerId pi) {
   case PLAYER_NONE:
     return os << "Player NONE";
   default:
-    assert(false);
-    return os; // Unreachable, but to make -Wall shut up
+    throw runtime_error("Unknown player id");
   }
 }
 
@@ -38,8 +36,7 @@ ostream &operator<<(ostream &os, PieceType pt) {
   case PLAYER_2:
     return os << "king";
   default:
-    assert(false);
-    return os; // Unreachable, but to make -Wall shut up
+    throw runtime_error("Unknown piece type");
   }
 }
 
@@ -107,8 +104,7 @@ ostream &operator<<(ostream &os, BoardItem bi) {
   }
   
   // Didn't match, should never happen
-  assert(false);
-  return os;
+  throw runtime_error("Unknown board item");
 }
 
 ostream &operator<<(ostream &os, State s) {
@@ -150,4 +146,20 @@ void printMove(const Move &move) {
 
 void printState(const State &state) {
   cout << state << endl;
+}
+
+State MakeStartingState() {
+  // Unspecified BoardItems are initialized to 0
+  State state = {
+    {{{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
+     {{true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}},
+     {{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
+     {{}, {}, {}, {}, {}, {}, {}, {}},
+     {{}, {}, {}, {}, {}, {}, {}, {}},
+     {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}},
+     {{}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}},
+     {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}}},
+    PLAYER_1
+  };
+  return state;
 }
