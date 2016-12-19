@@ -1,11 +1,8 @@
 #include <getopt.h>
-#include <cstring>
-#include <cstdlib>
-#include <ctime>
-#include <cassert>
 #include <vector>
 #include <chrono>
 #include <functional>
+#include <random>
 #include <boost/program_options.hpp>
 
 #include "state.hpp"
@@ -21,6 +18,8 @@
 #endif
 
 #define NUM_TEST_SETUPS 2
+#define SEED 2016
+#define MAX_RANDOM_MOVES 100 // NOTE : Is 100 max random moves reasonable?  How long is an average checkers game?
 
 using namespace std;
 
@@ -43,7 +42,6 @@ istream &operator>>(istream& in, runMode& mode) {
     mode = Single;
   }
   else {
-    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
     throw runtime_error("Unknown run mode");
   }
 
@@ -59,8 +57,7 @@ ostream &operator<<(ostream &os, runMode mode) {
   case Single:
     return os << "single";
   default:
-    assert(false);
-    return os; // Unreachable, but to make -Wall shut up
+    throw runtime_error("Unknown run mode");
   }
 }
 
@@ -71,18 +68,7 @@ ostream &operator<<(ostream &os, runMode mode) {
 // verbose (optional): Enable verbose output.
 // Return: The PlayerId of the winning player (or PLAYER_NONE if there is a draw)
 PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
-  // Unspecified BoardItems are initialized to 0
-  State state = {
-    {{{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-     {{true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}},
-     {{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-     {{}, {}, {}, {}, {}, {}, {}, {}},
-     {{}, {}, {}, {}, {}, {}, {}, {}},
-     {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}},
-     {{}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}},
-     {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}}},
-    PLAYER_1
-  };
+  State state = MakeStartingState();
 
   // Game is over when there are no more possible moves
   while (!state.isGameOver()) {
@@ -120,24 +106,16 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 vector<State> genRandomStates(unsigned int numTests) {
   vector<State> ourStates(numTests);
   RandomPlayer thePlayer;
-
+  default_random_engine generator(SEED);
+  uniform_int_distribution<int> distribution(1,MAX_RANDOM_MOVES);
+  
   cout << "Building random states..." << endl;
   #pragma omp parallel for
   for (unsigned int n = 0; n < numTests; n++) {
-    unsigned int randomMoves = rand() % 100; // TODO : Is 100 max random moves reasonable?  How long is an average checkers game?
+    unsigned int randomMoves = distribution(generator);
 
-    State state = {
-      {{{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-       {{true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}},
-       {{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
-       {{}, {}, {}, {}, {}, {}, {}, {}},
-       {{}, {}, {}, {}, {}, {}, {}, {}},
-       {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}},
-       {{}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}},
-       {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}}},
-      PLAYER_1
-    };
-
+    State state = MakeStartingState();
+    
     // Carry out the opening random moves
     for (unsigned int m = 0; m < randomMoves; m ++) {
       if (state.isGameOver())
@@ -208,62 +186,7 @@ void genMovesTests(unsigned int numTests) {
   cout << "Passed" << endl;
 }
 
-Player *getPlayer(string name) {
-  if (name == "human") {
-    return new HumanPlayer;
-  }
-  else if (name == "random") {
-    return new RandomPlayer;
-  }
-  else if (name == "mcts") {
-    return new MCTSPlayer;
-  }
-  else if (name == "mcts_host") {
-    return new MCTSPlayer(500, 7, new HostPlayoutDriver);
-  }
-  else if (name == "mcts_device_single") {
-    return new MCTSPlayer(50000, 7, new DeviceSinglePlayoutDriver);
-  }
-  else if (name == "mcts_device_heuristic") {
-    return new MCTSPlayer(50000, 7, new DeviceHeuristicPlayoutDriver);
-  }
-  else if (name == "mcts_device_multiple") {
-    return new MCTSPlayer(5000, 7, new DeviceMultiplePlayoutDriver);
-  }
-  else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(50000, 7, new HybridPlayoutDriver(6));
-  }
-  else {
-    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
-    throw runtime_error("Unknown player type");
-  }
-}
-
-PlayoutDriver *getPlayoutDriver(string name) {
-  if (name == "host") {
-    return new HostPlayoutDriver;
-  }
-  else if (name == "device_single") {
-    return new DeviceSinglePlayoutDriver;
-  }
-  else if (name == "device_heuristic") {
-    return new DeviceHeuristicPlayoutDriver;
-  }
-  else if (name == "device_multiple") {
-    return new DeviceMultiplePlayoutDriver;
-  }
-  else if (name == "hybrid") {
-    return new HybridPlayoutDriver;
-  }
-  else {
-    //throw boost::program_options::validation_error(boost::program_options::validation_error::invalid_option_value);
-    throw runtime_error("Unknown playout type");
-  }
-}
-
 int main(int argc, char **argv) {
-  srand(2016); // TODO: Should we randomize to time(NULL) instead?
-
   cout << "run_ai : GPU-based checkers player with MCTS" << endl;
   cout << "EE 5351, Fall 2016 Group Project" << endl;
   cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl;

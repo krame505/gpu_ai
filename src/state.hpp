@@ -260,3 +260,4 @@ void printLoc(const Loc &loc);
 void printMove(const Move &move);
 void printState(const State &state);
 
+State MakeStartingState();
