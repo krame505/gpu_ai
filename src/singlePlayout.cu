@@ -37,28 +37,28 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, int n) {
       numMoveCapture = 0;
       numMoveDirect = 0;
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
-	  Loc here(i, j);
-	  numMoveCapture += state.genLocSingleCaptureMoves(here, &captureMoves[numMoveCapture]);
-	  numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
-	}
+        for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+          Loc here(i, j);
+          numMoveCapture += state.genLocSingleCaptureMoves(here, &captureMoves[numMoveCapture]);
+          numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
+        }
       }
 
       if (numMoveCapture > 0) {
-	do {
-	  uint8_t moveIndex = curand(&generator) % numMoveCapture;
-	  Loc to = captureMoves[moveIndex].to;
-	  state.move(captureMoves[moveIndex]);
-	  state.turn = state.getNextTurn();
-	  numMoveCapture = state.genLocSingleCaptureMoves(to, captureMoves);
-	} while (numMoveCapture > 0);
-	state.turn = state.getNextTurn();
+        do {
+          uint8_t moveIndex = curand(&generator) % numMoveCapture;
+          Loc to = captureMoves[moveIndex].to;
+          state.move(captureMoves[moveIndex]);
+          state.turn = state.getNextTurn();
+          numMoveCapture = state.genLocSingleCaptureMoves(to, captureMoves);
+        } while (numMoveCapture > 0);
+        state.turn = state.getNextTurn();
       }
       else if (numMoveDirect > 0) {
-	state.move(directMoves[curand(&generator) % numMoveDirect]);
+        state.move(directMoves[curand(&generator) % numMoveDirect]);
       }
       else {
-	gameOver = true;
+        gameOver = true;
       }
     } while (!gameOver);
 

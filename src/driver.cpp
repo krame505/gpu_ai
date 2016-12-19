@@ -119,7 +119,7 @@ vector<State> genRandomStates(unsigned int numTests) {
     // Carry out the opening random moves
     for (unsigned int m = 0; m < randomMoves; m ++) {
       if (state.isGameOver())
-	break;
+        break;
 
       // Calculate the next move
       Move move = thePlayer.getMove(state);
@@ -217,35 +217,35 @@ int main(int argc, char **argv) {
   
     if (vm.count("player1")) {
       if (theRunMode == Single) {
-	player1 = getPlayer(vm["player1"].as<string>());
+        player1 = getPlayer(vm["player1"].as<string>());
       }
       else {
-	playoutDriver1 = getPlayoutDriver(vm["player1"].as<string>());
+        playoutDriver1 = getPlayoutDriver(vm["player1"].as<string>());
       }
     }
     else {
       if (theRunMode == Single) {
-	player1 = new RandomPlayer;
+        player1 = new RandomPlayer;
       }
       else {
-	playoutDriver1 = new HostPlayoutDriver;
+        playoutDriver1 = new HostPlayoutDriver;
       }
     }    
 
     if (vm.count("player2")) {
       if (theRunMode == Single) {
-	player2 = getPlayer(vm["player2"].as<string>());
+        player2 = getPlayer(vm["player2"].as<string>());
       }
       else {
-	playoutDriver2 = getPlayoutDriver(vm["player2"].as<string>());
+        playoutDriver2 = getPlayoutDriver(vm["player2"].as<string>());
       }
     }
     else {
       if (theRunMode == Single) {
-	player2 = new RandomPlayer;
+        player2 = new RandomPlayer;
       }
       else {
-	playoutDriver2 = new DeviceSinglePlayoutDriver;
+        playoutDriver2 = new DeviceSinglePlayoutDriver;
       }
     }
   }

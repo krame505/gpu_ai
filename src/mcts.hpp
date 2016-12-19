@@ -19,7 +19,7 @@ public:
   ~GameTree() {
     if (expanded)
       for (GameTree *n : children)
-	delete n;
+        delete n;
   }
 
   // Compute the fraction of wins for a player

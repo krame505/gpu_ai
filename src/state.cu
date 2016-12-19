@@ -424,7 +424,7 @@ __host__ __device__ void Move::addJump(Loc newTo) {
   assert(jumps < MAX_MOVE_JUMPS);
   intermediate[jumps] = newTo;
   removed[jumps++] = Loc((newTo.row - to.row) / 2 + to.row,
-			 (newTo.col - to.col) / 2 + to.col);
+                         (newTo.col - to.col) / 2 + to.col);
   to = newTo;
 }
 

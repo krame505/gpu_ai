@@ -45,7 +45,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
 
       // Perform the move if there is one
       if (!gameOver)
-	state.move(move);
+        state.move(move);
     }
   } while (!gameOver);
 

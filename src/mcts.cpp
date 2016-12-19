@@ -54,9 +54,9 @@ vector<State> GameTree::select(unsigned trials) {
     // If there is more than 1 trial to allocate then expand this node and allocate trials to the new children
     if (trials > 1) {
       for (unsigned i = 0; i < children.size(); i++) {
-	State newState = state;
-	newState.move(moves[i]);
-	children[i] = new GameTree(newState, this);
+        State newState = state;
+        newState.move(moves[i]);
+        children[i] = new GameTree(newState, this);
       }
       expanded = true;
     }
@@ -91,9 +91,9 @@ vector<State> GameTree::select(unsigned trials) {
     // If some children are untried, evenly assign all trials to them
     if (numUntried > 0) {
       if (children[i]->totalTrials == 0)
-	childAssignedTrials[i] = trials / numUntried;
+        childAssignedTrials[i] = trials / numUntried;
       else
-	childAssignedTrials[i] = 0;
+        childAssignedTrials[i] = 0;
     }
     // Assign trials based on fractions of weights, rounding down
     else if (trials > 0) {
@@ -110,8 +110,8 @@ vector<State> GameTree::select(unsigned trials) {
     int opt = -1;
     for (unsigned i = 0; i < children.size(); i++) {
       if (!assigned[i] && weights[i] > maxWeight) {
-	maxWeight = weights[i];
-	opt = i;
+        maxWeight = weights[i];
+        opt = i;
       }
     }
     assert(opt != -1);      
