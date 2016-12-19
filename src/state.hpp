@@ -247,6 +247,9 @@ struct Move {
   bool conflictsWith(const Move &other) const;
 };
 
+// Return the initial board setup
+State getStartingState();
+
 // Overload << operator for printing
 std::ostream &operator<<(std::ostream&, PlayerId);
 std::ostream &operator<<(std::ostream&, PieceType);
@@ -259,5 +262,3 @@ std::ostream &operator<<(std::ostream&, State);
 void printLoc(const Loc &loc);
 void printMove(const Move &move);
 void printState(const State &state);
-
-State MakeStartingState();

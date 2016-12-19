@@ -86,6 +86,9 @@ PlayoutDriver *getPlayoutDriver(string name) {
   else if (name == "device_multiple") {
     return new DeviceMultiplePlayoutDriver;
   }
+  else if (name == "device_relaunch") {
+    return new DeviceRelaunchPlayoutDriver;
+  }
   else if (name == "hybrid") {
     return new HybridPlayoutDriver;
   }

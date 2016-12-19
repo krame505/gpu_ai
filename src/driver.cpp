@@ -68,7 +68,7 @@ ostream &operator<<(ostream &os, runMode mode) {
 // verbose (optional): Enable verbose output.
 // Return: The PlayerId of the winning player (or PLAYER_NONE if there is a draw)
 PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
-  State state = MakeStartingState();
+  State state = getStartingState();
 
   // Game is over when there are no more possible moves
   while (!state.isGameOver()) {
@@ -114,7 +114,7 @@ vector<State> genRandomStates(unsigned int numTests) {
   for (unsigned int n = 0; n < numTests; n++) {
     unsigned int randomMoves = distribution(generator);
 
-    State state = MakeStartingState();
+    State state = getStartingState();
     
     // Carry out the opening random moves
     for (unsigned int m = 0; m < randomMoves; m ++) {
