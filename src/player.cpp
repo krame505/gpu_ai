@@ -116,7 +116,7 @@ Move MCTSPlayer::getMove(const State &state) {
 
 #ifdef VERBOSE
   cout << "Finished " << iterations << " iterations" << endl;
-  cout << "Next iteration with " << numPlayouts << " playouts" << endl;
+  //cout << "Next iteration with " << numPlayouts << " playouts" << endl;
   cout << "Time: " << elapsedTime << " seconds" << endl;
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     PlayerId player = (PlayerId)i;
@@ -142,16 +142,16 @@ Player *getPlayer(string name) {
     return new MCTSPlayer(100, 1000, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_device_single") {
-    return new MCTSPlayer(50000, 20, 7, new DeviceSinglePlayoutDriver);
+    return new MCTSPlayer(25000, 20, 7, new DeviceSinglePlayoutDriver);
   }
   else if (name == "mcts_device_heuristic") {
-    return new MCTSPlayer(50000, 20, 7, new DeviceHeuristicPlayoutDriver);
+    return new MCTSPlayer(25000, 20, 7, new DeviceHeuristicPlayoutDriver);
   }
   else if (name == "mcts_device_multiple") {
     return new MCTSPlayer(5000, 20, 7, new DeviceMultiplePlayoutDriver);
   }
   else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(50000, 20, 7, new HybridPlayoutDriver(6));
+    return new MCTSPlayer(7000, 50, 7, new HybridPlayoutDriver(6));
   }
   else {
     throw runtime_error("Unknown player type");
