@@ -200,10 +200,10 @@ int main(int argc, char **argv) {
 
   boost::program_options::options_description desc("Allowed options");
   desc.add_options()
-    ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Single), "run mode")
+    ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Single), "run mode\nsingle test gen_moves_test")
     ("num-playouts,n", boost::program_options::value<unsigned int>(&numTests)->default_value(DEFAULT_NUM_PLAYOUTS), "number of playouts")
-    ("player1,1", boost::program_options::value<string>(), "player 1")
-    ("player2,2", boost::program_options::value<string>(), "player 2")
+    ("player1,1", boost::program_options::value<string>(), "player 1 (mode = single)\nhuman random mcts mcts_host mcts_device_single mcts_device_heuristic mcts_device_multiple or mcts_hybrid\ntest 1 (mode = test)\nhost device_single device_heuristic device_multiple hybrid")
+    ("player2,2", boost::program_options::value<string>(), "player 2 (mode = single)\ntest 2 (mode = test)")
     ("help,h", "print help")
     ;
   boost::program_options::variables_map vm;
