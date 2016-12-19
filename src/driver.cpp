@@ -1,11 +1,9 @@
 #include <getopt.h>
-#include <cstring>
-#include <cstdlib>
-#include <ctime>
 #include <cassert>
 #include <vector>
 #include <chrono>
 #include <functional>
+#include <random>
 #include <boost/program_options.hpp>
 
 #include "state.hpp"
@@ -21,6 +19,8 @@
 #endif
 
 #define NUM_TEST_SETUPS 2
+#define SEED 2016
+#define MAX_RANDOM_MOVES 100 // NOTE : Is 100 max random moves reasonable?  How long is an average checkers game?
 
 using namespace std;
 
@@ -120,11 +120,13 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 vector<State> genRandomStates(unsigned int numTests) {
   vector<State> ourStates(numTests);
   RandomPlayer thePlayer;
-
+  default_random_engine generator(SEED);
+  uniform_int_distribution<int> distribution(1,MAX_RANDOM_MOVES);
+  
   cout << "Building random states..." << endl;
   #pragma omp parallel for
   for (unsigned int n = 0; n < numTests; n++) {
-    unsigned int randomMoves = rand() % 100; // TODO : Is 100 max random moves reasonable?  How long is an average checkers game?
+    unsigned int randomMoves = distribution(generator);
 
     State state = {
       {{{}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}, {}, {true, CHECKER, PLAYER_1}},
@@ -262,8 +264,6 @@ PlayoutDriver *getPlayoutDriver(string name) {
 }
 
 int main(int argc, char **argv) {
-  srand(2016); // TODO: Should we randomize to time(NULL) instead?
-
   cout << "run_ai : GPU-based checkers player with MCTS" << endl;
   cout << "EE 5351, Fall 2016 Group Project" << endl;
   cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl;
