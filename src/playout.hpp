@@ -38,6 +38,16 @@ public:
 
 // Perform playouts on the GPU with 1 state per block from the provided states,
 // returning the winners
+class DeviceRelaunchPlayoutDriver : public PlayoutDriver {
+public:
+  ~DeviceRelaunchPlayoutDriver() {};
+
+  std::vector<PlayerId> runPlayouts(std::vector<State>);
+  std::string getName() const { return "device_relaunch";}
+};
+
+// Perform playouts on the GPU with 1 state per block from the provided states,
+// returning the winners
 class DeviceHeuristicPlayoutDriver : public PlayoutDriver {
 public:
   ~DeviceHeuristicPlayoutDriver() {};
