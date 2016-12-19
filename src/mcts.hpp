@@ -22,6 +22,18 @@ public:
 	delete n;
   }
 
+  // Compute the fraction of wins for a player
+  double getScore(PlayerId player) const;
+
+  // Compute the best move for a player based scores for children
+  Move getOptMove(PlayerId player) const;
+
+  // Expand a tree by selecting playouts, performing them, and updating the tree
+  void expand(unsigned numPlayouts, PlayoutDriver *playoutDriver);
+  
+  const State state;
+
+private:
   // Distrubute trials to perform based on UCB1, creating nodes as needed
   std::vector<State> select(unsigned trials);
   
@@ -31,14 +43,6 @@ public:
   // Compute the Upper Confidence Bound 1 scoring algorithm
   double ucb1() const;
 
-  // Compute the fraction of wins for a player
-  double getScore(PlayerId player) const;
-
-  // Compute the best move for a player based scores for children
-  Move getOptMove(PlayerId player) const;
-  
-  const State state;
-private:
   const GameTree *parent;
   bool expanded = false;
   std::vector<Move> moves;
@@ -49,8 +53,3 @@ private:
   unsigned wins[NUM_PLAYERS] = {0};
 };
 
-// Build a tree by performing a series of trials with the number of playouts in a vector
-GameTree *buildTree(State, const std::vector<unsigned> &trials, PlayoutDriver *playoutDriver);
-
-// Build a tree by performing a series of trials until a timeout
-GameTree *buildTree(State, unsigned numPlayouts, unsigned timeout, PlayoutDriver *playoutDriver);

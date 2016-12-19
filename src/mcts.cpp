@@ -8,6 +8,40 @@
 #include <chrono>
 using namespace std;
 
+double GameTree::getScore(PlayerId player) const {
+  if (state.isGameOver()) {
+    PlayerId result = state.getNextTurn();
+    if (result == player)
+      return 1;
+    else
+      return 0;
+  }
+  else
+    return (double)wins[player] / totalTrials;
+}
+
+Move GameTree::getOptMove(PlayerId player) const {
+  double highestScore = -INFINITY;
+  Move bestMove;
+  
+  for (unsigned i = 0; i < children.size(); i++) {
+    if (children[i]->getScore(player) > highestScore) {
+      highestScore = children[i]->getScore(player);
+      bestMove = moves[i];
+    }
+  }
+ 
+  assert(highestScore != -INFINITY);
+  
+  return bestMove;
+}
+
+void GameTree::expand(unsigned numPlayouts, PlayoutDriver *playoutDriver) {
+  vector<State> playoutStates = select(numPlayouts);
+  vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
+  update(results);
+}
+
 vector<State> GameTree::select(unsigned trials) {
   // If this is a terminal state, then all assigned playouts must happen from this state
   if (state.isGameOver()) {
@@ -136,78 +170,4 @@ double GameTree::ucb1() const {
   else
     return (double)wins[state.turn] / totalTrials +
       sqrt(2.0L * log(parent->totalTrials) / totalTrials);
-}
-
-double GameTree::getScore(PlayerId player) const {
-  if (state.isGameOver()) {
-    PlayerId result = state.getNextTurn();
-    if (result == player)
-      return 1;
-    else
-      return 0;
-  }
-  else
-    return (double)wins[player] / totalTrials;
-}
-
-Move GameTree::getOptMove(PlayerId player) const {
-  double highestScore = -INFINITY;
-  Move bestMove;
-  
-  for (unsigned i = 0; i < children.size(); i++) {
-    if (children[i]->getScore(player) > highestScore) {
-      highestScore = children[i]->getScore(player);
-      bestMove = moves[i];
-    }
-  }
- 
-  assert(highestScore != -INFINITY);
-  
-  return bestMove;
-}
-
-GameTree *buildTree(State state, const vector<unsigned> &trials, PlayoutDriver *playoutDriver) {
-  GameTree *tree = new GameTree(state);
-
-#ifdef VERBOSE
-  auto start = chrono::high_resolution_clock::now();
-#endif
-
-  for (unsigned numPlayouts : trials) {
-    vector<State> playoutStates = tree->select(numPlayouts);
-    vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
-    tree->update(results);
-  }
-
-#ifdef VERBOSE
-  auto end = chrono::high_resolution_clock::now();
-  chrono::duration<double> diff = end - start;
-  cout << "Time: " << diff.count() << " seconds" << endl;
-#endif
-
-  return tree;
-}
-
-GameTree *buildTree(State state, unsigned numPlayouts, unsigned timeout, PlayoutDriver *playoutDriver) {
-  GameTree *tree = new GameTree(state);
-
-  auto start = chrono::high_resolution_clock::now();
-  chrono::duration<double> diff;
-  unsigned iterations = 0;
-  do {
-    vector<State> playoutStates = tree->select(numPlayouts);
-    vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
-    tree->update(results);
-
-    auto current = chrono::high_resolution_clock::now();
-    diff = current - start;
-    iterations++;
-  } while (diff.count() < timeout);
-
-#ifdef VERBOSE
-  cout << "Finished " << iterations << " iterations" << endl;
-  cout << "Time: " << diff.count() << " seconds" << endl;
-#endif
-
-  return tree;
 }

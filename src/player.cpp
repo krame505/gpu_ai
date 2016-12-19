@@ -6,14 +6,15 @@
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <chrono>
 using namespace std;
 
-Move RandomPlayer::getMove(const State &state) const {
+Move RandomPlayer::getMove(const State &state) {
   vector<Move> moves = state.getMoves();
   return moves[rand() % moves.size()];
 }
 
-Move HumanPlayer::getMove(const State &state) const {
+Move HumanPlayer::getMove(const State &state) {
   char input[100];
 
   while (true) {
@@ -84,16 +85,39 @@ Move HumanPlayer::getMove(const State &state) const {
   }
 }
 
-Move MCTSPlayer::getMove(const State &state) const {
+Move MCTSPlayer::getMove(const State &state) {
   // Don't bother running MCTS if there is only 1 possible move
   vector<Move> moves = state.getMoves();
   if (moves.size() == 1)
     return moves[0];
 
-  GameTree *tree = buildTree(state, numPlayouts, timeout, playoutDriver);
+  GameTree *tree = new GameTree(state);
+
+  // Build the tree
+  auto start = chrono::high_resolution_clock::now();
+  double elapsedTime;
+  unsigned iterations = 0;
+  do {
+    tree->expand(numPlayouts, playoutDriver);
+
+    auto current = chrono::high_resolution_clock::now();
+    chrono::duration<double> diff = current - start;
+    elapsedTime = diff.count();
+
+    iterations++;
+  } while (elapsedTime < timeout);
+
+  if (iterations > targetIterations)
+    numPlayouts *= MCTS_NUM_PLAYOUTS_SCALE;
+  else if (iterations < targetIterations)
+    numPlayouts /= MCTS_NUM_PLAYOUTS_SCALE;
+
   Move move = tree->getOptMove(state.turn);
 
 #ifdef VERBOSE
+  cout << "Finished " << iterations << " iterations" << endl;
+  cout << "Next iteration with " << numPlayouts << " playouts" << endl;
+  cout << "Time: " << elapsedTime << " seconds" << endl;
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     PlayerId player = (PlayerId)i;
     cout << player << " score: " << tree->getScore(player) << endl;
@@ -115,19 +139,19 @@ Player *getPlayer(string name) {
     return new MCTSPlayer;
   }
   else if (name == "mcts_host") {
-    return new MCTSPlayer(500, 7, new HostPlayoutDriver);
+    return new MCTSPlayer(100, 1000, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_device_single") {
-    return new MCTSPlayer(50000, 7, new DeviceSinglePlayoutDriver);
+    return new MCTSPlayer(50000, 20, 7, new DeviceSinglePlayoutDriver);
   }
   else if (name == "mcts_device_heuristic") {
-    return new MCTSPlayer(50000, 7, new DeviceHeuristicPlayoutDriver);
+    return new MCTSPlayer(50000, 20, 7, new DeviceHeuristicPlayoutDriver);
   }
   else if (name == "mcts_device_multiple") {
-    return new MCTSPlayer(5000, 7, new DeviceMultiplePlayoutDriver);
+    return new MCTSPlayer(5000, 20, 7, new DeviceMultiplePlayoutDriver);
   }
   else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(50000, 7, new HybridPlayoutDriver(6));
+    return new MCTSPlayer(50000, 20, 7, new HybridPlayoutDriver(6));
   }
   else {
     throw runtime_error("Unknown player type");
