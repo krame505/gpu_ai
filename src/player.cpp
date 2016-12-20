@@ -109,7 +109,7 @@ Move MCTSPlayer::getMove(const State &state) {
 
   if (iterations > targetIterations)
     numPlayouts *= MCTS_NUM_PLAYOUTS_SCALE;
-  else if (iterations < targetIterations && numPlayouts > 1)
+  else if (iterations < targetIterations && numPlayouts > 2)
     numPlayouts /= MCTS_NUM_PLAYOUTS_SCALE;
 
 #ifdef VERBOSE

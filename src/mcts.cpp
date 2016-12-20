@@ -9,8 +9,6 @@
 using namespace std;
 
 double GameTree::getScore(PlayerId player) const {
-  assert(expanded);
-
   if (state.isGameOver()) {
     PlayerId result = state.getNextTurn();
     if (result == player)
