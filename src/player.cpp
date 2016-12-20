@@ -98,6 +98,8 @@ Move MCTSPlayer::getMove(const State &state) {
   double elapsedTime;
   unsigned iterations = 0;
   do {
+    unsigned numPlayouts = initialNumPlayouts +
+      (finalNumPlayouts - initialNumPlayouts) * iterations / targetIterations;
     tree->expand(numPlayouts, playoutDriver);
 
     auto current = chrono::high_resolution_clock::now();
@@ -108,13 +110,16 @@ Move MCTSPlayer::getMove(const State &state) {
   } while (elapsedTime < timeout);
 
   if (iterations > targetIterations)
-    numPlayouts *= MCTS_NUM_PLAYOUTS_SCALE;
-  else if (iterations < targetIterations && numPlayouts > 2)
-    numPlayouts /= MCTS_NUM_PLAYOUTS_SCALE;
+    finalNumPlayouts *= MCTS_NUM_PLAYOUTS_SCALE;
+  else if (iterations < targetIterations)
+    finalNumPlayouts /= MCTS_NUM_PLAYOUTS_SCALE;
+
+  if (finalNumPlayouts < initialNumPlayouts)
+    finalNumPlayouts = initialNumPlayouts;
 
 #ifdef VERBOSE
   cout << "Finished " << iterations << " iterations" << endl;
-  cout << "Next iteration with " << numPlayouts << " playouts" << endl;
+  //cout << "Next iteration with max " << finalNumPlayouts << " playouts" << endl;
   cout << "Time: " << elapsedTime << " seconds" << endl;
   for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
     PlayerId player = (PlayerId)i;
@@ -139,22 +144,22 @@ Player *getPlayer(string name) {
     return new MCTSPlayer;
   }
   else if (name == "mcts_host") {
-    return new MCTSPlayer(100, 1000, 7, new HostPlayoutDriver);
+    return new MCTSPlayer(100, 100, 1000, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_device_single") {
-    return new MCTSPlayer(5000, 70, 7, new DeviceSinglePlayoutDriver);
-  }
-  else if (name == "mcts_device_heuristic") {
-    return new MCTSPlayer(5000, 70, 7, new DeviceHeuristicPlayoutDriver);
-  }
-  else if (name == "mcts_device_multiple") {
-    return new MCTSPlayer(300, 600, 7, new DeviceMultiplePlayoutDriver);
+    return new MCTSPlayer(4000, 6000, 70, 7, new DeviceSinglePlayoutDriver);
   }
   else if (name == "mcts_device_coarse") {
-    return new MCTSPlayer(5000, 70, 7, new DeviceCoarsePlayoutDriver);
+    return new MCTSPlayer(4000, 6000, 70, 7, new DeviceCoarsePlayoutDriver);
+  }
+  else if (name == "mcts_device_heuristic") {
+    return new MCTSPlayer(4000, 6000, 70, 7, new DeviceHeuristicPlayoutDriver);
+  }
+  else if (name == "mcts_device_multiple") {
+    return new MCTSPlayer(50, 500, 600, 7, new DeviceMultiplePlayoutDriver);
   }
   else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(300, 600, 7, new HybridPlayoutDriver(5.8));
+    return new MCTSPlayer(50, 600, 600, 7, new HybridPlayoutDriver(1.2));
   }
   else {
     throw runtime_error("Unknown player type");

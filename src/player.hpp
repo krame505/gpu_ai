@@ -8,7 +8,8 @@
 #include <string>
 #include <functional>
 
-#define MCTS_INITIAL_NUM_PLAYOUTS 300
+#define MCTS_INITIAL_NUM_PLAYOUTS 50
+#define MCTS_FINAL_NUM_PLAYOUTS 600
 #define MCTS_NUM_PLAYOUTS_SCALE 1.2
 #define MCTS_DEFAULT_TARGET_ITERATIONS 600
 #define MCTS_DEFAULT_TIMEOUT 7 // Seconds
@@ -41,17 +42,20 @@ public:
 
 class MCTSPlayer : public Player {
 public:
-  MCTSPlayer(unsigned numPlayouts,
+  MCTSPlayer(unsigned initialNumPlayouts,
+	     unsigned finalNumPlayouts,
 	     unsigned targetIterations,
 	     unsigned timeout,
 	     PlayoutDriver *playoutDriver=new MCTS_DEFAULT_PLAYOUT_DRIVER) :
-    numPlayouts(numPlayouts),
+    initialNumPlayouts(initialNumPlayouts),
+    finalNumPlayouts(finalNumPlayouts),
     targetIterations(targetIterations),
     timeout(timeout),
     playoutDriver(playoutDriver)
   {}
   MCTSPlayer(PlayoutDriver *playoutDriver=new MCTS_DEFAULT_PLAYOUT_DRIVER) :
     MCTSPlayer(MCTS_INITIAL_NUM_PLAYOUTS,
+	       MCTS_FINAL_NUM_PLAYOUTS,
 	       MCTS_DEFAULT_TARGET_ITERATIONS,
 	       MCTS_DEFAULT_TIMEOUT,
 	       playoutDriver)
@@ -64,7 +68,8 @@ public:
   std::string getName() const { return "mcts"; }
 
 private:
-  unsigned numPlayouts;
+  unsigned initialNumPlayouts;
+  unsigned finalNumPlayouts;
   const unsigned targetIterations;
   const unsigned timeout;
   PlayoutDriver *playoutDriver;
