@@ -68,13 +68,13 @@ __host__ __device__ bool State::isValidMove(Move move) const {
   for (uint8_t i = 0; i < move.jumps; i++) {
     Loc removed = move.removed[i];
     if (!removed.isValid() ||
-	!(*this)[removed].occupied ||
-	(*this)[removed].owner == (*this)[move.from].owner)
+        !(*this)[removed].occupied ||
+        (*this)[removed].owner == (*this)[move.from].owner)
       return false;
     
     Loc intermediate = move.intermediate[i];
     if (!intermediate.isValid() ||
-	(*this)[intermediate].occupied)
+        (*this)[intermediate].occupied)
       return false;
   }
 
@@ -96,7 +96,7 @@ __host__ __device__ bool State::isValidJump(Move move, Loc jumped, Loc newTo, bo
   if (checkCycles) {
     for (int8_t i = move.jumps - 1; i >= 0; i--) {
       if (newTo == move.intermediate[i])
-	return false;
+        return false;
     }
   }
 
@@ -127,8 +127,8 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
       Loc to(loc.row + dr[i], loc.col + dc[i]);
       if (to.isValid() && !(*this)[to].occupied)
         result[count++] =
-	  Move(loc, to, 0, 
-	       loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0));
+          Move(loc, to, 0, 
+               loc.row + dr[i] == (item.owner == PLAYER_1 ? (BOARD_SIZE - 1) : 0));
     }
   }
 
@@ -386,9 +386,9 @@ __host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJ
     for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
       Loc loc(i, j);
       if (isJump)
-	numMoves += genLocCaptureMoves(loc, &result[numMoves]);
+        numMoves += genLocCaptureMoves(loc, &result[numMoves]);
       else
-	numMoves += genLocDirectMoves(loc, &result[numMoves]);
+        numMoves += genLocDirectMoves(loc, &result[numMoves]);
     }
   }
 

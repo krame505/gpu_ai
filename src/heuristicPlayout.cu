@@ -39,59 +39,59 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results, size_t 
       numMoveCapture = 0;
       numMoveDirect = 0;
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
-	  Loc here(i, j);
-	  numMoveCapture += state.genLocCaptureMoves(here, &captureMoves[numMoveCapture]);
-	  numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
-	}
+        for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+          Loc here(i, j);
+          numMoveCapture += state.genLocCaptureMoves(here, &captureMoves[numMoveCapture]);
+          numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
+        }
       }
 
       totalWeight = 0.0f;
       p = curand_uniform(&generator);
 
       if (numMoveCapture > 0) {
-	// Weight jumps higher if they capture more pieces, or if they are a regular checker that gets promoted
-	for (uint8_t i = 0; i < numMoveCapture; i++) {
-	  weight[i] = (float)captureMoves[i].jumps;
-	  weight[i] += captureMoves[i].promoted ? 5.0f : 0.0f;
-	  totalWeight += weight[i];
-	}
-	p *= totalWeight;
-	for (uint8_t i = 0; i < numMoveCapture; i++) {
-	  p -= weight[i];
-	  if (p <= 0.0f) {
-	    state.move(captureMoves[i]);
-	    break;
-	  }
-	}	
+        // Weight jumps higher if they capture more pieces, or if they are a regular checker that gets promoted
+        for (uint8_t i = 0; i < numMoveCapture; i++) {
+          weight[i] = (float)captureMoves[i].jumps;
+          weight[i] += captureMoves[i].promoted ? 5.0f : 0.0f;
+          totalWeight += weight[i];
+        }
+        p *= totalWeight;
+        for (uint8_t i = 0; i < numMoveCapture; i++) {
+          p -= weight[i];
+          if (p <= 0.0f) {
+            state.move(captureMoves[i]);
+            break;
+          }
+        }        
       }
       else if (numMoveDirect > 0) {
-	for (uint8_t i = 0; i < numMoveDirect; i++) {
-	  // Weight checkers more highly if they are promoted or are more likely to be promoted
-	  // Weight kings evenly
-	  if (state[directMoves[i].from].type == CHECKER) {
-	    if (state[directMoves[i].from].owner == PLAYER_1)
-	      weight[i] = (float)directMoves[i].from.row;
-	    else
-	      weight[i] = 7.0f - (float)directMoves[i].from.row;
-	    weight[i] += captureMoves[i].promoted ? 5.0f : 0.0f;
-	  }
-	  else {
-	    weight[i] = 3.5f;
-	  }
-	  totalWeight += weight[i];
-	}
-	p *= totalWeight;
-	for (uint8_t i = 0; i < numMoveDirect; i++) {
-	  p -= weight[i];
-	  if (p <= 0.0f) {
-	    state.move(directMoves[i]);
-	    break;
-	  }
-	}	
+        for (uint8_t i = 0; i < numMoveDirect; i++) {
+          // Weight checkers more highly if they are promoted or are more likely to be promoted
+          // Weight kings evenly
+          if (state[directMoves[i].from].type == CHECKER) {
+            if (state[directMoves[i].from].owner == PLAYER_1)
+              weight[i] = (float)directMoves[i].from.row;
+            else
+              weight[i] = 7.0f - (float)directMoves[i].from.row;
+            weight[i] += captureMoves[i].promoted ? 5.0f : 0.0f;
+          }
+          else {
+            weight[i] = 3.5f;
+          }
+          totalWeight += weight[i];
+        }
+        p *= totalWeight;
+        for (uint8_t i = 0; i < numMoveDirect; i++) {
+          p -= weight[i];
+          if (p <= 0.0f) {
+            state.move(directMoves[i]);
+            break;
+          }
+        }        
       }
       else {
-	gameOver = true;
+        gameOver = true;
       }
     } while (!gameOver);
 
