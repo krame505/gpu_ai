@@ -26,6 +26,23 @@ fi
 ```
 to .bashrc
 
+## Building and Running
+
+```
+make
+```
+or
+```
+make nounicode=1
+```
+if your terminal doesn't print the Unicode checkers correctly.
+
+```
+bin/release/run_ai --help
+```
+Displays all runtime options
+
+
 ## Rough outline of kernel design
 * Block size is 32 (one thread per square on the board)
 * Board is represented as a struct containing an array of enums representing the state at each location
