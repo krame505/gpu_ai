@@ -13,20 +13,22 @@
 
 #define BLOCK_SIZE 32
 
-__global__ void relaunchPlayoutKernel(State *states, PlayerId *results, int n) {
+__global__ void relaunchPlayoutKernel(State *states, PlayerId *results, int n, uint32_t *globaltempIndex) {
   uint8_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
-  uint32_t tid = tx + (bx * NUM_LOCS);
+  uint32_t tid = tx + (bx * BLOCK_SIZE);
+  uint32_t threadtempIndex = tid;
+
 
   if (tid < n) {
     State state;
-    state = states[tid];
+    state = states[threadtempIndex];
 
     // Init random generator
     curandState_t generator;
-    curand_init(SEED, tid, 0, &generator);
+    curand_init(SEED, threadtempIndex, 0, &generator);
  
-    bool gameOver = false;
+    bool done = false;
 
     Move captureMoves[MAX_MOVES];
     Move directMoves[MAX_MOVES];
@@ -37,32 +39,39 @@ __global__ void relaunchPlayoutKernel(State *states, PlayerId *results, int n) {
       numMoveCapture = 0;
       numMoveDirect = 0;
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
-	  Loc here(i, j);
-	  numMoveCapture += state.genLocSingleCaptureMoves(here, &captureMoves[numMoveCapture]);
-	  numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
-	}
+      	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+	        Loc here(i, j);
+	        numMoveCapture += state.genLocSingleCaptureMoves(here, &captureMoves[numMoveCapture]);
+	        numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
+	      }
       }
 
       if (numMoveCapture > 0) {
-	do {
-	  uint8_t moveIndex = curand(&generator) % numMoveCapture;
-	  Loc to = captureMoves[moveIndex].to;
-	  state.move(captureMoves[moveIndex]);
-	  state.turn = state.getNextTurn();
-	  numMoveCapture = state.genLocSingleCaptureMoves(to, captureMoves);
-	} while (numMoveCapture > 0);
-	state.turn = state.getNextTurn();
-      }
+	      do {
+	        uint8_t moveIndex = curand(&generator) % numMoveCapture;
+	        Loc to = captureMoves[moveIndex].to;
+	        state.move(captureMoves[moveIndex]);
+	        state.turn = state.getNextTurn();
+	        numMoveCapture = state.genLocSingleCaptureMoves(to, captureMoves);
+	      } while (numMoveCapture > 0);
+	        state.turn = state.getNextTurn();
+      } 
       else if (numMoveDirect > 0) {
-	state.move(directMoves[curand(&generator) % numMoveDirect]);
+	      state.move(directMoves[curand(&generator) % numMoveDirect]);
       }
       else {
-	gameOver = true;
+        results[threadtempIndex] = state.getNextTurn();
+        if(*globaltempIndex >= n)
+        	done = true;
+        else{
+          do {
+          threadtempIndex = *globaltempIndex;
+          } while (atomicCAS(globaltempIndex, threadtempIndex, *globaltempIndex + 1) != threadtempIndex);
+           state = states[threadtempIndex]; 
+        }
       }
-    } while (!gameOver);
+    } while (!done);
 
-    results[tid] = state.getNextTurn();
   }
 }
 
@@ -72,23 +81,25 @@ std::vector<PlayerId> DeviceRelaunchPlayoutDriver::runPlayouts(std::vector<State
   PlayerId *devResults;
   cudaMalloc(&devStates, states.size() * sizeof(State));
   cudaMalloc(&devResults, states.size() * sizeof(PlayerId));
+ 
+  uint32_t *globaltempIndex;
+  cudaMalloc((void**) &globaltempIndex, sizeof(uint32_t));
+
 
   // Copy states for playouts to device
   cudaMemcpy(devStates, states.data(), states.size() * sizeof(State), cudaMemcpyHostToDevice);
 
-  int numBlocks = states.size() / BLOCK_SIZE;
-  if (states.size() % BLOCK_SIZE)
-    numBlocks++;
+  int numBlocks = 1024; //number of blocks  
+  
+  uint32_t temp = numBlocks * BLOCK_SIZE; //max number of threads that can run in parallel
+  cudaMemcpy(globaltempIndex, &temp, sizeof(uint32_t), cudaMemcpyHostToDevice);
 
   cudaError_t error;
 
   // Invoke the kernel
-
-  for (int iteration = 1; iteration <= 1000; iteration++) {
-
-    relaunchPlayoutKernel<<<numBlocks, BLOCK_SIZE>>>(devStates, devResults, states.size());
-    cudaDeviceSynchronize();
-  }
+  relaunchPlayoutKernel<<<numBlocks, BLOCK_SIZE>>>(devStates, devResults, states.size(), globaltempIndex);
+  cudaDeviceSynchronize();
+  
 
   // Check for errors
   error = cudaGetLastError();
