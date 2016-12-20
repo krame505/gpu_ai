@@ -16,7 +16,7 @@
 __global__ void heuristicPlayoutKernel(State *states, PlayerId *results, size_t numStates) {
   uint32_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
-  uint32_t tid = tx + (bx * NUM_LOCS);
+  uint32_t tid = tx + (bx * BLOCK_SIZE);
 
   if (tid < numStates) {
     State state;
