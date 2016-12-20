@@ -1,9 +1,11 @@
-#include <getopt.h>
 #include <vector>
 #include <chrono>
 #include <functional>
 #include <random>
 #include <boost/program_options.hpp>
+
+#include <cuda_runtime_api.h>
+#include <cuda.h>
 
 #include "state.hpp"
 #include "player.hpp"
@@ -166,6 +168,10 @@ vector<PlayerId> playoutTest(const vector<State> &states, PlayoutDriver *playout
 void playoutTests(unsigned int numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETUPS]) {
   vector<State> states = genRandomStates(numTests);
   
+  // Needed to avoid extra overhead of first kernel call
+  cout << "Initializing CUDA context..." << endl;
+  cudaDeviceSynchronize();
+
   for (unsigned int i = 0; i < NUM_TEST_SETUPS; i++) {
     cout << "Running test " << i << ": " << playoutDrivers[i]->getName() << "..." << endl;
     playoutTest(states, playoutDrivers[i]);
