@@ -142,19 +142,19 @@ Player *getPlayer(string name) {
     return new MCTSPlayer(100, 1000, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_device_single") {
-    return new MCTSPlayer(new DeviceSinglePlayoutDriver);
+    return new MCTSPlayer(5000, 70, 7, new DeviceSinglePlayoutDriver);
   }
   else if (name == "mcts_device_heuristic") {
-    return new MCTSPlayer(new DeviceHeuristicPlayoutDriver);
+    return new MCTSPlayer(5000, 70, 7, new DeviceHeuristicPlayoutDriver);
   }
   else if (name == "mcts_device_multiple") {
-    return new MCTSPlayer(5000, 20, 7, new DeviceMultiplePlayoutDriver);
+    return new MCTSPlayer(300, 600, 7, new DeviceMultiplePlayoutDriver);
   }
   else if (name == "mcts_device_coarse") {
-    return new MCTSPlayer(new DeviceCoarsePlayoutDriver);
+    return new MCTSPlayer(5000, 70, 7, new DeviceCoarsePlayoutDriver);
   }
   else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(10000, 40, 7, new HybridPlayoutDriver(6));
+    return new MCTSPlayer(300, 600, 7, new HybridPlayoutDriver(5.8));
   }
   else {
     throw runtime_error("Unknown player type");
