@@ -11,7 +11,7 @@
 #define DEVICE_HOST_PLAYOUT_RATIO_SCALE 1.05
 
 #define HOST_MAX_PLAYOUT_SIZE 300
-#define HYBRID_MAX_PLAYOUT 4500
+#define HYBRID_MAX_PLAYOUT 4000
 
 class PlayoutDriver {
 public:

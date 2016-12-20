@@ -9,7 +9,7 @@
 
 #define SEED 12345
 
-#define BLOCK_SIZE 1024
+#define BLOCK_SIZE 128
 
 __global__ void singlePlayoutKernel(State *states, PlayerId *results, size_t numStates) {
   uint32_t tx = threadIdx.x;
