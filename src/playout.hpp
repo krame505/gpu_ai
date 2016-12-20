@@ -10,6 +10,9 @@
 #define INITIAL_DEVICE_HOST_PLAYOUT_RATIO 1.35
 #define DEVICE_HOST_PLAYOUT_RATIO_SCALE 1.05
 
+#define HOST_MAX_PLAYOUT_SIZE 300
+#define HYBRID_MAX_PLAYOUT 4500
+
 class PlayoutDriver {
 public:
   virtual ~PlayoutDriver() {}
@@ -80,6 +83,16 @@ public:
 
 private:
   float deviceHostPlayoutRatio;
+};
+
+// Perform playouts using whichever of the above is appropriate for the provided number of playouts
+class OptimalPlayoutDriver : public PlayoutDriver {
+public:
+  OptimalPlayoutDriver() {}
+  ~OptimalPlayoutDriver() {}
+
+  std::vector<PlayerId> runPlayouts(std::vector<State>);
+  std::string getName() const { return "optimal"; }
 };
 
 PlayoutDriver *getPlayoutDriver(std::string name);

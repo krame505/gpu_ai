@@ -73,6 +73,19 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
   return results;
 }
 
+vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
+  HostPlayoutDriver hostPlayoutDriver;
+  HybridPlayoutDriver hybridPlayoutDriver;
+  DeviceCoarsePlayoutDriver deviceCoarsePlayoutDriver;
+  
+  if (states.size() < HOST_MAX_PLAYOUT_SIZE)
+    return hostPlayoutDriver.runPlayouts(states);
+  else if (states.size() < HYBRID_MAX_PLAYOUT)
+    return hybridPlayoutDriver.runPlayouts(states);
+  else
+    return deviceCoarsePlayoutDriver.runPlayouts(states);
+}
+
 PlayoutDriver *getPlayoutDriver(string name) {
   if (name == "host") {
     return new HostPlayoutDriver;
@@ -91,6 +104,9 @@ PlayoutDriver *getPlayoutDriver(string name) {
   }
   else if (name == "hybrid") {
     return new HybridPlayoutDriver;
+  }
+  else if (name == "optimal") {
+    return new OptimalPlayoutDriver;
   }
   else {
     throw runtime_error("Unknown playout type");

@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
   desc.add_options()
     ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Single), "run mode\nsingle test gen_moves_test")
     ("num-playouts,n", boost::program_options::value<unsigned int>(&numTests)->default_value(DEFAULT_NUM_PLAYOUTS), "number of playouts")
-    ("player1,1", boost::program_options::value<string>(), "player 1 (mode = single)\nhuman random mcts mcts_host mcts_device_single mcts_device_heuristic mcts_device_multiple mcts_device_coarse mcts_hybrid\ntest 1 (mode = test)\nhost device_single device_heuristic device_multiple device_coarse hybrid")
+    ("player1,1", boost::program_options::value<string>(), "player 1 (mode = single)\nhuman random mcts mcts_host mcts_device_single mcts_device_heuristic mcts_device_multiple mcts_device_coarse mcts_hybrid\ntest 1 (mode = test)\nhost device_single device_heuristic device_multiple device_coarse hybrid optimal")
     ("player2,2", boost::program_options::value<string>(), "player 2 (mode = single)\ntest 2 (mode = test)")
     ("help,h", "print help")
     ;
