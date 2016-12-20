@@ -34,7 +34,7 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
   if (numHostTrials + numDeviceTrials < states.size())
     numDeviceTrials++;
 
-  DeviceSinglePlayoutDriver devicePlayoutDriver;
+  DeviceRelaunchPlayoutDriver devicePlayoutDriver;
   HostPlayoutDriver hostPlayoutDriver;
 
   vector<PlayerId> results(numDeviceTrials);

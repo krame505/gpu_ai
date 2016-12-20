@@ -9,6 +9,8 @@
 using namespace std;
 
 double GameTree::getScore(PlayerId player) const {
+  assert(expanded);
+
   if (state.isGameOver()) {
     PlayerId result = state.getNextTurn();
     if (result == player)
@@ -21,6 +23,8 @@ double GameTree::getScore(PlayerId player) const {
 }
 
 Move GameTree::getOptMove(PlayerId player) const {
+  assert(expanded);
+
   double highestScore = -INFINITY;
   Move bestMove;
   
