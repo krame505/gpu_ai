@@ -28,7 +28,7 @@ using namespace std;
 enum runMode {
   GenMovesTest,
   Test,
-  Single
+  Game
 };
 
 istream &operator>>(istream& in, runMode& mode) {
@@ -40,8 +40,8 @@ istream &operator>>(istream& in, runMode& mode) {
   else if (token == "test") {
     mode = Test;
   }
-  else if (token == "single") {
-    mode = Single;
+  else if (token == "game") {
+    mode = Game;
   }
   else {
     throw runtime_error("Unknown run mode");
@@ -56,8 +56,8 @@ ostream &operator<<(ostream &os, runMode mode) {
     return os << "gen_moves_test";
   case Test:
     return os << "test";
-  case Single:
-    return os << "single";
+  case Game:
+    return os << "game";
   default:
     throw runtime_error("Unknown run mode");
   }
@@ -206,10 +206,10 @@ int main(int argc, char **argv) {
 
   boost::program_options::options_description desc("Allowed options");
   desc.add_options()
-    ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Single), "run mode\nsingle test gen_moves_test")
+    ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Game), "run mode\ngame test gen_moves_test")
     ("num-playouts,n", boost::program_options::value<unsigned int>(&numTests)->default_value(DEFAULT_NUM_PLAYOUTS), "number of playouts")
-    ("player1,1", boost::program_options::value<string>(), "player 1 (mode = single)\nhuman random mcts mcts_host mcts_device_single mcts_device_heuristic mcts_device_multiple mcts_device_coarse mcts_hybrid\ntest 1 (mode = test)\nhost device_single device_heuristic device_multiple device_coarse hybrid optimal")
-    ("player2,2", boost::program_options::value<string>(), "player 2 (mode = single)\ntest 2 (mode = test)")
+    ("player1,1", boost::program_options::value<string>(), "player 1 (mode = game)\nhuman random mcts mcts_host mcts_device_single mcts_device_heuristic mcts_device_multiple mcts_device_coarse mcts_hybrid\ntest 1 (mode = test)\nhost device_single device_heuristic device_multiple device_coarse hybrid optimal")
+    ("player2,2", boost::program_options::value<string>(), "player 2 (mode = game)\ntest 2 (mode = test)")
     ("help,h", "print help")
     ;
   boost::program_options::variables_map vm;
@@ -222,7 +222,7 @@ int main(int argc, char **argv) {
     }
   
     if (vm.count("player1")) {
-      if (theRunMode == Single) {
+      if (theRunMode == Game) {
         player1 = getPlayer(vm["player1"].as<string>());
       }
       else {
@@ -230,8 +230,8 @@ int main(int argc, char **argv) {
       }
     }
     else {
-      if (theRunMode == Single) {
-        player1 = new RandomPlayer;
+      if (theRunMode == Game) {
+        player1 = new HumanPlayer;
       }
       else {
         playoutDriver1 = new HostPlayoutDriver;
@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
     }    
 
     if (vm.count("player2")) {
-      if (theRunMode == Single) {
+      if (theRunMode == Game) {
         player2 = getPlayer(vm["player2"].as<string>());
       }
       else {
@@ -247,8 +247,8 @@ int main(int argc, char **argv) {
       }
     }
     else {
-      if (theRunMode == Single) {
-        player2 = new RandomPlayer;
+      if (theRunMode == Game) {
+        player2 = new MCTSPlayer;
       }
       else {
         playoutDriver2 = new DeviceCoarsePlayoutDriver;
@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
 
 
   // Run the game
-  if (theRunMode == Single) {
+  if (theRunMode == Game) {
     cout << "Playing single game of ";
     cout << player1->getName() << " Player 1 and ";
     cout << player2->getName() << " Player 2" << endl;
