@@ -150,8 +150,8 @@ Player *getPlayer(string name) {
   else if (name == "mcts_device_multiple") {
     return new MCTSPlayer(5000, 20, 7, new DeviceMultiplePlayoutDriver);
   }
-  else if (name == "mcts_device_relaunch") {
-    return new MCTSPlayer(new DeviceRelaunchPlayoutDriver);
+  else if (name == "mcts_device_coarse") {
+    return new MCTSPlayer(new DeviceCoarsePlayoutDriver);
   }
   else if (name == "mcts_hybrid") {
     return new MCTSPlayer(10000, 40, 7, new HybridPlayoutDriver(6));

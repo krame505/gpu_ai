@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
         player2 = new RandomPlayer;
       }
       else {
-        playoutDriver2 = new DeviceSinglePlayoutDriver;
+        playoutDriver2 = new DeviceCoarsePlayoutDriver;
       }
     }
   }

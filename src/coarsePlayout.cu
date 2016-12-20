@@ -12,7 +12,7 @@
 #define NUM_BLOCKS 192
 #define BLOCK_SIZE 32
 
-__global__ void relaunchPlayoutKernel(State *states, PlayerId *results, size_t numStates, uint32_t *globalStateIndex) {
+__global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t numStates, uint32_t *globalStateIndex) {
   uint8_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
   uint32_t tid = tx + (bx * BLOCK_SIZE);
@@ -79,7 +79,7 @@ __global__ void relaunchPlayoutKernel(State *states, PlayerId *results, size_t n
   }
 }
 
-std::vector<PlayerId> DeviceRelaunchPlayoutDriver::runPlayouts(std::vector<State> states) {
+std::vector<PlayerId> DeviceCoarsePlayoutDriver::runPlayouts(std::vector<State> states) {
   // Device variables
   State *devStates;
   PlayerId *devResults;
@@ -99,7 +99,7 @@ std::vector<PlayerId> DeviceRelaunchPlayoutDriver::runPlayouts(std::vector<State
   cudaError_t error;
 
   // Invoke the kernel
-  relaunchPlayoutKernel<<<NUM_BLOCKS, BLOCK_SIZE>>>(devStates, devResults, states.size(), globalStateIndex);
+  coarsePlayoutKernel<<<NUM_BLOCKS, BLOCK_SIZE>>>(devStates, devResults, states.size(), globalStateIndex);
   cudaDeviceSynchronize();
 
   // Check for errors

@@ -34,7 +34,7 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
   if (numHostTrials + numDeviceTrials < states.size())
     numDeviceTrials++;
 
-  DeviceRelaunchPlayoutDriver devicePlayoutDriver;
+  DeviceCoarsePlayoutDriver devicePlayoutDriver;
   HostPlayoutDriver hostPlayoutDriver;
 
   vector<PlayerId> results(numDeviceTrials);
@@ -86,8 +86,8 @@ PlayoutDriver *getPlayoutDriver(string name) {
   else if (name == "device_multiple") {
     return new DeviceMultiplePlayoutDriver;
   }
-  else if (name == "device_relaunch") {
-    return new DeviceRelaunchPlayoutDriver;
+  else if (name == "device_coarse") {
+    return new DeviceCoarsePlayoutDriver;
   }
   else if (name == "hybrid") {
     return new HybridPlayoutDriver;

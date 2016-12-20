@@ -39,12 +39,12 @@ public:
 
 // Perform playouts on the GPU with 1 state per block from the provided states,
 // returning the winners
-class DeviceRelaunchPlayoutDriver : public PlayoutDriver {
+class DeviceCoarsePlayoutDriver : public PlayoutDriver {
 public:
-  ~DeviceRelaunchPlayoutDriver() {};
+  ~DeviceCoarsePlayoutDriver() {};
 
   std::vector<PlayerId> runPlayouts(std::vector<State>);
-  std::string getName() const { return "device_relaunch";}
+  std::string getName() const { return "device_coarse";}
 };
 
 // Perform playouts on the GPU with 1 state per block from the provided states,
