@@ -11,14 +11,14 @@
 
 #define SEED 12345
 
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 1024
 
-__global__ void heuristicPlayoutKernel(State *states, PlayerId *results, int n) {
+__global__ void heuristicPlayoutKernel(State *states, PlayerId *results, size_t numStates) {
   uint8_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
   uint32_t tid = tx + (bx * NUM_LOCS);
 
-  if (tid < n) {
+  if (tid < numStates) {
     State state;
     state = states[tid];
 
