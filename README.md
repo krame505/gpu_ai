@@ -28,10 +28,11 @@ to .bashrc
 
 ## Building and Running
 
+Simply run
 ```
 make
 ```
-or
+or try
 ```
 make nounicode=1
 ```
@@ -41,6 +42,19 @@ if your terminal doesn't print the Unicode checkers correctly.
 bin/release/run_ai --help
 ```
 Displays all runtime options
+
+To play a game:
+```
+bin/release/run_ai -1 player1_type -2 player2_type
+```
+The default is human vs. mcts.  Allowed player types are human, random, mcts, mcts_host, mcts_device_single, mcts_device_heuristic, mcts_device_multiple, mcts_device_coarse, and mcts_hybrid.
+
+To run a test:
+```
+bin/release/run_ai --mode test -1 player1_type -2 player2_type -n num_tests
+```
+These were used to collect the benchmark results in our report.  Allowed test types are host, device_single, device_heuristic, device_multiple, device_coarse, hybrid, and optimal.
+											    
 
 
 ## Rough outline of kernel design
