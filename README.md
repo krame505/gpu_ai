@@ -49,6 +49,11 @@ bin/release/run_ai -1 player1_type -2 player2_type
 ```
 The default is human vs. mcts.  Allowed player types are human, random, mcts, mcts_host, mcts_device_single, mcts_device_heuristic, mcts_device_multiple, mcts_device_coarse, and mcts_hybrid.
 
+Running the human player will enter an interactive mode prompting you to enter a move.  The move format consists of the simply the destination location, or if more than one piece can move to the same location, the source location followed by the destination, seperated by a space.  For ambigous multiple jump moves, the intermediate locations can be entered between the source and destination seperated by spaces.  Promotions are handled automaticly when a checker is moved to the oposite end of the board.  
+For example, to move a piece from location b6 to a5, you would type
+```b6 a5```
+and press enter.  
+
 To run a test:
 ```
 bin/release/run_ai --mode test -1 player1_type -2 player2_type -n num_tests
