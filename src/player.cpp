@@ -161,6 +161,9 @@ Player *getPlayer(string name) {
   else if (name == "mcts_hybrid") {
     return new MCTSPlayer(50, 600, 600, 7, new HybridPlayoutDriver(1.2));
   }
+  else if (name == "mcts_optimal") {
+    return new MCTSPlayer(50, 600, 600, 7, new OptimalPlayoutDriver);
+  }
   else {
     throw runtime_error("Unknown player type");
   }
