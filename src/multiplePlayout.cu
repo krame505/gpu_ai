@@ -25,27 +25,23 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
  
   __shared__ Move moves[MAX_MOVES];
 
-  __shared__ bool gameOver;
-
-  if (tx == 0)
-    gameOver = false;
+  bool gameOver = false;
 
   do {
     uint8_t numMoves = state.genMoves(moves);
 
-    if (tx == 0) {
-      // Select a move
-      Move move;
-      if (numMoves > 0) {
+    if (numMoves > 0) {
+      if (tx == 0) {
+	// Select a move
+	Move move;
         move = moves[curand(&generator) % numMoves];
-      }
-      else {
-        gameOver = true; // No moves, game is over
-      }
 
-      // Perform the move if there is one
-      if (!gameOver)
-        state.move(move);
+	// Perform the move
+	state.move(move);
+      }
+    }
+    else {
+      gameOver = true; // No moves, game is over
     }
   } while (!gameOver);
 
