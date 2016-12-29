@@ -18,24 +18,24 @@ class Player {
 public:
   virtual ~Player() {};
 
-  virtual Move getMove(const State&, bool verbose=true) = 0;
   virtual std::string getName() const = 0;
+  virtual Move getMove(const State&, bool verbose=true) = 0;
 };
 
 class HumanPlayer : public Player {
 public:
   ~HumanPlayer() {};
 
-  Move getMove(const State&, bool verbose=true);
   std::string getName() const { return "human"; }
+  Move getMove(const State&, bool verbose=true);
 };
 
 class RandomPlayer : public Player {
 public:
   ~RandomPlayer() {};
 
-  Move getMove(const State&, bool verbose=true);
   std::string getName() const { return "random"; }
+  Move getMove(const State&, bool verbose=true);
 };
 
 class MCTSPlayer : public Player {
@@ -59,8 +59,8 @@ public:
     delete playoutDriver;
   };
 
-  Move getMove(const State&, bool verbose=true);
   std::string getName() const { return "mcts"; }
+  Move getMove(const State&, bool verbose=true);
 
 private:
   const unsigned initialNumPlayouts;
