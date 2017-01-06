@@ -30,7 +30,7 @@ public:
   std::string getName() const { return "host"; }
 };
 
-// Perform playouts on the GPU with 1 state per block from the provided states,
+// Perform playouts on the GPU with 1 state per thread from the provided states,
 // returning the winners
 class DeviceSinglePlayoutDriver : public PlayoutDriver {
 public:
@@ -40,7 +40,7 @@ public:
   std::string getName() const { return "device_single"; }
 };
 
-// Perform playouts on the GPU with 1 state per block from the provided states,
+// Perform playouts on the GPU with 1 state per thread from the provided states,
 // returning the winners
 class DeviceCoarsePlayoutDriver : public PlayoutDriver {
 public:
@@ -50,7 +50,7 @@ public:
   std::string getName() const { return "device_coarse";}
 };
 
-// Perform playouts on the GPU with 1 state per block from the provided states,
+// Perform playouts on the GPU with 1 state per thread from the provided states,
 // returning the winners
 class DeviceHeuristicPlayoutDriver : public PlayoutDriver {
 public:
@@ -60,7 +60,7 @@ public:
   std::string getName() const { return "device_heuristic"; }
 };
 
-// Perform playouts on the GPU with 1 state per thread from the provided states,
+// Perform playouts on the GPU with 1 state per block from the provided states,
 // returning the winners
 class DeviceMultiplePlayoutDriver : public PlayoutDriver {
 public:

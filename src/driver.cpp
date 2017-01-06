@@ -217,7 +217,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 void gameTests(unsigned numTests, Player *players[NUM_PLAYERS]) {
   int wins[3] = {0, 0, 0};
   for (unsigned i = 0; i < numTests; i++) {
-    cout << "Playing game " << i << "... ";
+    cout << "Playing game " << i << "... " << flush;
     PlayerId result = playGame(players, false);
 
     if (result == PLAYER_NONE) {
