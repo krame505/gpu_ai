@@ -93,6 +93,7 @@ struct State {
   BoardItem board[BOARD_SIZE][BOARD_SIZE];
   PlayerId turn;
 
+  // Subscript operator overload to access board elements directly as a 2d array
 #ifdef __CUDACC__
   __host__ __device__
 #endif
@@ -100,6 +101,7 @@ struct State {
     return &(board[row][0]);
   }
 
+  // Subscript operator overload to access board elements directly with a location
 #ifdef __CUDACC__
   __host__ __device__
 #endif
@@ -107,12 +109,13 @@ struct State {
     return board[loc.row][loc.col];
   }
 
-// Get the next player in the turn sequence
+  // Get the next player in the turn sequence
 #ifdef __CUDACC__
   __host__ __device__
 #endif
   PlayerId getNextTurn() const;
 
+  // Apply a move, modifying this state
 #ifdef __CUDACC__
   __host__ __device__
 #endif
