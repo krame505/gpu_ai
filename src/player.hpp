@@ -13,7 +13,6 @@
 #define MCTS_DEFAULT_TIMEOUT 10 // Seconds
 #define MCTS_DEFAULT_PLAYOUT_DRIVER OptimalPlayoutDriver
 
-
 class Player {
 public:
   virtual ~Player() {};

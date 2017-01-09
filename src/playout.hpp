@@ -30,6 +30,16 @@ public:
   std::string getName() const { return "host"; }
 };
 
+// Perform playouts on the CPU using a heuristic for determining the winner
+// from the provided states, returning the winners
+class HostHeuristicPlayoutDriver : public PlayoutDriver {
+public:
+  ~HostHeuristicPlayoutDriver() {};
+
+  std::vector<PlayerId> runPlayouts(std::vector<State>);
+  std::string getName() const { return "host_heuristic"; }
+};
+
 // Perform playouts on the GPU with 1 state per thread from the provided states,
 // returning the winners
 class DeviceSinglePlayoutDriver : public PlayoutDriver {
@@ -50,8 +60,8 @@ public:
   std::string getName() const { return "device_coarse";}
 };
 
-// Perform playouts on the GPU with 1 state per thread from the provided states,
-// returning the winners
+// Perform playouts on the GPU with 1 state per block using a heuristic for determining the winner
+// from the provided states, returning the winners
 class DeviceHeuristicPlayoutDriver : public PlayoutDriver {
 public:
   ~DeviceHeuristicPlayoutDriver() {};

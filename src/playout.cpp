@@ -90,6 +90,9 @@ PlayoutDriver *getPlayoutDriver(string name) {
   if (name == "host") {
     return new HostPlayoutDriver;
   }
+  else if (name == "host_heuristic") {
+    return new HostHeuristicPlayoutDriver;
+  }
   else if (name == "device_single") {
     return new DeviceSinglePlayoutDriver;
   }
