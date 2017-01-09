@@ -153,11 +153,20 @@ void playoutTests(unsigned numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETU
   cout << "Initializing CUDA context..." << endl;
   cudaDeviceSynchronize();
 
+  vector<PlayerId> results[NUM_TEST_SETUPS];
   for (unsigned i = 0; i < NUM_TEST_SETUPS; i++) {
     cout << "Running test " << i << ": " << playoutDrivers[i]->getName() << "..." << endl;
-    playoutTest(states, playoutDrivers[i]);
+    results[i] = playoutTest(states, playoutDrivers[i]);
     cout << endl;
   }
+
+  unsigned numSame = 0;
+  for (unsigned i = 0; i < numTests; i++) {
+    if (results[0][i] == results[1][i])
+      numSame++;
+  }
+
+  cout << "Similar results: " << (float)numSame / numTests * 100 << "%" << endl;
 }
 
 // playGame: Implements the game logic.
