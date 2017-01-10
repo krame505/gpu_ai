@@ -140,7 +140,7 @@ __host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], MoveType
   return numMoves;
 }
 
-__device__ uint8_t State::genTypeMovesMultiple(Move result[MAX_MOVES], MoveType type) const {
+__device__ uint8_t State::genTypeMovesParallel(Move result[MAX_MOVES], MoveType type) const {
   assert(blockDim.x == NUM_LOCS);
 
   uint8_t tx = threadIdx.x;
@@ -205,10 +205,10 @@ __host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES]) const {
   return numMoves;
 }
 
-__device__ uint8_t State::genMovesMultiple(Move result[MAX_MOVES]) const {
-  uint8_t numMoves = genTypeMovesMultiple(result, CAPTURE);
+__device__ uint8_t State::genMovesParallel(Move result[MAX_MOVES]) const {
+  uint8_t numMoves = genTypeMovesParallel(result, CAPTURE);
   if (numMoves == 0)
-    numMoves = genTypeMovesMultiple(result, DIRECT);
+    numMoves = genTypeMovesParallel(result, DIRECT);
 
   return numMoves;
 }

@@ -153,7 +153,7 @@ struct State {
 
   // Generate the possible moves of a type fron all locations in parallel on the device
 #ifdef __CUDACC__
-  __device__ uint8_t genTypeMovesMultiple(Move result[MAX_MOVES], MoveType type) const;
+  __device__ uint8_t genTypeMovesParallel(Move result[MAX_MOVES], MoveType type) const;
 #endif
 
   // Generate the valid possible moves from all locations
@@ -164,7 +164,7 @@ struct State {
 
   // Generate the valid possible moves from all locations in parallel on the device
 #ifdef __CUDACC__
-  __device__ uint8_t genMovesMultiple(Move result[MAX_MOVES]) const;
+  __device__ uint8_t genMovesParallel(Move result[MAX_MOVES]) const;
 #endif
 
   // Generate a vector of all the moves for the current turn

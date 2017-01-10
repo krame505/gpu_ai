@@ -40,7 +40,7 @@ __global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t num
       numMoveCapture = 0;
       numMoveDirect = 0;
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-              for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
           Loc here(i, j);
           numMoveCapture += state.genLocMoves(here, &captureMoves[numMoveCapture], SINGLE_CAPTURE);
           numMoveDirect += state.genLocMoves(here, &directMoves[numMoveDirect], DIRECT);
