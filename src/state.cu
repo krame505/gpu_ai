@@ -317,90 +317,108 @@ __device__ uint8_t State::genLocSingleCaptureKing(Loc loc, Move result[MAX_LOC_M
   return count;
 }
 
-__host__ __device__ uint8_t State::genLocMoves(Loc l, Move result[MAX_LOC_MOVES]) const {
-  uint8_t numMoves = genLocCaptureMoves(l, result);
-  if (numMoves == 0)
-    numMoves = genLocDirectMoves(l, result);
+__host__ __device__ uint8_t State::genLocMoves(Loc loc, Move result[MAX_LOC_MOVES], MoveType type) const {
+  uint8_t numMoves;
+  switch (type) {
+  case ALL: // TODO: I don't think this case should actually ever be used
+    numMoves = genLocCaptureMoves(loc, result);
+    if (numMoves == 0)
+      numMoves = genLocDirectMoves(loc, result);
+    break;
+  case DIRECT:
+    numMoves = genLocDirectMoves(loc, result);
+    break;
+  case CAPTURE:
+    numMoves = genLocCaptureMoves(loc, result);
+    break;
+  case SINGLE_CAPTURE:
+    numMoves = genLocSingleCaptureMoves(loc, result);
+    break;
+  }
   return numMoves;
 }
 
-__host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], bool isJump) const {
+__host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES], MoveType type) const {
   uint8_t numMoves = 0;
 
-#ifdef __CUDA_ARCH__
-  uint8_t tx = threadIdx.x;
-  uint8_t row = tx / (BOARD_SIZE / 2);
-  uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);
-  Loc loc(row, col);
-  
-  __shared__ uint8_t indices[NUM_LOCS];
-
-  // Generate the moves for this location
-  Move locMoves[MAX_LOC_MOVES];
-  uint8_t numLocMoves;
-  if (isJump)
-    numLocMoves = genLocCaptureMoves(loc, locMoves);
-  else
-    numLocMoves = genLocDirectMoves(loc, locMoves);
-  indices[tx] = numLocMoves;
-
-  // Reduce
-  uint8_t stride = 1;
-  while (stride < NUM_LOCS) {
-    __syncthreads();
-    if (((tx + 1) & ((stride << 1) - 1)) == 0) {
-      indices[tx] += indices[tx - stride];
-    }
-    stride <<= 1;
+  if (type == ALL) {
+    numMoves = genMoves(result, CAPTURE);
+    if (numMoves == 0)
+      numMoves = genMoves(result, DIRECT);
   }
-
-  // Write zero to the last element after saving the value there as numMoves
-  __syncthreads();
-  numMoves = indices[NUM_LOCS - 1];
-  __syncthreads();
-  if (tx == 0) {
-    indices[NUM_LOCS - 1] = 0;
-  }
-
-  // Scan
-  stride = NUM_LOCS / 2;
-  while (stride > 0) {
-    __syncthreads();
-    if (((tx + 1) & ((stride << 1) - 1)) == 0) {
-      uint8_t temp = indices[tx - stride];
-      indices[tx - stride] = indices[tx];
-      indices[tx] += temp;
-    }
-    stride >>= 1;
-  }
-  
-  // Copy generated moves to results array
-  for (uint8_t i = 0; i < numLocMoves; i++) {
-    result[i + indices[tx]] = locMoves[i];
-  }
-
-  __syncthreads();
-  
-#else
-  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-    for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
-      Loc loc(i, j);
-      if (isJump)
-        numMoves += genLocCaptureMoves(loc, &result[numMoves]);
-      else
-        numMoves += genLocDirectMoves(loc, &result[numMoves]);
+  else {
+    for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+      for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+	Loc loc(i, j);
+	numMoves += genLocMoves(loc, &result[numMoves], type);
+      }
     }
   }
-
-#endif
 
   return numMoves;
 }
 
-__host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES]) const {
-  uint8_t numMoves = genTypeMoves(result, true);
-  if (numMoves == 0)
-    numMoves = genTypeMoves(result, false);
+__device__ uint8_t State::genMovesMultiple(Move result[MAX_MOVES], MoveType type) const {
+  assert(blockDim.x == NUM_LOCS);
+
+  uint8_t numMoves = 0;
+
+  if (type == ALL) {
+    numMoves = genMovesMultiple(result, CAPTURE);
+    if (numMoves == 0)
+      numMoves = genMovesMultiple(result, DIRECT);
+  }
+  else {
+    uint8_t tx = threadIdx.x;
+    uint8_t row = tx / (BOARD_SIZE / 2);
+    uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);
+    Loc loc(row, col);
+  
+    __shared__ uint8_t indices[NUM_LOCS];
+
+    // Generate the moves for this location
+    Move locMoves[MAX_LOC_MOVES];
+    uint8_t numLocMoves = genLocMoves(loc, locMoves, type);
+    indices[tx] = numLocMoves;
+
+    // Reduce
+    uint8_t stride = 1;
+    while (stride < NUM_LOCS) {
+      __syncthreads();
+      if (((tx + 1) & ((stride << 1) - 1)) == 0) {
+	indices[tx] += indices[tx - stride];
+      }
+      stride <<= 1;
+    }
+
+    // Write zero to the last element after saving the value there as numMoves
+    __syncthreads();
+    numMoves = indices[NUM_LOCS - 1];
+    __syncthreads();
+    if (tx == 0) {
+      indices[NUM_LOCS - 1] = 0;
+    }
+
+    // Scan
+    stride = NUM_LOCS / 2;
+    while (stride > 0) {
+      __syncthreads();
+      if (((tx + 1) & ((stride << 1) - 1)) == 0) {
+	uint8_t temp = indices[tx - stride];
+	indices[tx - stride] = indices[tx];
+	indices[tx] += temp;
+      }
+      stride >>= 1;
+    }
+  
+    // Copy generated moves to results array
+    for (uint8_t i = 0; i < numLocMoves; i++) {
+      result[i + indices[tx]] = locMoves[i];
+    }
+
+    __syncthreads();
+  }
+
   return numMoves;
 }
 

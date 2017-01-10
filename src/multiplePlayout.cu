@@ -28,7 +28,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   bool gameOver = false;
 
   do {
-    uint8_t numMoves = state.genMoves(moves);
+    uint8_t numMoves = state.genMovesMultiple(moves);
 
     if (numMoves > 0) {
       if (tx == 0) {

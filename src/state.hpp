@@ -86,6 +86,13 @@ struct BoardItem {
   BoardItem() {}*/
 };
 
+enum MoveType {
+  ALL,
+  DIRECT,
+  CAPTURE,
+  SINGLE_CAPTURE
+};
+
 struct Move;
 
 // Represents the current state of the game, including the board and current turn
@@ -179,23 +186,22 @@ private:
   uint8_t genLocCaptureKing(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
 
 public:
-  // Generate the possible moves from a location
+  // Generate the possible moves of a type from a location
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genLocMoves(Loc, Move result[MAX_LOC_MOVES]) const;
+  uint8_t genLocMoves(Loc, Move result[MAX_LOC_MOVES], MoveType type=ALL) const;
 
-  // Generate all the possible capture or direct moves
+  // Generate the possible moves of a type fron all locations
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genTypeMoves(Move result[MAX_MOVES], bool isJump=false) const;
+  uint8_t genMoves(Move result[MAX_MOVES], MoveType type=ALL) const;
 
-  // Generate all the possible moves
+  // Generate the possible moves of a type fron all locations in parallel on the device
 #ifdef __CUDACC__
-  __host__ __device__
+  __device__ uint8_t genMovesMultiple(Move result[MAX_MOVES], MoveType type=ALL) const;
 #endif
-  uint8_t genMoves(Move result[MAX_MOVES]) const;
 
   // Generate a vector of all the moves for the current turn
   std::vector<Move> getMoves() const;
