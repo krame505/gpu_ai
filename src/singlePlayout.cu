@@ -7,6 +7,8 @@
 
 #include <vector>
 
+#define CUDA_STACK_SIZE 1024 * 32
+
 #define SEED 12345
 
 #define BLOCK_SIZE 128
@@ -37,8 +39,8 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, size_t num
       for (uint8_t i = 0; i < BOARD_SIZE; i++) {
         for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
           Loc here(i, j);
-          numMoveCapture += state.genLocSingleCaptureMoves(here, &captureMoves[numMoveCapture]);
-          numMoveDirect += state.genLocDirectMoves(here, &directMoves[numMoveDirect]);
+          numMoveCapture += state.genLocMoves(here, &captureMoves[numMoveCapture], SINGLE_CAPTURE);
+          numMoveDirect += state.genLocMoves(here, &directMoves[numMoveDirect], DIRECT);
         }
       }
 
@@ -48,7 +50,7 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, size_t num
           Loc to = captureMoves[moveIndex].to;
           state.move(captureMoves[moveIndex]);
           state.turn = state.getNextTurn();
-          numMoveCapture = state.genLocSingleCaptureMoves(to, captureMoves);
+          numMoveCapture = state.genLocMoves(to, captureMoves, SINGLE_CAPTURE);
         } while (numMoveCapture > 0);
         state.turn = state.getNextTurn();
       }
@@ -78,7 +80,13 @@ std::vector<PlayerId> DeviceSinglePlayoutDriver::runPlayouts(std::vector<State> 
   if (states.size() % BLOCK_SIZE)
     numBlocks++;
 
-  cudaError_t error;
+  // Increase default stack size
+  cudaError_t error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
+  if (error != cudaSuccess) {
+    // print the CUDA error message and exit
+    std::cout << "CUDA error setting stack size: " << cudaGetErrorString(error) << std::endl;
+    exit(1);
+  }
 
   // Invoke the kernel
   singlePlayoutKernel<<<numBlocks, BLOCK_SIZE>>>(devStates, devResults, states.size());

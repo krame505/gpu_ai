@@ -103,15 +103,121 @@ __host__ __device__ bool State::isValidJump(Move move, Loc jumped, Loc newTo, bo
   return true;
 }
 
+__host__ __device__ uint8_t State::genLocMoves(Loc loc, Move result[MAX_LOC_MOVES], MoveType type) const {
+  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
+    return 0;
+
+  switch (type) {
+  case DIRECT:
+    return genLocDirectMoves(loc, result);
+
+  case CAPTURE:
+    result[0] = Move(loc, loc);
+    if ((*this)[loc].type == CHECKER)
+      return genLocCaptureReg(loc, result);
+    else
+      return genLocCaptureKing(loc, result);
+
+  case SINGLE_CAPTURE:
+    if ((*this)[loc].type == CHECKER)
+      return genLocSingleCaptureReg(loc, result);
+    else
+      return genLocSingleCaptureKing(loc, result);
+  }
+
+  assert(false); // Should never get here
+  return 0;
+}
+
+__host__ __device__ uint8_t State::genTypeMoves(Move result[MAX_MOVES], MoveType type) const {
+  uint8_t numMoves = 0;
+  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+    for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+      Loc loc(i, j);
+      numMoves += genLocMoves(loc, &result[numMoves], type);
+    }
+  }
+  return numMoves;
+}
+
+__device__ uint8_t State::genTypeMovesMultiple(Move result[MAX_MOVES], MoveType type) const {
+  assert(blockDim.x == NUM_LOCS);
+
+  uint8_t tx = threadIdx.x;
+  uint8_t row = tx / (BOARD_SIZE / 2);
+  uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);
+  Loc loc(row, col);
+
+  uint8_t numMoves = 0;
+  
+  __shared__ uint8_t indices[NUM_LOCS];
+
+  // Generate the moves for this location
+  Move locMoves[MAX_LOC_MOVES];
+  uint8_t numLocMoves = genLocMoves(loc, locMoves, type);
+  indices[tx] = numLocMoves;
+
+  // Reduce
+  uint8_t stride = 1;
+  while (stride < NUM_LOCS) {
+    __syncthreads();
+    if (((tx + 1) & ((stride << 1) - 1)) == 0) {
+      indices[tx] += indices[tx - stride];
+    }
+    stride <<= 1;
+  }
+
+  // Write zero to the last element after saving the value there as numMoves
+  __syncthreads();
+  numMoves = indices[NUM_LOCS - 1];
+  __syncthreads();
+  if (tx == 0) {
+    indices[NUM_LOCS - 1] = 0;
+  }
+
+  // Scan
+  stride = NUM_LOCS / 2;
+  while (stride > 0) {
+    __syncthreads();
+    if (((tx + 1) & ((stride << 1) - 1)) == 0) {
+      uint8_t temp = indices[tx - stride];
+      indices[tx - stride] = indices[tx];
+      indices[tx] += temp;
+    }
+    stride >>= 1;
+  }
+  
+  // Copy generated moves to results array
+  for (uint8_t i = 0; i < numLocMoves; i++) {
+    result[i + indices[tx]] = locMoves[i];
+  }
+
+  __syncthreads();
+
+  return numMoves;
+}
+
+__host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES]) const {
+  uint8_t numMoves = genTypeMoves(result, CAPTURE);
+  if (numMoves == 0)
+    numMoves = genTypeMoves(result, DIRECT);
+
+  return numMoves;
+}
+
+__device__ uint8_t State::genMovesMultiple(Move result[MAX_MOVES]) const {
+  uint8_t numMoves = genTypeMovesMultiple(result, CAPTURE);
+  if (numMoves == 0)
+    numMoves = genTypeMovesMultiple(result, DIRECT);
+
+  return numMoves;
+}
 
 __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
   const int dc[] = {1, -1, 1, -1};
   const int dr[] = {1, 1, -1, -1};
   // NOTE: player 1 is moving down, player 2 is moving up - fix if this assumption is wrong
-
-  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
-    return 0;
 
   if ((*this)[loc].type == CHECKER_KING) {
     for (uint8_t i = 0; i < 4; i++) {
@@ -135,30 +241,7 @@ __host__ __device__ uint8_t State::genLocDirectMoves(Loc loc, Move result[MAX_LO
   return count;
 }
 
-
-__host__ __device__ uint8_t State::genLocSingleCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
-  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
-    return 0;
-
-  if ((*this)[loc].type == CHECKER)
-    return genLocSingleCaptureReg(loc, result);
-  else
-    return genLocSingleCaptureKing(loc, result);
-}
-
-__host__ __device__ uint8_t State::genLocCaptureMoves(Loc loc, Move result[MAX_LOC_MOVES]) const {
-  if (!(*this)[loc].occupied || (*this)[loc].owner != turn)
-    return 0;
-
-  result[0] = Move(loc, loc);
-  if ((*this)[loc].type == CHECKER)
-    return genLocCaptureReg(loc, result);
-  else
-    return genLocCaptureKing(loc, result);
-}
-
-
-__device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
+__host__ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
 
   // add an item if have jumped one piece already and it is the longest jump
   // possible (i.e. the set of jumps is not a proper subset of another possible
@@ -217,8 +300,7 @@ __device__ uint8_t State::genLocCaptureReg(Loc loc, Move result[MAX_LOC_MOVES], 
   return count;
 }
 
-
-__device__ uint8_t State::genLocSingleCaptureReg(Loc loc, Move result[MAX_LOC_MOVES]) const {
+__host__ __device__ uint8_t State::genLocSingleCaptureReg(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
   
   int8_t deltaRowLeft, deltaColLeft, deltaRowRight, deltaColRight;
@@ -264,8 +346,7 @@ __device__ uint8_t State::genLocSingleCaptureReg(Loc loc, Move result[MAX_LOC_MO
   return count;
 }
 
-
-__device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
+__host__ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES], uint8_t count, bool first) const {
   Move prevMove = result[count];
 
   int8_t deltaRows[4] = {1, 1, -1, -1};
@@ -299,7 +380,7 @@ __device__ uint8_t State::genLocCaptureKing(Loc loc, Move result[MAX_LOC_MOVES],
   return count;
 }
 
-__device__ uint8_t State::genLocSingleCaptureKing(Loc loc, Move result[MAX_LOC_MOVES]) const {
+__host__ __device__ uint8_t State::genLocSingleCaptureKing(Loc loc, Move result[MAX_LOC_MOVES]) const {
   uint8_t count = 0;
   
   int8_t deltaRows[4] = {1, 1, -1, -1};
@@ -315,111 +396,6 @@ __device__ uint8_t State::genLocSingleCaptureKing(Loc loc, Move result[MAX_LOC_M
   }
 
   return count;
-}
-
-__host__ __device__ uint8_t State::genLocMoves(Loc loc, Move result[MAX_LOC_MOVES], MoveType type) const {
-  uint8_t numMoves;
-  switch (type) {
-  case ALL: // TODO: I don't think this case should actually ever be used
-    numMoves = genLocCaptureMoves(loc, result);
-    if (numMoves == 0)
-      numMoves = genLocDirectMoves(loc, result);
-    break;
-  case DIRECT:
-    numMoves = genLocDirectMoves(loc, result);
-    break;
-  case CAPTURE:
-    numMoves = genLocCaptureMoves(loc, result);
-    break;
-  case SINGLE_CAPTURE:
-    numMoves = genLocSingleCaptureMoves(loc, result);
-    break;
-  }
-  return numMoves;
-}
-
-__host__ __device__ uint8_t State::genMoves(Move result[MAX_MOVES], MoveType type) const {
-  uint8_t numMoves = 0;
-
-  if (type == ALL) {
-    numMoves = genMoves(result, CAPTURE);
-    if (numMoves == 0)
-      numMoves = genMoves(result, DIRECT);
-  }
-  else {
-    for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-      for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
-	Loc loc(i, j);
-	numMoves += genLocMoves(loc, &result[numMoves], type);
-      }
-    }
-  }
-
-  return numMoves;
-}
-
-__device__ uint8_t State::genMovesMultiple(Move result[MAX_MOVES], MoveType type) const {
-  assert(blockDim.x == NUM_LOCS);
-
-  uint8_t numMoves = 0;
-
-  if (type == ALL) {
-    numMoves = genMovesMultiple(result, CAPTURE);
-    if (numMoves == 0)
-      numMoves = genMovesMultiple(result, DIRECT);
-  }
-  else {
-    uint8_t tx = threadIdx.x;
-    uint8_t row = tx / (BOARD_SIZE / 2);
-    uint8_t col = ((tx % (BOARD_SIZE / 2)) * 2) + (row % 2 == 0);
-    Loc loc(row, col);
-  
-    __shared__ uint8_t indices[NUM_LOCS];
-
-    // Generate the moves for this location
-    Move locMoves[MAX_LOC_MOVES];
-    uint8_t numLocMoves = genLocMoves(loc, locMoves, type);
-    indices[tx] = numLocMoves;
-
-    // Reduce
-    uint8_t stride = 1;
-    while (stride < NUM_LOCS) {
-      __syncthreads();
-      if (((tx + 1) & ((stride << 1) - 1)) == 0) {
-	indices[tx] += indices[tx - stride];
-      }
-      stride <<= 1;
-    }
-
-    // Write zero to the last element after saving the value there as numMoves
-    __syncthreads();
-    numMoves = indices[NUM_LOCS - 1];
-    __syncthreads();
-    if (tx == 0) {
-      indices[NUM_LOCS - 1] = 0;
-    }
-
-    // Scan
-    stride = NUM_LOCS / 2;
-    while (stride > 0) {
-      __syncthreads();
-      if (((tx + 1) & ((stride << 1) - 1)) == 0) {
-	uint8_t temp = indices[tx - stride];
-	indices[tx - stride] = indices[tx];
-	indices[tx] += temp;
-      }
-      stride >>= 1;
-    }
-  
-    // Copy generated moves to results array
-    for (uint8_t i = 0; i < numLocMoves; i++) {
-      result[i + indices[tx]] = locMoves[i];
-    }
-
-    __syncthreads();
-  }
-
-  return numMoves;
 }
 
 __host__ __device__ bool Move::operator==(const Move &other) const {

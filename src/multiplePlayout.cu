@@ -59,6 +59,7 @@ std::vector<PlayerId> DeviceMultiplePlayoutDriver::runPlayouts(std::vector<State
   // Copy states for playouts to device
   cudaMemcpy(devStates, states.data(), states.size() * sizeof(State), cudaMemcpyHostToDevice);
 
+  // Increase default stack size
   cudaError_t error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
   if (error != cudaSuccess) {
     // print the CUDA error message and exit

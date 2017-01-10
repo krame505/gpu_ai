@@ -87,7 +87,6 @@ struct BoardItem {
 };
 
 enum MoveType {
-  ALL,
   DIRECT,
   CAPTURE,
   SINGLE_CAPTURE
@@ -140,67 +139,32 @@ struct State {
 #endif
   bool isValidJump(Move move, Loc jumped, Loc newTo, bool checkCycles) const;
 
-  // Generate the possible direct (i.e. not capture) moves from a location
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  uint8_t genLocDirectMoves(Loc, Move result[MAX_LOC_MOVES]) const;
-
-  // Generate the possible capture moves of length 1 from a location
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  uint8_t genLocSingleCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const;
-
-  // Generate the possible capture moves from a location
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  uint8_t genLocCaptureMoves(Loc, Move result[MAX_LOC_MOVES]) const;
-
-private:
-  // Helper to genLocSingleCaptureMoves, recursively generate the capture moves of length 1
-  // for a regular checker
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  uint8_t genLocSingleCaptureReg(Loc, Move result[MAX_LOC_MOVES]) const;
-
-  // Helper to genLocCaptureMoves, recursively generate the capture moves for a regular checker
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  uint8_t genLocCaptureReg(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
-
-  // Helper to genLocSingleCaptureMoves, recursively generate the capture moves of length 1
-  // for a king
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  uint8_t genLocSingleCaptureKing(Loc, Move result[MAX_LOC_MOVES]) const;
-
-  // Helper to genLocCaptureMoves, recursively generate the capture moves for a king
-#ifdef __CUDACC__
-  __host__ __device__
-#endif
-  uint8_t genLocCaptureKing(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
-
-public:
   // Generate the possible moves of a type from a location
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genLocMoves(Loc, Move result[MAX_LOC_MOVES], MoveType type=ALL) const;
+  uint8_t genLocMoves(Loc, Move result[MAX_LOC_MOVES], MoveType type) const;
 
   // Generate the possible moves of a type fron all locations
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  uint8_t genMoves(Move result[MAX_MOVES], MoveType type=ALL) const;
+  uint8_t genTypeMoves(Move result[MAX_MOVES], MoveType type) const;
 
   // Generate the possible moves of a type fron all locations in parallel on the device
 #ifdef __CUDACC__
-  __device__ uint8_t genMovesMultiple(Move result[MAX_MOVES], MoveType type=ALL) const;
+  __device__ uint8_t genTypeMovesMultiple(Move result[MAX_MOVES], MoveType type) const;
+#endif
+
+  // Generate the valid possible moves from all locations
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genMoves(Move result[MAX_MOVES]) const;
+
+  // Generate the valid possible moves from all locations in parallel on the device
+#ifdef __CUDACC__
+  __device__ uint8_t genMovesMultiple(Move result[MAX_MOVES]) const;
 #endif
 
   // Generate a vector of all the moves for the current turn
@@ -208,6 +172,39 @@ public:
 
   // Return true if the game is finished
   bool isGameOver() const;
+
+private:
+  // Helpers for move generation
+
+  // Generate the possible direct (i.e. not capture) moves from a location
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocDirectMoves(Loc, Move result[MAX_LOC_MOVES]) const;
+
+  // Recursively generate the capture moves of length 1 for a regular checker
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocSingleCaptureReg(Loc, Move result[MAX_LOC_MOVES]) const;
+
+  // Recursively generate the capture moves for a regular checker
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocCaptureReg(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
+
+  // Recursively generate the capture moves of length 1 for a king
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocSingleCaptureKing(Loc, Move result[MAX_LOC_MOVES]) const;
+
+  // Recursively generate the capture moves for a king
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  uint8_t genLocCaptureKing(Loc, Move result[MAX_LOC_MOVES], uint8_t count=0, bool first=true) const;
 };
 
 // Represents a move, independant from any particular board state
