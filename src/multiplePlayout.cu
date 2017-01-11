@@ -33,8 +33,7 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
     if (numMoves > 0) {
       if (tx == 0) {
 	// Select a move
-	Move move;
-        move = moves[curand(&generator) % numMoves];
+	Move move = moves[curand(&generator) % numMoves];
 
 	// Perform the move
 	state.move(move);

@@ -13,8 +13,6 @@
 
 #define SEED 12345
 
-#define NUM_ITERATIONS_BETWEEN_HEURISTIC 10
-
 __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
   uint8_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
@@ -32,16 +30,45 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
   bool gameOver = false;
 
   do {
-    uint8_t numMoves = state.genMoves(moves);
+    uint8_t numMoves = state.genMovesParallel(moves);
 
     if (numMoves > 0) {
-      if (tx == 0) {
-	// Select a move
-	Move move;
-        move = moves[curand(&generator) % numMoves];
+      Move optMove;
+      float optScore = -1/0.0; // -infinity
 
+      // Calculate scores for each move and copy the best ones for each thread into an array
+      for (uint8_t i = tx; i < numMoves; i += NUM_LOCS) {
+	Move move = moves[i];
+	State newState = state;
+	newState.move(move);
+	float score = scoreHeuristic(newState) + curand_normal(&generator) * HEURISTIC_SIGMA;
+	if (i == tx || score > optScore) {
+	  optMove = move;
+	  optScore = score;
+	}
+      }
+
+      __shared__ float scores[NUM_LOCS];
+      if (tx < numMoves) {
+	moves[tx] = optMove;
+	scores[tx] = optScore;
+      }
+      else {
+	scores[tx] = -1/0.0; // -infinity
+      }
+
+      // Perform reduction to find move with max score
+      for (uint8_t stride = NUM_LOCS / 2; stride > 0; stride >>= 1) {
+	__syncthreads();
+	if (tx < stride && scores[tx] < scores[tx + stride]) {
+	  moves[tx] = moves[tx + stride];
+	  scores[tx] = scores[tx + stride];
+	}
+      }
+
+      if (tx == 0) {
 	// Perform the move
-	state.move(move);
+	state.move(moves[0]);
       }
     }
     else {
@@ -63,6 +90,7 @@ std::vector<PlayerId> DeviceHeuristicPlayoutDriver::runPlayouts(std::vector<Stat
   // Copy states for playouts to device
   cudaMemcpy(devStates, states.data(), states.size() * sizeof(State), cudaMemcpyHostToDevice);
 
+  // Increase default stack size
   cudaError_t error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
   if (error != cudaSuccess) {
     // print the CUDA error message and exit

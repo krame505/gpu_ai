@@ -14,9 +14,9 @@ CUFILES	    := state.cu singlePlayout.cu multiplePlayout.cu heuristicPlayout.cu 
 # C/C++ source files (compiled with gcc / c++)
 CCFILES	    := state.cpp playout.cpp heuristicPlayout.cpp mcts.cpp player.cpp driver.cpp
 # Header files included by any of CUFILES
-CUHEADERS   := playout.hpp state.hpp genMovesTest.hpp
+CUHEADERS   := playout.hpp state.hpp heuristic.hpp genMovesTest.hpp
 # Header files included by any of CCFILES
-CCHEADERS   := colors.h mcts.hpp playout.hpp state.hpp player.hpp
+CCHEADERS   := colors.h mcts.hpp playout.hpp state.hpp player.hpp heuristic.hpp
 
 SRCDIR      := src
 ROOTDIR     := .

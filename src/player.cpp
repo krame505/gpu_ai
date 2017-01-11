@@ -147,6 +147,9 @@ Player *getPlayer(string name) {
   else if (name == "mcts_host") {
     return new MCTSPlayer(50, 1, 7, new HostPlayoutDriver);
   }
+  else if (name == "mcts_host_heuristic") {
+    return new MCTSPlayer(50, 1, 7, new HostHeuristicPlayoutDriver);
+  }
   else if (name == "mcts_device_coarse") {
     return new MCTSPlayer(4000, 1.001, 7, new DeviceCoarsePlayoutDriver);
   }
