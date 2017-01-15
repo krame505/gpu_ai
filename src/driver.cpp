@@ -2,10 +2,11 @@
 #include <chrono>
 #include <functional>
 #include <random>
-#include <boost/program_options.hpp>
 
 #include <cuda_runtime_api.h>
 #include <cuda.h>
+
+#include "cxxopts.hpp"
 
 #include "state.hpp"
 #include "player.hpp"
@@ -261,31 +262,38 @@ int main(int argc, char **argv) {
   cout << "Lucas Kramer, Katie Maurer, Ryan Todtleben, and Phil Senum" << endl;
 
   unsigned int numTests;
-  runMode theRunMode;
+  runMode mode = Game;
   Player *player1 = NULL;
   Player *player2 = NULL;
   PlayoutDriver *playoutDriver1 = NULL;
   PlayoutDriver *playoutDriver2 = NULL;
 
-  boost::program_options::options_description desc("Allowed options");
-  desc.add_options()
-    ("mode,m", boost::program_options::value<runMode>(&theRunMode)->default_value(Game), "run mode\n gen_moves_test playout_test game_test game")
-    ("num-playouts,n", boost::program_options::value<unsigned int>(&numTests), "number of playouts")
-    ("player1,1", boost::program_options::value<string>(), "player 1 (mode = game, game_test)\nhuman random mcts mcts_host mcts_device_multiple mcts_device_coarse mcts_hybrid mcts_optimal\ntest 1 (mode = playout_test)\nhost device_single device_heuristic device_multiple device_coarse hybrid optimal")
-    ("player2,2", boost::program_options::value<string>(), "player 2 (mode = game, game_test)\ntest 2 (mode = playout_test)")
-    ("help,h", "print help")
+  cxxopts::Options options(argv[0]);
+  options.add_options()
+    ("m,mode", "run mode: gen_moves_test playout_test game_test game",
+     cxxopts::value<runMode>(mode))
+    ("n,num_tests", "number of tests to run",
+     cxxopts::value<unsigned int>(numTests))
+    ("1,player1", "player 1 (mode = game, game_test): human random mcts mcts_host mcts_device_multiple mcts_device_coarse mcts_hybrid mcts_optimal                                   playout driver 1 (mode = playout_test): host device_single device_heuristic device_multiple device_coarse hybrid optimal",
+     cxxopts::value<string>())
+    ("2,player2", "player 2 (mode = game, game_test)                      test 2   (mode = playout_test)",
+     cxxopts::value<string>())
+    ("h,help", "print help")
     ;
-  boost::program_options::variables_map vm;
+
+    options.parse_positional({"player1", "player2"});
+
+    
   try {
-    boost::program_options::store(boost::program_options::parse_command_line(argc, argv, desc), vm);
-    boost::program_options::notify(vm);
-    if (vm.count("help")) {
-      cout << desc << endl;
+    options.parse(argc, argv);
+
+    if (options.count("help")) {
+      cout << options.help() << endl;
       return 0;
     }
 
-    if (!vm.count("num-playouts")) {
-      if (theRunMode == GameTest) {
+    if (!options.count("num_tests")) {
+      if (mode == GameTest) {
 	numTests = DEFAULT_NUM_GAMES;
       }
       else {
@@ -293,16 +301,16 @@ int main(int argc, char **argv) {
       }
     }
   
-    if (vm.count("player1")) {
-      if (theRunMode == Game || theRunMode == GameTest) {
-        player1 = getPlayer(vm["player1"].as<string>());
+    if (options.count("player1")) {
+      if (mode == Game || mode == GameTest) {
+        player1 = getPlayer(options["player1"].as<string>());
       }
       else {
-        playoutDriver1 = getPlayoutDriver(vm["player1"].as<string>());
+        playoutDriver1 = getPlayoutDriver(options["player1"].as<string>());
       }
     }
     else {
-      if (theRunMode == Game || theRunMode == GameTest) {
+      if (mode == Game || mode == GameTest) {
         player1 = new HumanPlayer;
       }
       else {
@@ -310,16 +318,16 @@ int main(int argc, char **argv) {
       }
     }    
 
-    if (vm.count("player2")) {
-      if (theRunMode == Game || theRunMode == GameTest) {
-        player2 = getPlayer(vm["player2"].as<string>());
+    if (options.count("player2")) {
+      if (mode == Game || mode == GameTest) {
+        player2 = getPlayer(options["player2"].as<string>());
       }
       else {
-        playoutDriver2 = getPlayoutDriver(vm["player2"].as<string>());
+        playoutDriver2 = getPlayoutDriver(options["player2"].as<string>());
       }
     }
     else {
-      if (theRunMode == Game || theRunMode == GameTest) {
+      if (mode == Game || mode == GameTest) {
         player2 = new MCTSPlayer;
       }
       else {
@@ -329,13 +337,13 @@ int main(int argc, char **argv) {
   }
   catch (exception& err) {
     cout << err.what() << endl;
-    cout << desc << endl;
+    cout << options.help() << endl;
     return 1;
   }
 
 
   // Run the game
-  switch (theRunMode) {
+  switch (mode) {
   case GenMovesTest:
     cout << "Testing " << numTests << " random states have the same moves on the host and device" << endl;
     cout << endl;

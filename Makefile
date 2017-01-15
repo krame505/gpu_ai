@@ -16,7 +16,7 @@ CCFILES	    := state.cpp playout.cpp heuristicPlayout.cpp mcts.cpp player.cpp dr
 # Header files included by any of CUFILES
 CUHEADERS   := playout.hpp state.hpp heuristic.hpp genMovesTest.hpp
 # Header files included by any of CCFILES
-CCHEADERS   := colors.h mcts.hpp playout.hpp state.hpp player.hpp heuristic.hpp
+CCHEADERS   := cxxopts.hpp colors.h mcts.hpp playout.hpp state.hpp player.hpp heuristic.hpp
 
 SRCDIR      := src
 ROOTDIR     := .
@@ -44,7 +44,7 @@ NVCCFLAGS   += --generate-code arch=compute_20,code=sm_20 --generate-code arch=c
 CXX         := g++
 CXXFLAGS    += -fopenmp -fno-strict-aliasing -m64 -std=gnu++11 -Wall -Wextra -DVERBOSE -DUNIX -I"$(CUDA_INSTALL_PATH)/include"
 
-LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcuda -lcudart -lboost_program_options
+LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcudart
 
 ifeq ($(dbg),1)
   CXXFLAGS  += -g3 -ggdb
