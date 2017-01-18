@@ -281,7 +281,7 @@ int main(int argc, char **argv) {
     ("h,help", "print help")
     ;
 
-    options.parse_positional({"player1", "player2"});
+  options.parse_positional(vector<string>{"player1", "player2"});
 
     
   try {
