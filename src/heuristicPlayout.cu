@@ -19,7 +19,8 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
   uint32_t tid = tx + (bx * NUM_LOCS);
 
   __shared__ State state;
-  state = states[bx];
+  if (tx == 0)
+    state = states[bx];
 
   // Init random generator
   curandState_t generator;
@@ -27,6 +28,10 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
  
   __shared__ Move moves[MAX_MOVES];
 
+  // Calculate the scores for the initial state
+  unsigned stateScore[NUM_PLAYERS];
+  scoreState(state, stateScore);
+  
   bool gameOver = false;
 
   do {
@@ -34,41 +39,57 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
 
     if (numMoves > 0) {
       Move optMove;
-      float optScore = -1/0.0; // -infinity
+      int optMoveScore[NUM_PLAYERS] = {0, 0};
+      float optWeight = -1/0.0; // -infinity
 
-      // Calculate scores for each move and copy the best ones for each thread into an array
+      // Calculate weights for each move and copy the best ones for each thread into an array
       for (uint8_t i = tx; i < numMoves; i += NUM_LOCS) {
 	Move move = moves[i];
-	State newState = state;
-	newState.move(move);
-	float score = scoreHeuristic(newState) + curand_normal(&generator) * HEURISTIC_SIGMA;
-	if (i == tx || score > optScore) {
+	int moveScore[NUM_PLAYERS] = {0, 0};
+	scoreMove(state, move, moveScore);
+	float weight = getWeight(state, stateScore, moveScore) + curand_normal(&generator) * HEURISTIC_SIGMA;
+	if (i == tx || weight > optWeight) {
 	  optMove = move;
-	  optScore = score;
+	  optWeight = weight;
+	  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	    optMoveScore[i] = moveScore[i];
+	  }
 	}
       }
 
-      __shared__ float scores[NUM_LOCS];
+      __shared__ float weights[NUM_LOCS];
+      __shared__ float moveScores[NUM_LOCS][NUM_PLAYERS];
       if (tx < numMoves) {
 	moves[tx] = optMove;
-	scores[tx] = optScore;
-      }
-      else {
-	scores[tx] = -1/0.0; // -infinity
-      }
-
-      // Perform reduction to find move with max score
-      for (uint8_t stride = NUM_LOCS / 2; stride > 0; stride >>= 1) {
-	__syncthreads();
-	if (tx < stride && scores[tx] < scores[tx + stride]) {
-	  moves[tx] = moves[tx + stride];
-	  scores[tx] = scores[tx + stride];
+	weights[tx] = optWeight;
+	for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	  moveScores[tx][i] = optMoveScore[i];
 	}
       }
+      else {
+	weights[tx] = -1/0.0; // -infinity
+      }
 
+      // Perform reduction to find move with max weight
+      for (uint8_t stride = NUM_LOCS / 2; stride > 0; stride >>= 1) {
+	__syncthreads();
+	if (tx < stride && weights[tx] < weights[tx + stride]) {
+	  moves[tx] = moves[tx + stride];
+	  weights[tx] = weights[tx + stride];
+	  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	    moveScores[tx][i] = moveScores[tx + stride][i];
+	  }
+	}
+      }
+ 
       if (tx == 0) {
 	// Perform the move
 	state.move(moves[0]);
+
+	// Update the score for the current state
+	for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	  stateScore[i] += moveScores[0][i];
+	}
       }
     }
     else {

@@ -17,7 +17,8 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
   uint32_t tid = tx + (bx * NUM_LOCS);
 
   __shared__ State state;
-  state = states[bx];
+  if (tx == 0)
+    state = states[bx];
 
   // Init random generator
   curandState_t generator;

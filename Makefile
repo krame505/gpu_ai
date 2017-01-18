@@ -39,7 +39,7 @@ CUOBJS      := $(patsubst %.cu, $(OBJDIR)/%.cu.o, $(CUFILES))
 CCOBJS      := $(patsubst %.cpp, $(OBJDIR)/%.cpp.o, $(CCFILES))
 
 NVCC        := $(CUDA_INSTALL_PATH)/bin/nvcc
-NVCCFLAGS   += --generate-code arch=compute_20,code=sm_20 --generate-code arch=compute_30,code=sm_30 -Wno-deprecated-gpu-targets -m64 -DUNIX --compiler-options -fno-strict-aliasing -I"$(CUDA_INSTALL_PATH)/include"
+NVCCFLAGS   += --generate-code arch=compute_20,code=sm_20 --generate-code arch=compute_30,code=sm_30 -Wno-deprecated-gpu-targets -m64 -DUNIX -std=c++11 --compiler-options -fno-strict-aliasing -I"$(CUDA_INSTALL_PATH)/include"
 
 CXX         := g++
 CXXFLAGS    += -fopenmp -fno-strict-aliasing -m64 -std=gnu++11 -Wall -Wextra -DVERBOSE -DUNIX -I"$(CUDA_INSTALL_PATH)/include"

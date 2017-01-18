@@ -5,6 +5,9 @@
 #include <vector>
 #include <string>
 
+#define DEFAULT_HYBRID_HOST_PLAYOUT_DRIVER DeviceMultiplePlayoutDriver
+#define DEFAULT_DEVICE_HOST_PLAYOUT_DRIVER HostPlayoutDriver
+
 // In theory should be host runtime / device runtime for target # of playouts
 // But in practice needs tuning for MCTS
 #define INITIAL_DEVICE_HOST_PLAYOUT_RATIO 1.35
@@ -84,14 +87,27 @@ public:
 // returning the winners
 class HybridPlayoutDriver : public PlayoutDriver {
 public:
-  HybridPlayoutDriver(float deviceHostPlayoutRatio=INITIAL_DEVICE_HOST_PLAYOUT_RATIO) :
+  HybridPlayoutDriver(PlayoutDriver *hostPlayoutDriver=new DEFAULT_HYBRID_HOST_PLAYOUT_DRIVER,
+		      PlayoutDriver *devicePlayoutDriver=new DEFAULT_DEVICE_HOST_PLAYOUT_DRIVER,
+		      float deviceHostPlayoutRatio=INITIAL_DEVICE_HOST_PLAYOUT_RATIO) :
+    hostPlayoutDriver(hostPlayoutDriver),
+    devicePlayoutDriver(devicePlayoutDriver),
     deviceHostPlayoutRatio(deviceHostPlayoutRatio) {}
-  ~HybridPlayoutDriver() {}
+  HybridPlayoutDriver(float deviceHostPlayoutRatio) :
+    HybridPlayoutDriver(new DEFAULT_HYBRID_HOST_PLAYOUT_DRIVER,
+			new DEFAULT_DEVICE_HOST_PLAYOUT_DRIVER,
+			deviceHostPlayoutRatio) {}
+  ~HybridPlayoutDriver() {
+    delete hostPlayoutDriver;
+    delete devicePlayoutDriver;
+  }
 
   std::vector<PlayerId> runPlayouts(std::vector<State>);
   std::string getName() const { return "hybrid"; }
 
 private:
+  PlayoutDriver *hostPlayoutDriver;
+  PlayoutDriver *devicePlayoutDriver;
   float deviceHostPlayoutRatio;
 };
 

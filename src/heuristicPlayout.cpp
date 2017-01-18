@@ -18,20 +18,29 @@ vector<PlayerId> HostHeuristicPlayoutDriver::runPlayouts(vector<State> states) {
   #pragma omp parallel for
   for (unsigned i = 0; i < states.size(); i++) {
     State state = states[i];
+    unsigned stateScore[NUM_PLAYERS];
+    scoreState(state, stateScore);
     while (!state.isGameOver()) {
       vector<Move> moves = state.getMoves();
       Move optMove;
-      float optScore = -1/0.0; // -infinity
+      int optMoveScore[NUM_PLAYERS] = {0, 0};
+      float optWeight = -1/0.0; // -infinity
       for (Move move : moves) {
-	State newState = state;
-	newState.move(move);
-	float score = scoreHeuristic(newState) + distribution(generator);
-	if (score > optScore) {
+	int moveScore[NUM_PLAYERS];
+	scoreMove(state, move, moveScore);
+	float weight = getWeight(state, stateScore, moveScore) + distribution(generator);
+	if (weight > optWeight) {
 	  optMove = move;
-	  optScore = score;
+	  optWeight = weight;
+	  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	    optMoveScore[i] = moveScore[i];
+	  }
 	}
       }
       state.move(optMove);
+      for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	stateScore[i] += optMoveScore[i];
+      }
     }
     results[i] = state.getNextTurn();
   }
