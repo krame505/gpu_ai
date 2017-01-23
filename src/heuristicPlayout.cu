@@ -27,6 +27,7 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
   curand_init(SEED, tid, 0, &generator);
  
   __shared__ Move moves[MAX_MOVES];
+  __shared__ float moveScores[MAX_MOVES][NUM_PLAYERS];
 
   // Calculate the scores for the initial state
   unsigned stateScore[NUM_PLAYERS];
@@ -38,9 +39,8 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
     uint8_t numMoves = state.genMovesParallel(moves);
 
     if (numMoves > 0) {
-      Move optMove;
-      int optMoveScore[NUM_PLAYERS] = {0, 0};
       float optWeight = -1/0.0; // -infinity
+      uint8_t optIndex;
 
       // Calculate weights for each move and copy the best ones for each thread into an array
       for (uint8_t i = tx; i < numMoves; i += NUM_LOCS) {
@@ -48,25 +48,23 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
 	int moveScore[NUM_PLAYERS] = {0, 0};
 	scoreMove(state, move, moveScore);
 	float weight = getWeight(state, stateScore, moveScore) + curand_normal(&generator) * HEURISTIC_SIGMA;
+	for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
+	  moveScores[i][j] = moveScore[j];
+	}
 	if (i == tx || weight > optWeight) {
-	  optMove = move;
+	  optIndex = i;
 	  optWeight = weight;
-	  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	    optMoveScore[i] = moveScore[i];
-	  }
 	}
       }
 
+      __shared__ uint8_t indices[NUM_LOCS];
       __shared__ float weights[NUM_LOCS];
-      __shared__ float moveScores[NUM_LOCS][NUM_PLAYERS];
       if (tx < numMoves) {
-	moves[tx] = optMove;
+	indices[tx] = optIndex;
 	weights[tx] = optWeight;
-	for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	  moveScores[tx][i] = optMoveScore[i];
-	}
       }
       else {
+	indices[tx] = (uint8_t)-1;
 	weights[tx] = -1/0.0; // -infinity
       }
 
@@ -74,21 +72,20 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
       for (uint8_t stride = NUM_LOCS / 2; stride > 0; stride >>= 1) {
 	__syncthreads();
 	if (tx < stride && weights[tx] < weights[tx + stride]) {
-	  moves[tx] = moves[tx + stride];
+	  indices[tx] = indices[tx + stride];
 	  weights[tx] = weights[tx + stride];
-	  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	    moveScores[tx][i] = moveScores[tx + stride][i];
-	  }
 	}
       }
  
       if (tx == 0) {
+	uint8_t index = indices[0];
+
 	// Perform the move
-	state.move(moves[0]);
+	state.move(moves[index]);
 
 	// Update the score for the current state
 	for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	  stateScore[i] += moveScores[0][i];
+	  stateScore[i] += moveScores[index][i];
 	}
       }
     }
