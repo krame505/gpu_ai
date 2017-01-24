@@ -39,8 +39,8 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
     uint8_t numMoves = state.genMovesParallel(moves);
 
     if (numMoves > 0) {
-      float optWeight = -1/0.0; // -infinity
       uint8_t optIndex;
+      float optWeight = -1/0.0; // -infinity
 
       // Calculate weights for each move and copy the best ones for each thread into an array
       for (uint8_t i = tx; i < numMoves; i += NUM_LOCS) {
@@ -51,7 +51,7 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
 	for (uint8_t j = 0; j < NUM_PLAYERS; j++) {
 	  moveScores[i][j] = moveScore[j];
 	}
-	if (i == tx || weight > optWeight) {
+	if (weight > optWeight) {
 	  optIndex = i;
 	  optWeight = weight;
 	}
@@ -77,16 +77,16 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
 	}
       }
  
+      uint8_t index = indices[0];
+
+      // Perform the move
       if (tx == 0) {
-	uint8_t index = indices[0];
-
-	// Perform the move
 	state.move(moves[index]);
+      }
 
-	// Update the score for the current state
-	for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	  stateScore[i] += moveScores[index][i];
-	}
+      // Update the score for the current state
+      for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
+	stateScore[i] += moveScores[index][i];
       }
     }
     else {
