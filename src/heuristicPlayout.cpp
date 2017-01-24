@@ -22,24 +22,23 @@ vector<PlayerId> HostHeuristicPlayoutDriver::runPlayouts(vector<State> states) {
     scoreState(state, stateScore);
     while (!state.isGameOver()) {
       vector<Move> moves = state.getMoves();
-      Move optMove;
-      int optMoveScore[NUM_PLAYERS] = {0, 0};
+      int moveScores[moves.size()][NUM_PLAYERS];
+
+      unsigned optIndex = (unsigned)-1;
       float optWeight = -1/0.0; // -infinity
-      for (Move move : moves) {
-	int moveScore[NUM_PLAYERS];
+      for (unsigned i = 0; i < moves.size(); i++) {
+	Move move = moves[i];
+	int (&moveScore)[NUM_PLAYERS] = moveScores[i];
 	scoreMove(state, move, moveScore);
 	float weight = getWeight(state, stateScore, moveScore) + distribution(generator);
 	if (weight > optWeight) {
-	  optMove = move;
+	  optIndex = i;
 	  optWeight = weight;
-	  for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	    optMoveScore[i] = moveScore[i];
-	  }
 	}
       }
-      state.move(optMove);
+      state.move(moves[optIndex]);
       for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
-	stateScore[i] += optMoveScore[i];
+	stateScore[i] += moveScores[optIndex][i];
       }
     }
     results[i] = state.getNextTurn();
