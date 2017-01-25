@@ -12,6 +12,7 @@ __host__ __device__ unsigned pieceValue(PieceType type) {
     return CHECKER_KING_VALUE;
   }
 
+  // Should never get here, can't throw an exception in device code
   assert(false);
   return 0;
 }

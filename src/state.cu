@@ -125,7 +125,8 @@ __host__ __device__ uint8_t State::genLocMoves(Loc loc, Move result[MAX_LOC_MOVE
       return genLocSingleCaptureKing(loc, result);
   }
 
-  assert(false); // Should never get here
+  // Should never get here, can't throw an exception in device code
+  assert(false);
   return 0;
 }
 

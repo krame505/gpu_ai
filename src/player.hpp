@@ -11,7 +11,7 @@
 #define MCTS_INITIAL_NUM_PLAYOUTS 50
 #define MCTS_NUM_PLAYOUTS_SCALE 1.005
 #define MCTS_DEFAULT_TIMEOUT 10 // Seconds
-#define MCTS_DEFAULT_PLAYOUT_DRIVER OptimalPlayoutDriver
+#define MCTS_DEFAULT_PLAYOUT_DRIVER OptimalHeuristicPlayoutDriver
 
 class Player {
 public:
