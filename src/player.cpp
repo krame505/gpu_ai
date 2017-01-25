@@ -162,6 +162,9 @@ Player *getPlayer(string name) {
   else if (name == "mcts_optimal") {
     return new MCTSPlayer(50, 1.004, 7, new OptimalPlayoutDriver);
   }
+  else if (name == "mcts_heuristic") {
+    return new MCTSPlayer(50, 1.004, 7, new OptimalHeuristicPlayoutDriver);
+  }
   else {
     throw runtime_error("Unknown player type");
   }

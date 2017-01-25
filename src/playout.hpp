@@ -5,12 +5,10 @@
 #include <vector>
 #include <string>
 
-#define DEFAULT_HYBRID_HOST_PLAYOUT_DRIVER DeviceMultiplePlayoutDriver
-#define DEFAULT_DEVICE_HOST_PLAYOUT_DRIVER HostPlayoutDriver
-
 // In theory should be host runtime / device runtime for target # of playouts
 // But in practice needs tuning for MCTS
-#define INITIAL_DEVICE_HOST_PLAYOUT_RATIO 1.35
+#define INITIAL_HYBRID_PLAYOUT_RATIO 1.35
+#define INITIAL_HYBRID_HEURISTIC_PLAYOUT_RATIO 0.9
 #define DEVICE_HOST_PLAYOUT_RATIO_SCALE 1.05
 
 #define HOST_MAX_PLAYOUT_SIZE 300
@@ -33,7 +31,7 @@ public:
   std::string getName() const { return "host"; }
 };
 
-// Perform playouts on the CPU using a heuristic for determining the winner
+// Perform playouts on the CPU using a heuristic for selecting moves
 // from the provided states, returning the winners
 class HostHeuristicPlayoutDriver : public PlayoutDriver {
 public:
@@ -63,7 +61,7 @@ public:
   std::string getName() const { return "device_coarse";}
 };
 
-// Perform playouts on the GPU with 1 state per block using a heuristic for determining the winner
+// Perform playouts on the GPU with 1 state per block using a heuristic for selecting moves
 // from the provided states, returning the winners
 class DeviceHeuristicPlayoutDriver : public PlayoutDriver {
 public:
@@ -87,28 +85,40 @@ public:
 // returning the winners
 class HybridPlayoutDriver : public PlayoutDriver {
 public:
-  HybridPlayoutDriver(PlayoutDriver *hostPlayoutDriver=new DEFAULT_HYBRID_HOST_PLAYOUT_DRIVER,
-		      PlayoutDriver *devicePlayoutDriver=new DEFAULT_DEVICE_HOST_PLAYOUT_DRIVER,
-		      float deviceHostPlayoutRatio=INITIAL_DEVICE_HOST_PLAYOUT_RATIO) :
+  HybridPlayoutDriver(PlayoutDriver *hostPlayoutDriver=new DeviceMultiplePlayoutDriver,
+		      PlayoutDriver *devicePlayoutDriver=new HostPlayoutDriver,
+		      float deviceHostPlayoutRatio=INITIAL_HYBRID_PLAYOUT_RATIO) :
     hostPlayoutDriver(hostPlayoutDriver),
     devicePlayoutDriver(devicePlayoutDriver),
     deviceHostPlayoutRatio(deviceHostPlayoutRatio) {}
   HybridPlayoutDriver(float deviceHostPlayoutRatio) :
-    HybridPlayoutDriver(new DEFAULT_HYBRID_HOST_PLAYOUT_DRIVER,
-			new DEFAULT_DEVICE_HOST_PLAYOUT_DRIVER,
+    HybridPlayoutDriver(new DeviceMultiplePlayoutDriver,
+			new HostPlayoutDriver,
 			deviceHostPlayoutRatio) {}
-  ~HybridPlayoutDriver() {
+  virtual ~HybridPlayoutDriver() {
     delete hostPlayoutDriver;
     delete devicePlayoutDriver;
   }
 
   std::vector<PlayerId> runPlayouts(std::vector<State>);
-  std::string getName() const { return "hybrid"; }
+  virtual std::string getName() const { return "hybrid"; }
 
 private:
   PlayoutDriver *hostPlayoutDriver;
   PlayoutDriver *devicePlayoutDriver;
   float deviceHostPlayoutRatio;
+};
+
+// Perform playouts on the GPU and CPU in parallel using a heuristic for selecting moves
+// from the provided states, returning the winners
+class HybridHeuristicPlayoutDriver : public HybridPlayoutDriver {
+public:
+  HybridHeuristicPlayoutDriver(float deviceHostPlayoutRatio=INITIAL_HYBRID_HEURISTIC_PLAYOUT_RATIO) :
+    HybridPlayoutDriver(new HostHeuristicPlayoutDriver,
+				 new DeviceHeuristicPlayoutDriver,
+				 deviceHostPlayoutRatio) {}
+
+  std::string getName() const { return "hybrid_heuristic"; }
 };
 
 // Perform playouts using whichever of the above is appropriate for the provided number of playouts
@@ -119,6 +129,16 @@ public:
 
   std::vector<PlayerId> runPlayouts(std::vector<State>);
   std::string getName() const { return "optimal"; }
+};
+
+// Perform heuristic playouts using whichever of the above is appropriate for the provided number of playouts
+class OptimalHeuristicPlayoutDriver : public PlayoutDriver {
+public:
+  OptimalHeuristicPlayoutDriver() {}
+  ~OptimalHeuristicPlayoutDriver() {}
+
+  std::vector<PlayerId> runPlayouts(std::vector<State>);
+  std::string getName() const { return "optimal_heuristic"; }
 };
 
 PlayoutDriver *getPlayoutDriver(std::string name);

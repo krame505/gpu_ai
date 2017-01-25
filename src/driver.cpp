@@ -274,9 +274,9 @@ int main(int argc, char **argv) {
      cxxopts::value<runMode>(mode))
     ("n,num_tests", "number of tests to run",
      cxxopts::value<unsigned int>(numTests))
-    ("1,player1", "player 1 (mode = game, game_test): human random mcts mcts_host mcts_device_multiple mcts_device_coarse mcts_hybrid mcts_optimal                                   playout driver 1 (mode = playout_test): host device_single device_heuristic device_multiple device_coarse hybrid optimal",
+    ("1,player1", "positioanl arg 1                                       * player 1 (mode = game, game_test): human random mcts mcts_host mcts_host_heuristic mcts_device_multiple mcts_device_coarse mcts_hybrid mcts_optimal mcts_heuristic * playout driver 1 (mode = playout_test): host host_heurisitc device_single device_heuristic device_multiple device_coarse hybrid hybrid_heruistic optimal optimal_heuristic",
      cxxopts::value<string>())
-    ("2,player2", "player 2 (mode = game, game_test)                      test 2   (mode = playout_test)",
+    ("2,player2", "positioanl arg 2                                       * player 2 (mode = game, game_test)                   * test 2   (mode = playout_test)",
      cxxopts::value<string>())
     ("h,help", "print help")
     ;

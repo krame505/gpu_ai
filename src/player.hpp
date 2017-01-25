@@ -54,11 +54,13 @@ public:
 	       MCTS_DEFAULT_TIMEOUT,
 	       playoutDriver)
   {}
-  ~MCTSPlayer() {
+  virtual ~MCTSPlayer() {
     delete playoutDriver;
   };
 
-  std::string getName() const { return "mcts"; }
+  virtual std::string getName() const {
+    return "mcts_" + playoutDriver->getName();
+  }
   Move getMove(const State&, bool verbose=true);
 
 private:
