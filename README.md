@@ -1,5 +1,5 @@
 # gpu_ai
-GPU-based Monte Carlo Tree Search algorithm
+GPU-based game AI framework utilizing the Monte Carlo Tree Search algorithm
 
 ## Setup info
 Due to the use of C++11 features, gcc 5+ and CUDA 8.0+ must be used.  This requires setting the  `LD_LIBRARY_PATH` environment variable so that the correct shared libraries can be dynamicly linked.
