@@ -10,6 +10,16 @@ __host__ __device__ bool Loc::isValid() const {
   return (row < BOARD_SIZE && col < BOARD_SIZE);
 }
 
+__host__ __device__ bool State::operator==(const State &state) const {
+  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+    for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+      if ((*this)[i][j] != state[i][j])
+        return false;
+    }
+  }
+  return true;
+}
+
 __host__ __device__ PlayerId State::getNextTurn() const {
   switch (turn) {
   case PLAYER_1:

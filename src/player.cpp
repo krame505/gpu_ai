@@ -86,12 +86,10 @@ Move HumanPlayer::getMove(const State &state, bool) {
 }
 
 Move MCTSPlayer::getMove(const State &state, bool verbose) {
-  // Don't bother running MCTS if there is only 1 possible move
-  vector<Move> moves = state.getMoves();
-  if (moves.size() == 1)
-    return moves[0];
-
-  GameTree *tree = new GameTree(state);
+  if (state != tree->state) {
+    delete tree;
+    tree = new GameTree(state);
+  }
 
   // Build the tree
   auto start = chrono::high_resolution_clock::now();
@@ -127,11 +125,14 @@ Move MCTSPlayer::getMove(const State &state, bool verbose) {
       cout << player << " score: " << tree->getScore(player) << endl;
     }
   }
+  
+  return tree->getOptMove(state.turn);
+}
 
-  Move move = tree->getOptMove(state.turn);
-
+void MCTSPlayer::move(const Move &move) {
+  GameTree *newTree = tree->move(move);
   delete tree;
-  return move;
+  tree = newTree;
 }
 
 Player *getPlayer(string name) {

@@ -84,6 +84,20 @@ struct BoardItem {
   __host__ __device__
 #endif
   BoardItem() {}*/
+  
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator==(const BoardItem &item) const {
+    return type == item.type && owner == item.owner;
+  }
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator!=(const BoardItem &item) const {
+    return !((*this) == item);
+  }
 };
 
 enum MoveType {
@@ -103,8 +117,8 @@ struct State {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  inline BoardItem *operator[](uint8_t row) {
-    return &(board[row][0]);
+  inline const BoardItem *operator[](uint8_t row) const {
+    return board[row];
   }
 
   // Subscript operator overload to access board elements directly with a location
@@ -113,6 +127,18 @@ struct State {
 #endif
   inline BoardItem operator[](Loc loc) const {
     return board[loc.row][loc.col];
+  }
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator==(const State &state) const;
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator!=(const State &state) const {
+    return !((*this) == state);
   }
 
   // Get the next player in the turn sequence

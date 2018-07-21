@@ -194,6 +194,11 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
       cout << state.turn << " moved " << move << endl;
     }
 
+    // Notify all players of the move
+    for (unsigned i = 0; i < NUM_PLAYERS; i++) {
+      players[i]->move(move);
+    }
+
     // Update the number of moves since the last capture
     if (move.jumps > 0)
       movesSinceLastCapture = 0;

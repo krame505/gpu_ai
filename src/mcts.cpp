@@ -8,6 +8,25 @@
 #include <chrono>
 using namespace std;
 
+GameTree *GameTree::move(const Move &move) {
+  if (expanded) {
+    GameTree *result = NULL;
+    for (unsigned i = 0; i < children.size(); i++) {
+      if (moves[i] == move)
+        result = children[i];
+      else
+        delete children[i];
+    }
+    assert(result != NULL);
+    expanded = false;
+    return result;
+  } else {
+    State newState(state);
+    newState.move(move);
+    return new GameTree(newState);
+  }
+}
+
 double GameTree::getScore(PlayerId player) const {
   if (state.isGameOver()) {
     PlayerId result = state.getNextTurn();

@@ -19,6 +19,7 @@ public:
 
   virtual std::string getName() const = 0;
   virtual Move getMove(const State&, bool verbose=true) = 0;
+  virtual void move(const Move&) {}
 };
 
 class HumanPlayer : public Player {
@@ -46,7 +47,8 @@ public:
     initialNumPlayouts(initialNumPlayouts),
     numPlayoutsScale(numPlayoutsScale),
     timeout(timeout),
-    playoutDriver(playoutDriver)
+    playoutDriver(playoutDriver),
+    tree(new GameTree(getStartingState()))
   {}
   MCTSPlayer(PlayoutDriver *playoutDriver=new MCTS_DEFAULT_PLAYOUT_DRIVER) :
     MCTSPlayer(MCTS_INITIAL_NUM_PLAYOUTS,
@@ -54,20 +56,23 @@ public:
 	       MCTS_DEFAULT_TIMEOUT,
 	       playoutDriver)
   {}
-  virtual ~MCTSPlayer() {
+  ~MCTSPlayer() {
     delete playoutDriver;
+    delete tree;
   };
 
-  virtual std::string getName() const {
+  std::string getName() const {
     return "mcts_" + playoutDriver->getName();
   }
   Move getMove(const State&, bool verbose=true);
+  void move(const Move&);
 
 private:
   const unsigned initialNumPlayouts;
   const float numPlayoutsScale;
   const unsigned timeout;
-  PlayoutDriver *playoutDriver;
+  PlayoutDriver *const playoutDriver;
+  GameTree *tree;
 };
 
 Player *getPlayer(std::string name);
