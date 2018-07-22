@@ -179,6 +179,11 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   State state = getStartingState();
   unsigned movesSinceLastCapture = 0;
 
+  // Start all players
+  for (unsigned i = 0; i < NUM_PLAYERS; i++) {
+    players[i]->start();
+  }
+
   // Game is over when there are no more possible moves or no captures have been made for an extended time
   while (!state.isGameOver() && movesSinceLastCapture < NUM_DRAW_MOVES) {
     if (verbose) {
@@ -214,6 +219,11 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
 
   if (verbose) {
     cout << state << endl;
+  }
+
+  // Stop all players
+  for (unsigned i = 0; i < NUM_PLAYERS; i++) {
+    players[i]->stop();
   }
 
   // Game over: Other player is the winner, unless the game was a draw
@@ -279,7 +289,7 @@ int main(int argc, char **argv) {
      cxxopts::value<runMode>(mode))
     ("n,num_tests", "number of tests to run",
      cxxopts::value<unsigned int>(numTests))
-    ("1,player1", "positioanl arg 1                                       * player 1 (mode = game, game_test): human random mcts mcts_host mcts_host_heuristic mcts_device_multiple mcts_device_coarse mcts_hybrid mcts_optimal mcts_heuristic * playout driver 1 (mode = playout_test): host host_heurisitc device_single device_heuristic device_multiple device_coarse hybrid hybrid_heruistic optimal optimal_heuristic",
+    ("1,player1", "positioanl arg 1                                       * player 1 (mode = game, game_test): human random mcts mcts_host mcts_host_heuristic mcts_device_multiple mcts_device_coarse mcts_hybrid mcts_optimal mcts_heuristic * playout driver 1 (mode = playout_test): host host_heuristic device_single device_heuristic device_multiple device_coarse hybrid hybrid_heruistic optimal optimal_heuristic",
      cxxopts::value<string>())
     ("2,player2", "positioanl arg 2                                       * player 2 (mode = game, game_test)                   * test 2   (mode = playout_test)",
      cxxopts::value<string>())

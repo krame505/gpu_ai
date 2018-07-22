@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <random>
 #include <chrono>
+#include <cassert>
 using namespace std;
 
 Move RandomPlayer::getMove(const State &state, bool) {
@@ -85,41 +86,23 @@ Move HumanPlayer::getMove(const State &state, bool) {
   }
 }
 
+MCTSPlayer::~MCTSPlayer() {
+  if (running)
+    stop();
+  delete playoutDriver;
+  delete tree;
+};
+
 Move MCTSPlayer::getMove(const State &state, bool verbose) {
   if (state != tree->state) {
     delete tree;
     tree = new GameTree(state);
   }
 
-  // Build the tree
-  auto start = chrono::high_resolution_clock::now();
-  double elapsedTime;
-  unsigned iterations = 0;
-  float numPlayoutsTotalScale = 1;
-  do {
-    unsigned numPlayouts = initialNumPlayouts * numPlayoutsTotalScale;
-    tree->expand(numPlayouts, playoutDriver);
-
-    auto current = chrono::high_resolution_clock::now();
-    chrono::duration<double> diff = current - start;
-    elapsedTime = diff.count();
-
-    iterations++;
-    numPlayoutsTotalScale *= numPlayoutsScale;
-  } while (elapsedTime < timeout);
-
-  // if (iterations > targetIterations)
-  //   finalNumPlayouts *= MCTS_NUM_PLAYOUTS_SCALE;
-  // else if (iterations < targetIterations)
-  //   finalNumPlayouts /= MCTS_NUM_PLAYOUTS_SCALE;
-
-  // if (finalNumPlayouts < initialNumPlayouts)
-  //   finalNumPlayouts = initialNumPlayouts;
+  sleep(timeout);
 
   if (verbose) {
-    cout << "Finished " << iterations << " iterations" << endl;
-    cout << "Max " << (unsigned)(initialNumPlayouts * numPlayoutsTotalScale) << " playouts" << endl;
-    cout << "Time: " << elapsedTime << " seconds" << endl;
+    cout << "Tree size: " << tree->getTotalTrials() << endl;
     for (uint8_t i = 0; i < NUM_PLAYERS; i++) {
       PlayerId player = (PlayerId)i;
       cout << player << " score: " << tree->getScore(player) << endl;
@@ -130,9 +113,45 @@ Move MCTSPlayer::getMove(const State &state, bool verbose) {
 }
 
 void MCTSPlayer::move(const Move &move) {
+  treeMutex.lock();
   GameTree *newTree = tree->move(move);
   delete tree;
   tree = newTree;
+  updateCancelled = true;
+  treeMutex.unlock();
+}
+
+void MCTSPlayer::start() {
+  assert(!running);
+  running = true;
+  workerThread = thread(&MCTSPlayer::worker, this);
+}
+
+void MCTSPlayer::stop() {
+  treeMutex.lock();
+  assert(running);
+  updateCancelled = true;
+  running = false;
+  treeMutex.unlock();
+  workerThread.join();
+}
+
+void MCTSPlayer::worker() {
+  treeMutex.lock();
+  while (running) {
+    unsigned numPlayouts = tree->getTotalTrials() * numPlayoutsScale;
+    if (numPlayouts == 0)
+      numPlayouts = initialNumPlayouts;
+    vector<State> playoutStates = tree->select(numPlayouts);
+    treeMutex.unlock();
+    vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
+    treeMutex.lock();
+    if (!updateCancelled)
+      tree->update(results);
+    else
+      updateCancelled = false;
+  }
+  treeMutex.unlock();
 }
 
 Player *getPlayer(string name) {
@@ -146,25 +165,25 @@ Player *getPlayer(string name) {
     return new MCTSPlayer;
   }
   else if (name == "mcts_host") {
-    return new MCTSPlayer(50, 1, 7, new HostPlayoutDriver);
+    return new MCTSPlayer(50, 0, 7, new HostPlayoutDriver);
   }
   else if (name == "mcts_host_heuristic") {
-    return new MCTSPlayer(50, 1, 7, new HostHeuristicPlayoutDriver);
+    return new MCTSPlayer(50, 0, 7, new HostHeuristicPlayoutDriver);
   }
   else if (name == "mcts_device_coarse") {
-    return new MCTSPlayer(4000, 1.001, 7, new DeviceCoarsePlayoutDriver);
+    return new MCTSPlayer(4000, 0.001, 7, new DeviceCoarsePlayoutDriver);
   }
   else if (name == "mcts_device_multiple") {
-    return new MCTSPlayer(50, 1.02, 7, new DeviceMultiplePlayoutDriver);
+    return new MCTSPlayer(50, 0.02, 7, new DeviceMultiplePlayoutDriver);
   }
   else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(50, 1.02, 7, new HybridPlayoutDriver(1.2));
+    return new MCTSPlayer(50, 0.02, 7, new HybridPlayoutDriver(1.2));
   }
   else if (name == "mcts_optimal") {
-    return new MCTSPlayer(50, 1.004, 7, new OptimalPlayoutDriver);
+    return new MCTSPlayer(50, 0.004, 7, new OptimalPlayoutDriver);
   }
   else if (name == "mcts_heuristic") {
-    return new MCTSPlayer(50, 1.004, 7, new OptimalHeuristicPlayoutDriver);
+    return new MCTSPlayer(50, 0.004, 7, new OptimalHeuristicPlayoutDriver);
   }
   else {
     throw runtime_error("Unknown player type");

@@ -4,6 +4,9 @@
 #include "playout.hpp"
 
 #include <vector>
+#include <mutex>
+
+#include <unistd.h>
 
 class GameTree {
 public:
@@ -23,8 +26,19 @@ public:
   // Compute the best move for a player based on scores for children
   Move getOptMove(PlayerId player) const;
 
+  // Compute the best move for a player based on scores for children
+  unsigned getTotalTrials() const {
+    return totalTrials;
+  }
+
   // Expand a tree by selecting playouts, performing them, and updating the tree
   void expand(unsigned numPlayouts, PlayoutDriver *playoutDriver);
+  
+  // Distrubute trials to perform based on UCB1, creating nodes as needed
+  std::vector<State> select(unsigned trials);
+  
+  // Update the entire tree with the playout results
+  void update(const std::vector<PlayerId>&);
   
   const State state;
 
@@ -37,12 +51,6 @@ private:
       children.push_back(NULL);
     }
   }
-  
-  // Distrubute trials to perform based on UCB1, creating nodes as needed
-  std::vector<State> select(unsigned trials);
-  
-  // Update the entire tree with the playout results
-  void update(const std::vector<PlayerId>&);
 
   // Compute the Upper Confidence Bound 1 scoring algorithm
   double ucb1() const;

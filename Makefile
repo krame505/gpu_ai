@@ -43,7 +43,7 @@ NVCCFLAGS   += -m64 -DUNIX -std=c++11 --compiler-options -fno-strict-aliasing -I
 CXX         := g++
 CXXFLAGS    += -fopenmp -fno-strict-aliasing -m64 -std=gnu++11 -Wall -Wextra -DVERBOSE -DUNIX -I"$(CUDA_INSTALL_PATH)/include"
 
-LIB         += -lgomp -L"$(CUDA_INSTALL_PATH)/lib64" -lcudart
+LIB         += -lgomp -lpthread -L"$(CUDA_INSTALL_PATH)/lib64" -lcudart
 
 ifeq ($(dbg),1)
   CXXFLAGS  += -g3 -ggdb
