@@ -4,6 +4,7 @@
 #include "state.hpp"
 #include "colors.h"
 
+#include <cassert>
 using namespace std;
 
 vector<Move> State::getMoves() const {
@@ -13,7 +14,12 @@ vector<Move> State::getMoves() const {
 }
 
 bool State::isGameOver() const {
-  return getMoves().size() == 0;
+  return getMoves().size() == 0 || movesSinceLastCapture >= NUM_DRAW_MOVES;
+}
+
+PlayerId State::getWinner() const {
+  assert(isGameOver());
+  return movesSinceLastCapture < NUM_DRAW_MOVES? getNextTurn() : PLAYER_NONE;
 }
 
 State getStartingState() {
@@ -27,7 +33,8 @@ State getStartingState() {
      {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}},
      {{}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}},
      {{true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}, {true, CHECKER, PLAYER_2}, {}}},
-    PLAYER_1
+    PLAYER_1,
+    0
   };
   return state;
 }

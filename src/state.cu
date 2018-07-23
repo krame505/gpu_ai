@@ -27,7 +27,7 @@ __host__ __device__ bool State::operator==(const State &other) const {
         return false;
     }
   }
-  return turn == other.turn;
+  return turn == other.turn && movesSinceLastCapture == other.movesSinceLastCapture;
 }
 
 __host__ __device__ bool State::operator<(const State &other) const {
@@ -37,7 +37,10 @@ __host__ __device__ bool State::operator<(const State &other) const {
         return (*this)[i][j] < other[i][j];
     }
   }
-  return turn < other.turn;
+  if (turn == other.turn)
+    return movesSinceLastCapture < other.movesSinceLastCapture;
+  else
+    return turn < other.turn;
 }
 
 __host__ __device__ PlayerId State::getNextTurn() const {
@@ -81,6 +84,11 @@ __host__ __device__ void State::move(const Move &move) {
   board[move.from.row][move.from.col].occupied = false;
 
   turn = getNextTurn();
+
+  if (move.jumps > 0)
+    movesSinceLastCapture = 0;
+  else
+    movesSinceLastCapture++;
 }
 
 

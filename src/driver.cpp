@@ -26,8 +26,6 @@
 #define SEED 2016
 #define MAX_RANDOM_MOVES 100 // NOTE : Is 100 max random moves reasonable?  How long is an average checkers game?
 
-#define NUM_DRAW_MOVES 50
-
 using namespace std;
 
 enum runMode {
@@ -177,7 +175,6 @@ void playoutTests(unsigned numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETU
 // Return: The PlayerId of the winning player (or PLAYER_NONE if there is a draw)
 PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   State state = getStartingState();
-  unsigned movesSinceLastCapture = 0;
 
   // Start all players
   for (unsigned i = 0; i < NUM_PLAYERS; i++) {
@@ -185,7 +182,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   }
 
   // Game is over when there are no more possible moves or no captures have been made for an extended time
-  while (!state.isGameOver() && movesSinceLastCapture < NUM_DRAW_MOVES) {
+  while (!state.isGameOver()) {
     if (verbose) {
       cout << state << endl;
     }
@@ -204,12 +201,6 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
       players[i]->move(move);
     }
 
-    // Update the number of moves since the last capture
-    if (move.jumps > 0)
-      movesSinceLastCapture = 0;
-    else
-      movesSinceLastCapture++;
-
     // Apply that move to the state
     state.move(move);
     if (verbose) {
@@ -227,7 +218,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   }
 
   // Game over: Other player is the winner, unless the game was a draw
-  PlayerId result = movesSinceLastCapture < NUM_DRAW_MOVES? state.getNextTurn() : PLAYER_NONE;
+  PlayerId result = state.getWinner();
   if (verbose) {
     if (result == PLAYER_NONE) {
       cout << "Draw!" << endl;

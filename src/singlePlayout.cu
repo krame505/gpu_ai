@@ -25,14 +25,18 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, size_t num
     // Init random generator
     curandState_t generator;
     curand_init(SEED, tid, 0, &generator);
- 
-    bool gameOver = false;
 
     Move captureMoves[MAX_MOVES];
     Move directMoves[MAX_MOVES];
     uint8_t numMoveCapture, numMoveDirect;
 
-    do {
+    while (1) {
+      // Check if the game is a draw
+      if (state.movesSinceLastCapture >= NUM_DRAW_MOVES) {
+        results[tid] = PLAYER_NONE;
+        break;
+      }
+    
       // Scan the board for pieces that can move
       numMoveCapture = 0;
       numMoveDirect = 0;
@@ -44,6 +48,7 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, size_t num
         }
       }
 
+      // Perform a random move if there is one
       if (numMoveCapture > 0) {
         do {
           uint8_t moveIndex = curand(&generator) % numMoveCapture;
@@ -53,16 +58,13 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, size_t num
           numMoveCapture = state.genLocMoves(to, captureMoves, SINGLE_CAPTURE);
         } while (numMoveCapture > 0);
         state.turn = state.getNextTurn();
-      }
-      else if (numMoveDirect > 0) {
+      } else if (numMoveDirect > 0) {
         state.move(directMoves[curand(&generator) % numMoveDirect]);
+      } else {
+        results[tid] = state.getNextTurn();
+        break;
       }
-      else {
-        gameOver = true;
-      }
-    } while (!gameOver);
-
-    results[tid] = state.getNextTurn();
+    }
   }
 }
 

@@ -97,17 +97,6 @@ Move MCTSPlayer::getMove(const State &state, bool verbose) {
     tree = make_shared<GameTree>(state);
   }
 
-  auto it = recentTrees.find(state);
-  if (it != recentTrees.end()) {
-    tree = it->second;
-  }
-  if (recentStates.size() > MCTS_MAX_RECENT_STATES) {
-    recentTrees.erase(recentStates.front());
-    recentStates.pop();
-  }
-  recentStates.push(state);
-  recentTrees.emplace(state, tree);
-
   sleep(timeout);
 
   if (verbose) {

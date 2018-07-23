@@ -28,46 +28,52 @@ __global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t num
     // Init random generator
     curandState_t generator;
     curand_init(SEED, threadStateIndex, 0, &generator);
- 
-    bool done = false;
 
     Move captureMoves[MAX_MOVES];
     Move directMoves[MAX_MOVES];
     uint8_t numMoveCapture, numMoveDirect;
 
-    do {
-      // Scan the board for pieces that can move
-      numMoveCapture = 0;
-      numMoveDirect = 0;
-      for (uint8_t i = 0; i < BOARD_SIZE; i++) {
-	for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
-          Loc here(i, j);
-          numMoveCapture += state.genLocMoves(here, &captureMoves[numMoveCapture], SINGLE_CAPTURE);
-          numMoveDirect += state.genLocMoves(here, &directMoves[numMoveDirect], DIRECT);
+    while (1) {
+      bool gameOver = false;
+      // Check if the game is a draw
+      if (state.movesSinceLastCapture >= NUM_DRAW_MOVES) {
+        results[tid] = PLAYER_NONE;
+        gameOver = true;
+      } else {
+        // Scan the board for pieces that can move
+        numMoveCapture = 0;
+        numMoveDirect = 0;
+        for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+          for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+            Loc here(i, j);
+            numMoveCapture += state.genLocMoves(here, &captureMoves[numMoveCapture], SINGLE_CAPTURE);
+            numMoveDirect += state.genLocMoves(here, &directMoves[numMoveDirect], DIRECT);
+          }
+        }
+      
+        // Perform a random move if there is one
+        if (numMoveCapture > 0) {
+          do {
+            uint8_t moveIndex = curand(&generator) % numMoveCapture;
+            Loc to = captureMoves[moveIndex].to;
+            state.move(captureMoves[moveIndex]);
+            state.turn = state.getNextTurn();
+            numMoveCapture = state.genLocMoves(to, captureMoves, SINGLE_CAPTURE);
+          } while (numMoveCapture > 0);
+          state.turn = state.getNextTurn();
+        } else if (numMoveDirect > 0) {
+          state.move(directMoves[curand(&generator) % numMoveDirect]);
+        } else {
+          // If the game is over, write the winner to the results array
+          results[threadStateIndex] = state.getNextTurn();
+          gameOver = true;
         }
       }
-      
-      // Perform a random move if there is one
-      if (numMoveCapture > 0) {
-        do {
-          uint8_t moveIndex = curand(&generator) % numMoveCapture;
-          Loc to = captureMoves[moveIndex].to;
-          state.move(captureMoves[moveIndex]);
-          state.turn = state.getNextTurn();
-          numMoveCapture = state.genLocMoves(to, captureMoves, SINGLE_CAPTURE);
-        } while (numMoveCapture > 0);
-        state.turn = state.getNextTurn();
-      }
-      else if (numMoveDirect > 0) {
-        state.move(directMoves[curand(&generator) % numMoveDirect]);
-      }
-      else {
-        // If the game is over, write the winner to the results array
-        results[threadStateIndex] = state.getNextTurn();
+      if (gameOver) {
         // Attempt to select another state from the inputs
-        if (*globalStateIndex >= numStates)
-          done = true;
-        else {
+        if (*globalStateIndex >= numStates) {
+          break;
+        } else {
           unsigned oldGlobalStateIndex;
           do {
             threadStateIndex = *globalStateIndex;
@@ -75,9 +81,9 @@ __global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t num
           } while (oldGlobalStateIndex != threadStateIndex);
           state = states[threadStateIndex]; 
         }
+        gameOver = false;
       }
-    } while (!done);
-
+    }
   }
 }
 

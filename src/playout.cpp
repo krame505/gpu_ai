@@ -21,7 +21,7 @@ vector<PlayerId> HostPlayoutDriver::runPlayouts(vector<State> states) {
       Move move = player.getMove(state);
       state.move(move);
     }
-    results[i] = state.getNextTurn();
+    results[i] = state.getWinner();
   }
   
   return results;

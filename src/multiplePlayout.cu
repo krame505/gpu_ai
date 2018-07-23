@@ -26,27 +26,28 @@ __global__ void playoutKernel(State *states, PlayerId *results) {
  
   __shared__ Move moves[MAX_MOVES];
 
-  bool gameOver = false;
-
-  do {
+  while (1) {
+    if (state.movesSinceLastCapture >= NUM_DRAW_MOVES) {
+      if (tx == 0)
+        results[bx] = PLAYER_NONE;
+      break;
+    }
+    
     uint8_t numMoves = state.genMovesParallel(moves);
-
-    if (numMoves > 0) {
-      if (tx == 0) {
-	// Select a move
-	Move move = moves[curand(&generator) % numMoves];
-
-	// Perform the move
-	state.move(move);
-      }
+    if (numMoves == 0) {
+      if (tx == 0)
+        results[bx] = state.getNextTurn();
+      break;
     }
-    else {
-      gameOver = true; // No moves, game is over
-    }
-  } while (!gameOver);
+    
+    if (tx == 0) {
+      // Select a move
+      Move move = moves[curand(&generator) % numMoves];
 
-  if (tx == 0)
-    results[bx] = state.getNextTurn();
+      // Perform the move
+      state.move(move);
+    }
+  }
 }
 
 std::vector<PlayerId> DeviceMultiplePlayoutDriver::runPlayouts(std::vector<State> states) {

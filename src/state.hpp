@@ -11,6 +11,8 @@
 #define NUM_LOCS 32
 #define NUM_PLAYERS 2
 
+#define NUM_DRAW_MOVES 50
+
 // TODO: Figure out actual values - these are probably overestimates
 #define MAX_MOVE_JUMPS 8   // Max number of jumps that can be taken in a single move
 #define MAX_LOC_MOVES  10  // Max number of possible moves for a piece from a single point
@@ -117,6 +119,7 @@ struct Move;
 struct State {
   BoardItem board[BOARD_SIZE][BOARD_SIZE];
   PlayerId turn;
+  unsigned movesSinceLastCapture;
 
   // Subscript operator overload to access board elements directly as a 2d array
 #ifdef __CUDACC__
@@ -208,6 +211,9 @@ struct State {
 
   // Return true if the game is finished
   bool isGameOver() const;
+
+  // Return the winner of a finished game
+  PlayerId getWinner() const;
 
 private:
   // Helpers for move generation

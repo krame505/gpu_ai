@@ -41,7 +41,7 @@ vector<PlayerId> HostHeuristicPlayoutDriver::runPlayouts(vector<State> states) {
 	stateScore[i] += moveScores[optIndex][i];
       }
     }
-    results[i] = state.getNextTurn();
+    results[i] = state.getWinner();
   }
   
   return results;
