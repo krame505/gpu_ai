@@ -90,14 +90,23 @@ MCTSPlayer::~MCTSPlayer() {
   if (running)
     stop();
   delete playoutDriver;
-  delete tree;
 };
 
 Move MCTSPlayer::getMove(const State &state, bool verbose) {
   if (state != tree->state) {
-    delete tree;
-    tree = new GameTree(state);
+    tree = make_shared<GameTree>(state);
   }
+
+  auto it = recentTrees.find(state);
+  if (it != recentTrees.end()) {
+    tree = it->second;
+  }
+  if (recentStates.size() > MCTS_MAX_RECENT_STATES) {
+    recentTrees.erase(recentStates.front());
+    recentStates.pop();
+  }
+  recentStates.push(state);
+  recentTrees.emplace(state, tree);
 
   sleep(timeout);
 
@@ -114,9 +123,7 @@ Move MCTSPlayer::getMove(const State &state, bool verbose) {
 
 void MCTSPlayer::move(const Move &move) {
   treeMutex.lock();
-  GameTree *newTree = tree->move(move);
-  delete tree;
-  tree = newTree;
+  tree = tree->move(move);
   updateCancelled = true;
   treeMutex.unlock();
 }

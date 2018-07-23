@@ -8,22 +8,19 @@
 #include <chrono>
 using namespace std;
 
-GameTree *GameTree::move(const Move &move) {
+shared_ptr<GameTree> GameTree::move(const Move &move) {
   if (expanded) {
-    GameTree *result = NULL;
+    shared_ptr<GameTree> result;
     for (unsigned i = 0; i < children.size(); i++) {
       if (moves[i] == move)
         result = children[i];
-      else
-        delete children[i];
     }
-    assert(result != NULL);
-    expanded = false;
+    assert(result);
     return result;
   } else {
     State newState(state);
     newState.move(move);
-    return new GameTree(newState);
+    return make_shared<GameTree>(newState);
   }
 }
 
@@ -74,10 +71,10 @@ vector<State> GameTree::select(unsigned trials) {
   if (!expanded) {
     // If there is more than 1 trial to allocate then expand this node and allocate trials to the new children
     if (trials > 1) {
-      for (unsigned i = 0; i < children.size(); i++) {
+      for (unsigned i = 0; i < moves.size(); i++) {
         State newState = state;
         newState.move(moves[i]);
-        children[i] = new GameTree(newState, this);
+        children.push_back(make_shared<GameTree>(newState, this));
       }
       expanded = true;
     }
@@ -166,7 +163,7 @@ void GameTree::update(const vector<PlayerId> &results) {
   if (expanded) {
     // Maintain an iterator to the input results vector
     auto it = results.begin();
-    for (GameTree *child : children) {
+    for (shared_ptr<GameTree> child : children) {
       // Copy the next child->assignedTrials results into childResults
       vector<PlayerId> childResults(it, it + child->assignedTrials);
       it += child->assignedTrials;

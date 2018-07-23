@@ -10,14 +10,34 @@ __host__ __device__ bool Loc::isValid() const {
   return (row < BOARD_SIZE && col < BOARD_SIZE);
 }
 
-__host__ __device__ bool State::operator==(const State &state) const {
+__host__ __device__ bool BoardItem::operator<(const BoardItem &other) const {
+  if (occupied == other.occupied)
+    if (type == other.type)
+      return owner < other.owner;
+    else
+      return type < other.type;
+  else
+    return occupied < other.occupied;
+}
+
+__host__ __device__ bool State::operator==(const State &other) const {
   for (uint8_t i = 0; i < BOARD_SIZE; i++) {
     for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
-      if ((*this)[i][j] != state[i][j])
+      if ((*this)[i][j] != other[i][j])
         return false;
     }
   }
-  return true;
+  return turn == other.turn;
+}
+
+__host__ __device__ bool State::operator<(const State &other) const {
+  for (uint8_t i = 0; i < BOARD_SIZE; i++) {
+    for (uint8_t j = 1 - (i % 2); j < BOARD_SIZE; j+=2) {
+      if ((*this)[i][j] != other[i][j])
+        return (*this)[i][j] < other[i][j];
+    }
+  }
+  return turn < other.turn;
 }
 
 __host__ __device__ PlayerId State::getNextTurn() const {

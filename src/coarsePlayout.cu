@@ -11,13 +11,13 @@
 
 #define SEED 12345
 
-#define NUM_BLOCKS 192
-#define BLOCK_SIZE 128
+#define NUM_BLOCKS 256 //192
+#define BLOCK_SIZE 32 //128
 
 __global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t numStates, uint32_t *globalStateIndex) {
   uint8_t tx = threadIdx.x;
   uint32_t bx = blockIdx.x;
-  uint32_t tid = tx + (bx * BLOCK_SIZE);
+  uint32_t tid = tx + (bx * blockDim.x);
 
   uint32_t threadStateIndex = tid;
 

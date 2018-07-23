@@ -5,14 +5,18 @@
 #include "playout.hpp"
 
 #include <vector>
+#include <queue>
+#include <map>
 #include <string>
 #include <functional>
 #include <thread>
 #include <mutex>
+#include <memory>
 
 #define MCTS_INITIAL_NUM_PLAYOUTS 50
 #define MCTS_NUM_PLAYOUTS_SCALE 0.005
 #define MCTS_DEFAULT_TIMEOUT 1 // Seconds
+#define MCTS_MAX_RECENT_STATES 15
 #define MCTS_DEFAULT_PLAYOUT_DRIVER OptimalHeuristicPlayoutDriver
 
 class Player {
@@ -74,7 +78,9 @@ private:
   const float numPlayoutsScale;
   const unsigned timeout;
   PlayoutDriver *const playoutDriver;
-  GameTree *tree;
+  std::shared_ptr<GameTree> tree;
+  std::queue<State> recentStates;
+  std::map<State, std::shared_ptr<GameTree>> recentTrees;
   std::mutex treeMutex;
   std::thread workerThread;
   bool updateCancelled = false;

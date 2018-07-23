@@ -47,17 +47,17 @@ struct Loc {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator==(const Loc &loc) const {
-    return row == loc.row && col == loc.col;
+  bool operator==(const Loc &other) const {
+    return row == other.row && col == other.col;
   }
 
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator!=(const Loc &loc) const {
-    return !((*this) == loc);
+  bool operator!=(const Loc &other) const {
+    return !((*this) == other);
   }
-
+  
   // Return true if this location is within the bounds of the board
 #ifdef __CUDACC__
   __host__ __device__
@@ -88,16 +88,21 @@ struct BoardItem {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator==(const BoardItem &item) const {
-    return type == item.type && owner == item.owner;
+  bool operator==(const BoardItem &other) const {
+    return occupied == other.occupied && type == other.type && owner == other.owner;
   }
 
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator!=(const BoardItem &item) const {
-    return !((*this) == item);
+  bool operator!=(const BoardItem &other) const {
+    return !((*this) == other);
   }
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator<(const BoardItem &other) const;
 };
 
 enum MoveType {
@@ -132,14 +137,19 @@ struct State {
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator==(const State &state) const;
+  bool operator==(const State &other) const;
 
 #ifdef __CUDACC__
   __host__ __device__
 #endif
-  bool operator!=(const State &state) const {
-    return !((*this) == state);
+  bool operator!=(const State &other) const {
+    return !((*this) == other);
   }
+
+#ifdef __CUDACC__
+  __host__ __device__
+#endif
+  bool operator<(const State &other) const;
 
   // Get the next player in the turn sequence
 #ifdef __CUDACC__

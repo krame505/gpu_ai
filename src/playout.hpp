@@ -115,8 +115,8 @@ class HybridHeuristicPlayoutDriver : public HybridPlayoutDriver {
 public:
   HybridHeuristicPlayoutDriver(float deviceHostPlayoutRatio=INITIAL_HYBRID_HEURISTIC_PLAYOUT_RATIO) :
     HybridPlayoutDriver(new HostHeuristicPlayoutDriver,
-				 new DeviceHeuristicPlayoutDriver,
-				 deviceHostPlayoutRatio) {}
+                        new DeviceHeuristicPlayoutDriver,
+                        deviceHostPlayoutRatio) {}
 
   std::string getName() const { return "hybrid_heuristic"; }
 };
