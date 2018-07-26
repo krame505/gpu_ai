@@ -11,8 +11,9 @@
 
 #define SEED 12345
 
-#define NUM_BLOCKS 256 //192
-#define BLOCK_SIZE 32 //128
+//#define NUM_BLOCKS 8 //192
+#define BLOCK_SIZE 128
+#define UNDERFILL 4
 
 __global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t numStates, uint32_t *globalStateIndex) {
   uint8_t tx = threadIdx.x;
@@ -88,6 +89,26 @@ __global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t num
 }
 
 std::vector<PlayerId> DeviceCoarsePlayoutDriver::runPlayouts(std::vector<State> states) {
+  // Query device to figure out how many blocks can run in parallel
+  int device;
+  cudaError_t error = cudaGetDevice(&device);
+  if (error != cudaSuccess) {
+    // print the CUDA error message and exit
+    std::cout << "CUDA error getting device: " << cudaGetErrorString(error) << std::endl;
+    exit(1);
+  }
+  struct cudaDeviceProp properties;
+  error = cudaGetDeviceProperties(&properties, device);
+  if (error != cudaSuccess) {
+    // print the CUDA error message and exit
+    std::cout << "CUDA error getting device properties: " << cudaGetErrorString(error) << std::endl;
+    exit(1);
+  }
+
+  unsigned numBlocks =
+    properties.multiProcessorCount * properties.maxThreadsPerMultiProcessor / (BLOCK_SIZE * UNDERFILL);
+  std::cout << "Launching " << numBlocks << " blocks" << std::endl;
+  
   // Device variables
   State *devStates;
   PlayerId *devResults;
@@ -101,11 +122,11 @@ std::vector<PlayerId> DeviceCoarsePlayoutDriver::runPlayouts(std::vector<State> 
   cudaMemcpy(devStates, states.data(), states.size() * sizeof(State), cudaMemcpyHostToDevice);
   
   // Copy global state index to be the number of threads initially
-  unsigned numThreads = NUM_BLOCKS * BLOCK_SIZE; // max number of threads that can run in parallel
+  unsigned numThreads = numBlocks * BLOCK_SIZE; // max number of threads that can run in parallel
   cudaMemcpy(globalStateIndex, &numThreads, sizeof(uint32_t), cudaMemcpyHostToDevice);
 
   // Increase default stack size
-  cudaError_t error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
+  error = cudaDeviceSetLimit(cudaLimitStackSize, CUDA_STACK_SIZE);
   if (error != cudaSuccess) {
     // print the CUDA error message and exit
     std::cout << "CUDA error setting stack size: " << cudaGetErrorString(error) << std::endl;
@@ -113,7 +134,7 @@ std::vector<PlayerId> DeviceCoarsePlayoutDriver::runPlayouts(std::vector<State> 
   }
 
   // Invoke the kernel
-  coarsePlayoutKernel<<<NUM_BLOCKS, BLOCK_SIZE>>>(devStates, devResults, states.size(), globalStateIndex);
+  coarsePlayoutKernel<<<numBlocks, BLOCK_SIZE>>>(devStates, devResults, states.size(), globalStateIndex);
   cudaDeviceSynchronize();
 
   // Check for errors
