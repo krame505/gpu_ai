@@ -5,6 +5,7 @@
 #include <omp.h>
 
 #include <vector>
+#include <memory>
 #include <random>
 #include <cassert>
 #include <chrono>
@@ -96,36 +97,36 @@ vector<PlayerId> OptimalHeuristicPlayoutDriver::runPlayouts(vector<State> states
     return hybridPlayoutDriver.runPlayouts(states);
 }
 
-PlayoutDriver *getPlayoutDriver(string name) {
+unique_ptr<PlayoutDriver> getPlayoutDriver(string name) {
   if (name == "host") {
-    return new HostPlayoutDriver;
+    return make_unique<HostPlayoutDriver>();
   }
   else if (name == "host_heuristic") {
-    return new HostHeuristicPlayoutDriver;
+    return make_unique<HostHeuristicPlayoutDriver>();
   }
   else if (name == "device_single") {
-    return new DeviceSinglePlayoutDriver;
+    return make_unique<DeviceSinglePlayoutDriver>();
   }
   else if (name == "device_multiple") {
-    return new DeviceMultiplePlayoutDriver;
+    return make_unique<DeviceMultiplePlayoutDriver>();
   }
   else if (name == "device_coarse") {
-    return new DeviceCoarsePlayoutDriver;
+    return make_unique<DeviceCoarsePlayoutDriver>();
   }
   else if (name == "device_heuristic") {
-    return new DeviceHeuristicPlayoutDriver;
+    return make_unique<DeviceHeuristicPlayoutDriver>();
   }
   else if (name == "hybrid") {
-    return new HybridPlayoutDriver;
+    return make_unique<HybridPlayoutDriver>();
   }
   else if (name == "hybrid_heuristic") {
-    return new HybridPlayoutDriver;
+    return make_unique<HybridPlayoutDriver>();
   }
   else if (name == "optimal") {
-    return new OptimalPlayoutDriver;
+    return make_unique<OptimalPlayoutDriver>();
   }
   else if (name == "optimal_heuristic") {
-    return new OptimalHeuristicPlayoutDriver;
+    return make_unique<OptimalHeuristicPlayoutDriver>();
   }
   else {
     throw runtime_error("Unknown playout type");

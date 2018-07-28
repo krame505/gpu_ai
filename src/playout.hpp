@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 // In theory should be host runtime / device runtime for target # of playouts
 // But in practice needs tuning for MCTS
@@ -85,27 +86,25 @@ public:
 // returning the winners
 class HybridPlayoutDriver : public PlayoutDriver {
 public:
-  HybridPlayoutDriver(PlayoutDriver *hostPlayoutDriver=new DeviceMultiplePlayoutDriver,
-		      PlayoutDriver *devicePlayoutDriver=new HostPlayoutDriver,
+  HybridPlayoutDriver(std::unique_ptr<PlayoutDriver> hostPlayoutDriver=
+                      std::make_unique<DeviceMultiplePlayoutDriver>(),
+		      std::unique_ptr<PlayoutDriver> devicePlayoutDriver=
+                      std::make_unique<HostPlayoutDriver>(),
 		      float deviceHostPlayoutRatio=INITIAL_HYBRID_PLAYOUT_RATIO) :
-    hostPlayoutDriver(hostPlayoutDriver),
-    devicePlayoutDriver(devicePlayoutDriver),
+    hostPlayoutDriver(std::move(hostPlayoutDriver)),
+    devicePlayoutDriver(std::move(devicePlayoutDriver)),
     deviceHostPlayoutRatio(deviceHostPlayoutRatio) {}
   HybridPlayoutDriver(float deviceHostPlayoutRatio) :
-    HybridPlayoutDriver(new DeviceMultiplePlayoutDriver,
-			new HostPlayoutDriver,
+    HybridPlayoutDriver(std::make_unique<DeviceMultiplePlayoutDriver>(),
+			std::make_unique<HostPlayoutDriver>(),
 			deviceHostPlayoutRatio) {}
-  virtual ~HybridPlayoutDriver() {
-    delete hostPlayoutDriver;
-    delete devicePlayoutDriver;
-  }
 
   std::vector<PlayerId> runPlayouts(std::vector<State>);
   virtual std::string getName() const { return "hybrid"; }
 
 private:
-  PlayoutDriver *hostPlayoutDriver;
-  PlayoutDriver *devicePlayoutDriver;
+  const std::unique_ptr<PlayoutDriver> hostPlayoutDriver;
+  const std::unique_ptr<PlayoutDriver> devicePlayoutDriver;
   float deviceHostPlayoutRatio;
 };
 
@@ -114,8 +113,8 @@ private:
 class HybridHeuristicPlayoutDriver : public HybridPlayoutDriver {
 public:
   HybridHeuristicPlayoutDriver(float deviceHostPlayoutRatio=INITIAL_HYBRID_HEURISTIC_PLAYOUT_RATIO) :
-    HybridPlayoutDriver(new HostHeuristicPlayoutDriver,
-                        new DeviceHeuristicPlayoutDriver,
+    HybridPlayoutDriver(std::make_unique<HostHeuristicPlayoutDriver>(),
+                        std::make_unique<DeviceHeuristicPlayoutDriver>(),
                         deviceHostPlayoutRatio) {}
 
   std::string getName() const { return "hybrid_heuristic"; }
@@ -141,4 +140,4 @@ public:
   std::string getName() const { return "optimal_heuristic"; }
 };
 
-PlayoutDriver *getPlayoutDriver(std::string name);
+std::unique_ptr<PlayoutDriver> getPlayoutDriver(std::string name);

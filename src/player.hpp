@@ -50,17 +50,17 @@ public:
   MCTSPlayer(unsigned initialNumPlayouts,
 	     float numPlayoutsScale,
 	     unsigned timeout,
-	     PlayoutDriver *playoutDriver=new MCTS_DEFAULT_PLAYOUT_DRIVER) :
+	     std::unique_ptr<PlayoutDriver> playoutDriver=std::make_unique<MCTS_DEFAULT_PLAYOUT_DRIVER>()) :
     initialNumPlayouts(initialNumPlayouts),
     numPlayoutsScale(numPlayoutsScale),
     timeout(timeout),
-    playoutDriver(playoutDriver),
-    tree(new GameTree(getStartingState())) {}
-  MCTSPlayer(PlayoutDriver *playoutDriver=new MCTS_DEFAULT_PLAYOUT_DRIVER) :
+    playoutDriver(std::move(playoutDriver)),
+    tree(std::make_shared<GameTree>(getStartingState())) {}
+  MCTSPlayer(std::unique_ptr<PlayoutDriver> playoutDriver=std::make_unique<MCTS_DEFAULT_PLAYOUT_DRIVER>()) :
     MCTSPlayer(MCTS_INITIAL_NUM_PLAYOUTS,
 	       MCTS_NUM_PLAYOUTS_SCALE,
 	       MCTS_DEFAULT_TIMEOUT,
-	       playoutDriver) {}
+	       std::move(playoutDriver)) {}
   ~MCTSPlayer();
 
   std::string getName() const {
@@ -75,7 +75,7 @@ private:
   const unsigned initialNumPlayouts;
   const float numPlayoutsScale;
   const unsigned timeout;
-  PlayoutDriver *const playoutDriver;
+  const std::unique_ptr<PlayoutDriver> playoutDriver;
   std::shared_ptr<GameTree> tree;
   std::mutex treeMutex;
   std::thread workerThread;
@@ -85,4 +85,4 @@ private:
   void worker();
 };
 
-Player *getPlayer(std::string name);
+std::unique_ptr<Player> getPlayer(std::string name);

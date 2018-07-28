@@ -1,6 +1,7 @@
 #include <vector>
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <random>
 
 #include <cuda_runtime_api.h>
@@ -115,7 +116,7 @@ void genMovesTests(unsigned int numTests) {
   cout << "Passed" << endl;
 }
 
-vector<PlayerId> playoutTest(const vector<State> &states, PlayoutDriver *playoutDriver) {
+vector<PlayerId> playoutTest(const vector<State> &states, unique_ptr<PlayoutDriver> playoutDriver) {
   auto t1 = chrono::high_resolution_clock::now();
   vector<PlayerId> playoutResults = playoutDriver->runPlayouts(states);
   auto t2 = chrono::high_resolution_clock::now();
@@ -145,7 +146,7 @@ vector<PlayerId> playoutTest(const vector<State> &states, PlayoutDriver *playout
   return playoutResults;
 }
 
-void playoutTests(unsigned numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETUPS]) {
+void playoutTests(unsigned numTests, unique_ptr<PlayoutDriver> playoutDrivers[NUM_TEST_SETUPS]) {
   vector<State> states = genRandomStates(numTests);
   
   // Needed to avoid extra overhead of first kernel call
@@ -155,7 +156,7 @@ void playoutTests(unsigned numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETU
   vector<PlayerId> results[NUM_TEST_SETUPS];
   for (unsigned i = 0; i < NUM_TEST_SETUPS; i++) {
     cout << "Running test " << i << ": " << playoutDrivers[i]->getName() << "..." << endl;
-    results[i] = playoutTest(states, playoutDrivers[i]);
+    results[i] = playoutTest(states, move(playoutDrivers[i]));
     cout << endl;
   }
 
@@ -173,7 +174,7 @@ void playoutTests(unsigned numTests, PlayoutDriver *playoutDrivers[NUM_TEST_SETU
 // players: Array of pointers to Player classes (human, random, or MCTS)
 // verbose (optional): Enable verbose output.
 // Return: The PlayerId of the winning player (or PLAYER_NONE if there is a draw)
-PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
+PlayerId playGame(unique_ptr<Player> players[NUM_PLAYERS], bool verbose=true) {
   State state = getStartingState();
 
   // Start all players
@@ -188,7 +189,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
     }
     
     // Get which player's turn it is from the state
-    Player *player = players[state.turn];
+    const unique_ptr<Player> &player = players[state.turn];
 
     // Calculate the next move
     Move move = player->getMove(state, verbose);
@@ -230,7 +231,7 @@ PlayerId playGame(Player *players[NUM_PLAYERS], bool verbose=true) {
   return result;
 }
 
-void gameTests(unsigned numTests, Player *players[NUM_PLAYERS]) {
+void gameTests(unsigned numTests, unique_ptr<Player> players[NUM_PLAYERS]) {
   int wins[3] = {0, 0, 0};
   for (unsigned i = 0; i < numTests; i++) {
     cout << "Playing game " << i << "... " << flush;
@@ -269,10 +270,10 @@ int main(int argc, char **argv) {
 
   unsigned int numTests;
   runMode mode = Game;
-  Player *player1 = NULL;
-  Player *player2 = NULL;
-  PlayoutDriver *playoutDriver1 = NULL;
-  PlayoutDriver *playoutDriver2 = NULL;
+  unique_ptr<Player> player1 = NULL;
+  unique_ptr<Player> player2 = NULL;
+  unique_ptr<PlayoutDriver> playoutDriver1;
+  unique_ptr<PlayoutDriver> playoutDriver2;
 
   cxxopts::Options options(argv[0]);
   options.add_options()
@@ -317,10 +318,10 @@ int main(int argc, char **argv) {
     }
     else {
       if (mode == Game || mode == GameTest) {
-        player1 = new HumanPlayer;
+        player1 = make_unique<HumanPlayer>();
       }
       else {
-        playoutDriver1 = new HostPlayoutDriver;
+        playoutDriver1 = make_unique<HostPlayoutDriver>();
       }
     }    
 
@@ -334,10 +335,10 @@ int main(int argc, char **argv) {
     }
     else {
       if (mode == Game || mode == GameTest) {
-        player2 = new MCTSPlayer;
+        player2 = make_unique<MCTSPlayer>();
       }
       else {
-        playoutDriver2 = new DeviceCoarsePlayoutDriver;
+        playoutDriver2 = make_unique<DeviceCoarsePlayoutDriver>();
       }
     }
   }
@@ -353,7 +354,6 @@ int main(int argc, char **argv) {
   case GenMovesTest:
     cout << "Testing " << numTests << " random states have the same moves on the host and device" << endl;
     cout << endl;
-
     genMovesTests(numTests);
     break;
 
@@ -362,15 +362,10 @@ int main(int argc, char **argv) {
     cout << playoutDriver1->getName() << " and ";
     cout << playoutDriver2->getName() << endl;
     cout << endl;
-
     {
-      PlayoutDriver *playoutDrivers[NUM_TEST_SETUPS] = {playoutDriver1, playoutDriver2};
+      unique_ptr<PlayoutDriver> playoutDrivers[NUM_TEST_SETUPS] = {move(playoutDriver1), move(playoutDriver2)};
       playoutTests(numTests, playoutDrivers);
     }
-
-    // Free playout drivers as we are done now
-    delete playoutDriver1;
-    delete playoutDriver2;
     break;
 
   case GameTest:
@@ -378,31 +373,20 @@ int main(int argc, char **argv) {
     cout << player1->getName() << " Player 1 and ";
     cout << player2->getName() << " Player 2" << endl;
     cout << endl;
-
     {
-      Player *players[NUM_PLAYERS] = {player1, player2};
+      unique_ptr<Player> players[NUM_PLAYERS] = {move(player1), move(player2)};
       gameTests(numTests, players);
     }
-
-    // Free players as we are done now
-    delete player1;
-    delete player2;
-    
     break;
 
   case Game:
     cout << "Playing single game of ";
     cout << player1->getName() << " Player 1 and ";
     cout << player2->getName() << " Player 2" << endl;
-
     {
-      Player *players[NUM_PLAYERS] = {player1, player2};
+      unique_ptr<Player> players[NUM_PLAYERS] = {move(player1), move(player2)};
       playGame(players);
     }
-
-    // Free players as we are done now
-    delete player1;
-    delete player2;
     break;
   }
 

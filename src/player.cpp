@@ -89,7 +89,6 @@ Move HumanPlayer::getMove(const State &state, bool) {
 MCTSPlayer::~MCTSPlayer() {
   if (running)
     stop();
-  delete playoutDriver;
 };
 
 Move MCTSPlayer::getMove(const State &state, bool verbose) {
@@ -150,36 +149,36 @@ void MCTSPlayer::worker() {
   treeMutex.unlock();
 }
 
-Player *getPlayer(string name) {
+unique_ptr<Player> getPlayer(string name) {
   if (name == "human") {
-    return new HumanPlayer;
+    return make_unique<HumanPlayer>();
   }
   else if (name == "random") {
-    return new RandomPlayer;
+    return make_unique<RandomPlayer>();
   }
   else if (name == "mcts") {
-    return new MCTSPlayer;
+    return make_unique<MCTSPlayer>();
   }
   else if (name == "mcts_host") {
-    return new MCTSPlayer(50, 0, 7, new HostPlayoutDriver);
+    return make_unique<MCTSPlayer>(50, 0, 7, make_unique<HostPlayoutDriver>());
   }
   else if (name == "mcts_host_heuristic") {
-    return new MCTSPlayer(50, 0, 7, new HostHeuristicPlayoutDriver);
+    return make_unique<MCTSPlayer>(50, 0, 7, make_unique<HostHeuristicPlayoutDriver>());
   }
   else if (name == "mcts_device_coarse") {
-    return new MCTSPlayer(4000, 0.001, 7, new DeviceCoarsePlayoutDriver);
+    return make_unique<MCTSPlayer>(4000, 0.001, 7, make_unique<DeviceCoarsePlayoutDriver>());
   }
   else if (name == "mcts_device_multiple") {
-    return new MCTSPlayer(50, 0.02, 7, new DeviceMultiplePlayoutDriver);
+    return make_unique<MCTSPlayer>(50, 0.02, 7, make_unique<DeviceMultiplePlayoutDriver>());
   }
   else if (name == "mcts_hybrid") {
-    return new MCTSPlayer(50, 0.02, 7, new HybridPlayoutDriver(1.2));
+    return make_unique<MCTSPlayer>(50, 0.02, 7, make_unique<HybridPlayoutDriver>(1.2));
   }
   else if (name == "mcts_optimal") {
-    return new MCTSPlayer(50, 0.004, 7, new OptimalPlayoutDriver);
+    return make_unique<MCTSPlayer>(50, 0.004, 7, make_unique<OptimalPlayoutDriver>());
   }
   else if (name == "mcts_heuristic") {
-    return new MCTSPlayer(50, 0.004, 7, new OptimalHeuristicPlayoutDriver);
+    return make_unique<MCTSPlayer>(50, 0.004, 7, make_unique<OptimalHeuristicPlayoutDriver>());
   }
   else {
     throw runtime_error("Unknown player type");
