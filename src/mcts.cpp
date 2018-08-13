@@ -54,7 +54,7 @@ Move GameTree::getOptMove(PlayerId player) const {
   return bestMove;
 }
 
-void GameTree::expand(unsigned numPlayouts, PlayoutDriver *playoutDriver) {
+void GameTree::expand(unsigned numPlayouts, PlayoutDriver *const playoutDriver) {
   vector<State> playoutStates = select(numPlayouts);
   vector<PlayerId> results = playoutDriver->runPlayouts(playoutStates);
   update(results);

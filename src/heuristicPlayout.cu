@@ -100,6 +100,11 @@ __global__ void heuristicPlayoutKernel(State *states, PlayerId *results) {
 }
 
 std::vector<PlayerId> DeviceHeuristicPlayoutDriver::runPlayouts(std::vector<State> states) {
+  // If no playouts are being performed, return an empty vector to avoid launching an empty kernel
+  if (states.empty()) {
+    return std::vector<PlayerId>();
+  }
+  
   // Device variables
   State *devStates;
   PlayerId *devResults;

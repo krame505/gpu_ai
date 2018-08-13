@@ -69,6 +69,11 @@ __global__ void singlePlayoutKernel(State *states, PlayerId *results, size_t num
 }
 
 std::vector<PlayerId> DeviceSinglePlayoutDriver::runPlayouts(std::vector<State> states) {
+  // If no playouts are being performed, return an empty vector to avoid launching an empty kernel
+  if (states.empty()) {
+    return std::vector<PlayerId>();
+  }
+  
   // Device variables
   State *devStates;
   PlayerId *devResults;

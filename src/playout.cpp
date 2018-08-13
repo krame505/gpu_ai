@@ -7,7 +7,10 @@
 #include <vector>
 #include <memory>
 #include <random>
+#include <algorithm>
 #include <cassert>
+#include <cmath>
+#include <climits>
 #include <chrono>
 using namespace std;
 
@@ -75,16 +78,90 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
 }
 
 vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
-  HostPlayoutDriver hostPlayoutDriver;
-  HybridPlayoutDriver hybridPlayoutDriver;
-  DeviceCoarsePlayoutDriver deviceCoarsePlayoutDriver;
-  
-  if (states.size() < HOST_MAX_PLAYOUT_SIZE)
-    return hostPlayoutDriver.runPlayouts(states);
-  else if (states.size() < HYBRID_MAX_PLAYOUT)
-    return hybridPlayoutDriver.runPlayouts(states);
-  else
-    return deviceCoarsePlayoutDriver.runPlayouts(states);
+  // Find the best playout driver to use
+  unsigned trials = states.size();
+  unsigned bestIndex = UINT_MAX;
+  double bestScore = INFINITY;
+  //cout << "Allocating " << trials << " trials" << endl;
+  for (unsigned i = 0; i < playoutDrivers.size(); i++) {
+    double newScore = score(trials, prevRuntimes[i]);
+    //cout << i << ": " << newScore << endl;
+    if (newScore <= bestScore) {
+      bestIndex = i;
+      bestScore = newScore;
+    }
+  }
+  auto &bestDriver = playoutDrivers[bestIndex];
+  auto &bestPrevRuntimes = prevRuntimes[bestIndex];
+
+  // Perform the playouts and measure the runtime
+  chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
+  vector<PlayerId> results = bestDriver->runPlayouts(states);
+  chrono::high_resolution_clock::time_point finish = chrono::high_resolution_clock::now();
+  chrono::duration<double> elapsedTime = finish - start;
+
+  // Update the measured runtimes for that driver, deleting outdated entries
+  for (auto it = bestPrevRuntimes.lower_bound(trials);
+       it != bestPrevRuntimes.end() && it->second < elapsedTime;
+       it = bestPrevRuntimes.erase(it));
+  for (auto it =
+         map<unsigned, chrono::duration<double>>::reverse_iterator(bestPrevRuntimes.lower_bound(trials));
+       it != bestPrevRuntimes.rend() && it->second > elapsedTime;
+       it = map<unsigned, chrono::duration<double>>::reverse_iterator(bestPrevRuntimes.erase(next(it).base())));
+  bestPrevRuntimes[trials] = elapsedTime;
+
+  return results;
+}
+
+double OptimalPlayoutDriver::score(const unsigned trials,
+                                   const map<unsigned, chrono::duration<double>> &prevRuntimes) {
+  if (prevRuntimes.count(trials)) {
+    return prevRuntimes.at(trials).count();
+  }
+  else if (prevRuntimes.size() < 2) {
+    return 0;
+  }
+
+  // Find the 2 elements of prevRuntimes that are closest to trials
+  auto it = prevRuntimes.upper_bound(trials);
+  for (unsigned i = 0; i < 2 && it != prevRuntimes.begin(); i++, it--);
+  unsigned trials1 = 0;
+  chrono::duration<double> time1;
+  unsigned minDifference1 = UINT_MAX;
+  unsigned trials2 = 0;
+  chrono::duration<double> time2;
+  unsigned minDifference2 = UINT_MAX;
+  for (unsigned i = 0; i < 4 && it != prevRuntimes.end(); i++, it++) {
+    unsigned difference = it->first > trials? it->first - trials : trials - it->first;
+    if (difference < minDifference1) {
+      trials2 = trials1;
+      time2 = time1;
+      minDifference2 = minDifference1;
+      trials1 = it->first;
+      time1 = it->second;
+      minDifference1 = difference;
+    } else if (difference < minDifference2) {
+      trials2 = it->first;
+      time2 = it->second;
+      minDifference2 = difference;
+    }
+  }
+
+  double slope = (time1 - time2).count() / (signed)(trials1 - trials2);
+  chrono::duration<double> expectedTime = time1 + chrono::duration<double>(slope * (signed)(trials - trials1));
+  double confidence = OPTIMAL_CONFIDENCE_SCALE * minDifference1 * minDifference1 * minDifference2;
+  //cout << expectedTime.count() << " " << confidence << endl;
+  return expectedTime.count() / (1 + confidence);
+}
+
+vector<unique_ptr<PlayoutDriver>> OptimalPlayoutDriver::getDefaultPlayoutDrivers() {
+  vector<unique_ptr<PlayoutDriver>> playoutDrivers;
+  playoutDrivers.push_back(make_unique<HostPlayoutDriver>());
+  playoutDrivers.push_back(make_unique<HybridPlayoutDriver>(make_unique<HostPlayoutDriver>(),
+                                                            make_unique<DeviceMultiplePlayoutDriver>()));
+  playoutDrivers.push_back(make_unique<HybridPlayoutDriver>(make_unique<HostPlayoutDriver>(),
+                                                            make_unique<DeviceCoarsePlayoutDriver>()));
+  return playoutDrivers;
 }
 
 vector<PlayerId> OptimalHeuristicPlayoutDriver::runPlayouts(vector<State> states) {

@@ -89,6 +89,11 @@ __global__ void coarsePlayoutKernel(State *states, PlayerId *results, size_t num
 }
 
 std::vector<PlayerId> DeviceCoarsePlayoutDriver::runPlayouts(std::vector<State> states) {
+  // If no playouts are being performed, return an empty vector to avoid launching an empty kernel
+  if (states.empty()) {
+    return std::vector<PlayerId>();
+  }
+  
   // Query device to figure out how many blocks can run in parallel
   int device;
   cudaError_t error = cudaGetDevice(&device);

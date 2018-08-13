@@ -3,8 +3,12 @@
 #include "state.hpp"
 
 #include <vector>
+#include <map>
+#include <utility>
 #include <string>
 #include <memory>
+#include <chrono>
+#include <cassert>
 
 // In theory should be host runtime / device runtime for target # of playouts
 // But in practice needs tuning for MCTS
@@ -14,6 +18,8 @@
 
 #define HOST_MAX_PLAYOUT_SIZE 300
 #define HYBRID_MAX_PLAYOUT 4000
+
+#define OPTIMAL_CONFIDENCE_SCALE 0.0001
 
 class PlayoutDriver {
 public:
@@ -95,8 +101,8 @@ public:
     devicePlayoutDriver(std::move(devicePlayoutDriver)),
     deviceHostPlayoutRatio(deviceHostPlayoutRatio) {}
   HybridPlayoutDriver(float deviceHostPlayoutRatio) :
-    HybridPlayoutDriver(std::make_unique<DeviceMultiplePlayoutDriver>(),
-			std::make_unique<HostPlayoutDriver>(),
+    HybridPlayoutDriver(std::make_unique<HostPlayoutDriver>(),
+			std::make_unique<DeviceMultiplePlayoutDriver>(),
 			deviceHostPlayoutRatio) {}
 
   std::vector<PlayerId> runPlayouts(std::vector<State>);
@@ -120,17 +126,32 @@ public:
   std::string getName() const { return "hybrid_heuristic"; }
 };
 
-// Perform playouts using whichever of the above is appropriate for the provided number of playouts
+// Perform playouts using whichever of the given drivers is most efficent for the provided number of playouts
 class OptimalPlayoutDriver : public PlayoutDriver {
 public:
-  OptimalPlayoutDriver() {}
+  OptimalPlayoutDriver(std::vector<std::unique_ptr<PlayoutDriver>> playoutDrivers) :
+    playoutDrivers(std::move(playoutDrivers)),
+    prevRuntimes(this->playoutDrivers.size()) {
+    assert(this->playoutDrivers.size() > 0);
+  }
+  OptimalPlayoutDriver() :
+    // TODO: Can't use constructor initializer list here due to broken move semantics
+    OptimalPlayoutDriver(getDefaultPlayoutDrivers()) {}
   ~OptimalPlayoutDriver() {}
 
   std::vector<PlayerId> runPlayouts(std::vector<State>);
-  std::string getName() const { return "optimal"; }
+  virtual std::string getName() const { return "optimal"; }
+
+private:
+  std::vector<std::unique_ptr<PlayoutDriver>> playoutDrivers;
+  std::vector<std::map<unsigned, std::chrono::duration<double>>> prevRuntimes;
+
+  static double score(const unsigned trials,
+                      const std::map<unsigned, std::chrono::duration<double>> &prevRuntimes);
+  static std::vector<std::unique_ptr<PlayoutDriver>> getDefaultPlayoutDrivers();
 };
 
-// Perform heuristic playouts using whichever of the above is appropriate for the provided number of playouts
+// Perform heuristic playouts using whichever of the above is most efficent for the provided number of playouts
 class OptimalHeuristicPlayoutDriver : public PlayoutDriver {
 public:
   OptimalHeuristicPlayoutDriver() {}

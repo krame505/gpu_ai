@@ -39,7 +39,7 @@ public:
   }
 
   // Expand a tree by selecting playouts, performing them, and updating the tree
-  void expand(unsigned numPlayouts, PlayoutDriver *playoutDriver);
+  void expand(unsigned numPlayouts, PlayoutDriver *const playoutDriver);
   
   // Distrubute trials to perform based on UCB1, creating nodes as needed
   std::vector<State> select(unsigned trials);
@@ -62,4 +62,3 @@ private:
   unsigned totalTrials    = 0; // Total (finished) trials from this tree
   unsigned wins[NUM_PLAYERS] = {0};
 };
-
