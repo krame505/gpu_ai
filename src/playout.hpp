@@ -20,7 +20,7 @@
 #define HOST_MAX_PLAYOUT_SIZE 300
 #define HYBRID_MAX_PLAYOUT 4000
 
-#define OPTIMAL_SCORE_EXP 2
+#define OPTIMAL_SCORE_EXP 0.8
 
 class PlayoutDriver {
 public:

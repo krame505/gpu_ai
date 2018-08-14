@@ -80,18 +80,17 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
 vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
   // Choose a playout driver
   unsigned trials = states.size();
+  cout << "Allocating " << trials << " trials" << endl;
   vector<double> weights(playoutDrivers.size());
   for (unsigned i = 0; i < playoutDrivers.size(); i++) {
     weights[i] = 1 / pow(predictRuntime(trials, prevRuntimes[i]).count(), OPTIMAL_SCORE_EXP);
+    cout << i << ": " << predictRuntime(trials, prevRuntimes[i]).count() << endl;
   }
   discrete_distribution<> d(weights.begin(), weights.end());
   unsigned driverIndex = d(gen);
-  if (driverIndex != 0) {
-    cout << "Allocating " << trials << " trials" << endl;
-    cout << "Picked " << driverIndex << endl;
-  }
   auto &chosenDriver = playoutDrivers[driverIndex];
   auto &chosenPrevRuntimes = prevRuntimes[driverIndex];
+  cout << "Picked " << driverIndex << ": " << chosenDriver->getName() << endl;
 
   // Perform the playouts and measure the runtime
   chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
