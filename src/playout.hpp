@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <map>
+#include <random>
 #include <utility>
 #include <string>
 #include <memory>
@@ -19,7 +20,7 @@
 #define HOST_MAX_PLAYOUT_SIZE 300
 #define HYBRID_MAX_PLAYOUT 4000
 
-#define OPTIMAL_CONFIDENCE_SCALE 0.0001
+#define OPTIMAL_SCORE_EXP 2
 
 class PlayoutDriver {
 public:
@@ -131,7 +132,8 @@ class OptimalPlayoutDriver : public PlayoutDriver {
 public:
   OptimalPlayoutDriver(std::vector<std::unique_ptr<PlayoutDriver>> playoutDrivers) :
     playoutDrivers(std::move(playoutDrivers)),
-    prevRuntimes(this->playoutDrivers.size()) {
+    prevRuntimes(this->playoutDrivers.size()),
+    gen(std::random_device()()) {
     assert(this->playoutDrivers.size() > 0);
   }
   OptimalPlayoutDriver() :
@@ -145,9 +147,10 @@ public:
 private:
   std::vector<std::unique_ptr<PlayoutDriver>> playoutDrivers;
   std::vector<std::map<unsigned, std::chrono::duration<double>>> prevRuntimes;
+  std::mt19937 gen;
 
-  static double score(const unsigned trials,
-                      const std::map<unsigned, std::chrono::duration<double>> &prevRuntimes);
+  static std::chrono::duration<double> predictRuntime(const unsigned trials,
+                                                      const std::map<unsigned, std::chrono::duration<double>> &prevRuntimes);
   static std::vector<std::unique_ptr<PlayoutDriver>> getDefaultPlayoutDrivers();
 };
 

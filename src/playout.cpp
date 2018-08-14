@@ -78,48 +78,47 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
 }
 
 vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
-  // Find the best playout driver to use
+  // Choose a playout driver
   unsigned trials = states.size();
-  unsigned bestIndex = UINT_MAX;
-  double bestScore = INFINITY;
-  //cout << "Allocating " << trials << " trials" << endl;
+  vector<double> weights(playoutDrivers.size());
   for (unsigned i = 0; i < playoutDrivers.size(); i++) {
-    double newScore = score(trials, prevRuntimes[i]);
-    //cout << i << ": " << newScore << endl;
-    if (newScore <= bestScore) {
-      bestIndex = i;
-      bestScore = newScore;
-    }
+    weights[i] = 1 / pow(predictRuntime(trials, prevRuntimes[i]).count(), OPTIMAL_SCORE_EXP);
   }
-  auto &bestDriver = playoutDrivers[bestIndex];
-  auto &bestPrevRuntimes = prevRuntimes[bestIndex];
+  discrete_distribution<> d(weights.begin(), weights.end());
+  unsigned driverIndex = d(gen);
+  if (driverIndex != 0) {
+    cout << "Allocating " << trials << " trials" << endl;
+    cout << "Picked " << driverIndex << endl;
+  }
+  auto &chosenDriver = playoutDrivers[driverIndex];
+  auto &chosenPrevRuntimes = prevRuntimes[driverIndex];
 
   // Perform the playouts and measure the runtime
   chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
-  vector<PlayerId> results = bestDriver->runPlayouts(states);
+  vector<PlayerId> results = chosenDriver->runPlayouts(states);
   chrono::high_resolution_clock::time_point finish = chrono::high_resolution_clock::now();
   chrono::duration<double> elapsedTime = finish - start;
 
   // Update the measured runtimes for that driver, deleting outdated entries
-  for (auto it = bestPrevRuntimes.lower_bound(trials);
-       it != bestPrevRuntimes.end() && it->second < elapsedTime;
-       it = bestPrevRuntimes.erase(it));
+  for (auto it = chosenPrevRuntimes.lower_bound(trials);
+       it != chosenPrevRuntimes.end() && it->second < elapsedTime;
+       it = chosenPrevRuntimes.erase(it));
   for (auto it =
-         map<unsigned, chrono::duration<double>>::reverse_iterator(bestPrevRuntimes.lower_bound(trials));
-       it != bestPrevRuntimes.rend() && it->second > elapsedTime;
-       it = map<unsigned, chrono::duration<double>>::reverse_iterator(bestPrevRuntimes.erase(next(it).base())));
-  bestPrevRuntimes[trials] = elapsedTime;
+         map<unsigned, chrono::duration<double>>::reverse_iterator(chosenPrevRuntimes.lower_bound(trials));
+       it != chosenPrevRuntimes.rend() && it->second > elapsedTime;
+       it = map<unsigned, chrono::duration<double>>::reverse_iterator(chosenPrevRuntimes.erase(next(it).base())));
+  chosenPrevRuntimes[trials] = elapsedTime;
 
   return results;
 }
 
-double OptimalPlayoutDriver::score(const unsigned trials,
-                                   const map<unsigned, chrono::duration<double>> &prevRuntimes) {
+chrono::duration<double> OptimalPlayoutDriver::predictRuntime(const unsigned trials,
+                                                              const map<unsigned, chrono::duration<double>> &prevRuntimes) {
   if (prevRuntimes.count(trials)) {
-    return prevRuntimes.at(trials).count();
+    return prevRuntimes.at(trials);
   }
   else if (prevRuntimes.size() < 2) {
-    return 0;
+    return chrono::duration<double>(0);
   }
 
   // Find the 2 elements of prevRuntimes that are closest to trials
@@ -148,10 +147,7 @@ double OptimalPlayoutDriver::score(const unsigned trials,
   }
 
   double slope = (time1 - time2).count() / (signed)(trials1 - trials2);
-  chrono::duration<double> expectedTime = time1 + chrono::duration<double>(slope * (signed)(trials - trials1));
-  double confidence = OPTIMAL_CONFIDENCE_SCALE * minDifference1 * minDifference1 * minDifference2;
-  //cout << expectedTime.count() << " " << confidence << endl;
-  return expectedTime.count() / (1 + confidence);
+  return time1 + chrono::duration<double>(slope * (signed)(trials - trials1));
 }
 
 vector<unique_ptr<PlayoutDriver>> OptimalPlayoutDriver::getDefaultPlayoutDrivers() {
