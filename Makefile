@@ -41,7 +41,7 @@ NVCC        := $(CUDA_INSTALL_PATH)/bin/nvcc
 NVCCFLAGS   += -m64 -DUNIX -std=c++14 --compiler-options -fno-strict-aliasing -I"$(CUDA_INSTALL_PATH)/include"
 
 CXX         := g++
-CXXFLAGS    += -fopenmp -fno-strict-aliasing -m64 -std=gnu++14 -Wall -Wextra -DVERBOSE -DUNIX -I"$(CUDA_INSTALL_PATH)/include"
+CXXFLAGS    += -fopenmp -fno-strict-aliasing -m64 -std=gnu++17 -Wall -Wextra -DVERBOSE -DUNIX -I"$(CUDA_INSTALL_PATH)/include"
 
 LIB         += -lgomp -lpthread -L"$(CUDA_INSTALL_PATH)/lib64" -lcudart
 

@@ -81,10 +81,19 @@ vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
   // Choose a playout driver
   unsigned trials = states.size();
   cout << "Allocating " << trials << " trials" << endl;
+  double totalScore = 0;
+  vector<double> scores(playoutDrivers.size());
+  vector<double> confidences(playoutDrivers.size());
+  for (unsigned i = 0; i < playoutDrivers.size(); i++) {
+    auto result = score(trials, prevRuntimes[i]);
+    totalScore += result.first;
+    scores[i] = result.first;
+    confidences[i] = result.second;
+  }
   vector<double> weights(playoutDrivers.size());
   for (unsigned i = 0; i < playoutDrivers.size(); i++) {
-    weights[i] = 1 / pow(predictRuntime(trials, prevRuntimes[i]).count(), OPTIMAL_SCORE_EXP);
-    cout << i << ": " << predictRuntime(trials, prevRuntimes[i]).count() << endl;
+    weights[i] = (scores[i] == INFINITY? 0 : scores[i] / totalScore) + confidences[i];
+    cout << i << ": " << weights[i] << endl;
   }
   discrete_distribution<> d(weights.begin(), weights.end());
   unsigned driverIndex = d(gen);
@@ -111,42 +120,49 @@ vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
   return results;
 }
 
-chrono::duration<double> OptimalPlayoutDriver::predictRuntime(const unsigned trials,
-                                                              const map<unsigned, chrono::duration<double>> &prevRuntimes) {
+pair<double, double> OptimalPlayoutDriver::score(const unsigned trials,
+                                                 const map<unsigned, chrono::duration<double>> &prevRuntimes) {
+  chrono::duration<double> predictedRuntime;
+  double confidence;
   if (prevRuntimes.count(trials)) {
-    return prevRuntimes.at(trials);
+    predictedRuntime = prevRuntimes.at(trials);
+    confidence = 0;
   }
   else if (prevRuntimes.size() < 2) {
-    return chrono::duration<double>(0);
-  }
-
-  // Find the 2 elements of prevRuntimes that are closest to trials
-  auto it = prevRuntimes.upper_bound(trials);
-  for (unsigned i = 0; i < 2 && it != prevRuntimes.begin(); i++, it--);
-  unsigned trials1 = 0;
-  chrono::duration<double> time1;
-  unsigned minDifference1 = UINT_MAX;
-  unsigned trials2 = 0;
-  chrono::duration<double> time2;
-  unsigned minDifference2 = UINT_MAX;
-  for (unsigned i = 0; i < 4 && it != prevRuntimes.end(); i++, it++) {
-    unsigned difference = it->first > trials? it->first - trials : trials - it->first;
-    if (difference < minDifference1) {
-      trials2 = trials1;
-      time2 = time1;
-      minDifference2 = minDifference1;
-      trials1 = it->first;
-      time1 = it->second;
-      minDifference1 = difference;
-    } else if (difference < minDifference2) {
-      trials2 = it->first;
-      time2 = it->second;
-      minDifference2 = difference;
+    predictedRuntime = chrono::duration<double>(0);
+    confidence = INFINITY;
+  } else {
+    // Find the 2 elements of prevRuntimes that are closest to trials
+    auto it = prevRuntimes.upper_bound(trials);
+    for (unsigned i = 0; i < 2 && it != prevRuntimes.begin(); i++, it--);
+    unsigned trials1 = 0;
+    chrono::duration<double> time1;
+    unsigned minDifference1 = UINT_MAX;
+    unsigned trials2 = 0;
+    chrono::duration<double> time2;
+    unsigned minDifference2 = UINT_MAX;
+    for (unsigned i = 0; i < 4 && it != prevRuntimes.end(); i++, it++) {
+      unsigned difference = it->first > trials? it->first - trials : trials - it->first;
+      if (difference < minDifference1) {
+        trials2 = trials1;
+        time2 = time1;
+        minDifference2 = minDifference1;
+        trials1 = it->first;
+        time1 = it->second;
+        minDifference1 = difference;
+      } else if (difference < minDifference2) {
+        trials2 = it->first;
+        time2 = it->second;
+        minDifference2 = difference;
+      }
     }
+    double slope = (time1 - time2).count() / (signed)(trials1 - trials2);
+    predictedRuntime = time1 + chrono::duration<double>(slope * (signed)(trials - trials1));
+    confidence = minDifference1 * OPTIMAL_CONFIDENCE_SCALE;
   }
 
-  double slope = (time1 - time2).count() / (signed)(trials1 - trials2);
-  return time1 + chrono::duration<double>(slope * (signed)(trials - trials1));
+  double score = 1 / pow(predictedRuntime.count(), OPTIMAL_SCORE_EXP);
+  return pair<double, double>(score, confidence);
 }
 
 vector<unique_ptr<PlayoutDriver>> OptimalPlayoutDriver::getDefaultPlayoutDrivers() {

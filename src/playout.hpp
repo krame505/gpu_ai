@@ -20,7 +20,8 @@
 #define HOST_MAX_PLAYOUT_SIZE 300
 #define HYBRID_MAX_PLAYOUT 4000
 
-#define OPTIMAL_SCORE_EXP 0.8
+#define OPTIMAL_SCORE_EXP 2
+#define OPTIMAL_CONFIDENCE_SCALE 0.0001
 
 class PlayoutDriver {
 public:
@@ -149,8 +150,8 @@ private:
   std::vector<std::map<unsigned, std::chrono::duration<double>>> prevRuntimes;
   std::mt19937 gen;
 
-  static std::chrono::duration<double> predictRuntime(const unsigned trials,
-                                                      const std::map<unsigned, std::chrono::duration<double>> &prevRuntimes);
+  static std::pair<double, double> score(const unsigned trials,
+                                         const std::map<unsigned, std::chrono::duration<double>> &prevRuntimes);
   static std::vector<std::unique_ptr<PlayoutDriver>> getDefaultPlayoutDrivers();
 };
 
