@@ -80,7 +80,7 @@ vector<PlayerId> HybridPlayoutDriver::runPlayouts(vector<State> states) {
 vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
   // Choose a playout driver
   unsigned trials = states.size();
-  cout << "Allocating " << trials << " trials" << endl;
+  //cout << "Allocating " << trials << " trials" << endl;
   double totalScore = 0;
   vector<double> scores(playoutDrivers.size());
   vector<double> confidences(playoutDrivers.size());
@@ -93,13 +93,13 @@ vector<PlayerId> OptimalPlayoutDriver::runPlayouts(vector<State> states) {
   vector<double> weights(playoutDrivers.size());
   for (unsigned i = 0; i < playoutDrivers.size(); i++) {
     weights[i] = (scores[i] == INFINITY? 0 : scores[i] / totalScore) + confidences[i];
-    cout << i << ": " << weights[i] << endl;
+    //cout << i << ": " << weights[i] << endl;
   }
   discrete_distribution<> d(weights.begin(), weights.end());
   unsigned driverIndex = d(gen);
   auto &chosenDriver = playoutDrivers[driverIndex];
   auto &chosenPrevRuntimes = prevRuntimes[driverIndex];
-  cout << "Picked " << driverIndex << ": " << chosenDriver->getName() << endl;
+  //cout << "Picked " << driverIndex << ": " << chosenDriver->getName() << endl;
 
   // Perform the playouts and measure the runtime
   chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
@@ -158,7 +158,7 @@ pair<double, double> OptimalPlayoutDriver::score(const unsigned trials,
     }
     double slope = (time1 - time2).count() / (signed)(trials1 - trials2);
     predictedRuntime = time1 + chrono::duration<double>(slope * (signed)(trials - trials1));
-    confidence = minDifference1 * OPTIMAL_CONFIDENCE_SCALE;
+    confidence = pow(minDifference1 * minDifference2, OPTIMAL_CONFIDENCE_EXP) * OPTIMAL_CONFIDENCE_SCALE / trials;
   }
 
   double score = 1 / pow(predictedRuntime.count(), OPTIMAL_SCORE_EXP);
@@ -168,8 +168,9 @@ pair<double, double> OptimalPlayoutDriver::score(const unsigned trials,
 vector<unique_ptr<PlayoutDriver>> OptimalPlayoutDriver::getDefaultPlayoutDrivers() {
   vector<unique_ptr<PlayoutDriver>> playoutDrivers;
   playoutDrivers.push_back(make_unique<HostPlayoutDriver>());
-  playoutDrivers.push_back(make_unique<HybridPlayoutDriver>(make_unique<HostPlayoutDriver>(),
-                                                            make_unique<DeviceMultiplePlayoutDriver>()));
+  //playoutDrivers.push_back(make_unique<HybridPlayoutDriver>(make_unique<HostPlayoutDriver>(),
+  //                                                          make_unique<DeviceMultiplePlayoutDriver>()));
+  playoutDrivers.push_back(make_unique<DeviceMultiplePlayoutDriver>());
   playoutDrivers.push_back(make_unique<HybridPlayoutDriver>(make_unique<HostPlayoutDriver>(),
                                                             make_unique<DeviceCoarsePlayoutDriver>()));
   return playoutDrivers;
