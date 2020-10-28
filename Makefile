@@ -4,8 +4,6 @@
 #
 ################################################################################
 
-CUDA_INSTALL_PATH ?= /usr/local/cuda
-
 EXECUTABLE  := run_ai
 
 # CUDA source files (compiled with cudacc)
@@ -37,13 +35,13 @@ C_DEPS      := $(addprefix $(SRCDIR)/, $(CCHEADERS)) Makefile
 CUOBJS      := $(patsubst %.cu, $(OBJDIR)/%.cu.o, $(CUFILES))
 CCOBJS      := $(patsubst %.cpp, $(OBJDIR)/%.cpp.o, $(CCFILES))
 
-NVCC        := $(CUDA_INSTALL_PATH)/bin/nvcc
-NVCCFLAGS   += -m64 -DUNIX -std=c++14 --compiler-options -fno-strict-aliasing -I"$(CUDA_INSTALL_PATH)/include"
+NVCC        := nvcc
+NVCCFLAGS   += -m64 -DUNIX -std=c++14 --compiler-options -fno-strict-aliasing
 
 CXX         := g++
-CXXFLAGS    += -fopenmp -fno-strict-aliasing -m64 -std=gnu++17 -Wall -Wextra -DVERBOSE -DUNIX -I"$(CUDA_INSTALL_PATH)/include"
+CXXFLAGS    += -fopenmp -fno-strict-aliasing -m64 -std=gnu++17 -Wall -Wextra -DVERBOSE -DUNIX
 
-LIB         += -lgomp -lpthread -L"$(CUDA_INSTALL_PATH)/lib64" -lcudart
+LIB         += -lgomp -lpthread -lcudart
 
 ifeq ($(dbg),1)
   CXXFLAGS  += -g3 -ggdb
